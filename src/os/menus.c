@@ -18,6 +18,8 @@ static u32 g_hier[MAX_MENUS];  /* hierarchical / popup menus */
 static int g_nhier;
 static s16 g_hilited;
 static const int ITEM_H = 16;
+#define BAR_H 20
+int menu_bar_height(void) { return BAR_H; }
 
 /* ---- item access ---- */
 typedef struct { u32 name; u8 icon, key, mark, style; u32 after; } Item;
@@ -259,7 +261,7 @@ static int title_width(u32 m) {
 static void title_rect(int idx, Rect *r) {
     int x = 10;
     for (int i = 0; i < idx; i++) x += title_width(g_bar[i]) + 16;
-    int mb = rds16(LM_MBarHeight);
+    int mb = BAR_H;
     *r = mkrect(0, x, mb - 1, x + title_width(g_bar[idx]) + 16);
 }
 
@@ -276,8 +278,9 @@ static void draw_title(int idx, bool hil) {
 }
 
 void menu_draw_bar(void) {
+    if (rds16(LM_MBarHeight) == 0) return; /* hidden by the application */
     mport_prepare();
-    int mb = rds16(LM_MBarHeight);
+    int mb = BAR_H;
     fill(mkrect(0, 0, mb - 1, qd_screen_w()), (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
     fill(mkrect(mb - 1, 0, mb, qd_screen_w()), (RGB){ 0, 0, 0 });
     for (int i = 0; i < g_nbar; i++) draw_title(i, rds16(hderef(g_bar[i]) + MI_ID) == g_hilited && g_hilited);
@@ -408,14 +411,25 @@ static Rect menu_rect_for(int idx) {
     int w = rds16(hderef(m) + MI_WIDTH), h = rds16(hderef(m) + MI_HEIGHT);
     int left = tr.left;
     if (left + w + 3 > qd_screen_w()) left = qd_screen_w() - w - 3;
-    int mb = rds16(LM_MBarHeight);
+    int mb = BAR_H;
     return mkrect(mb, left, mb + h, left + w);
 }
+
+static void draw_bar_now(void) {
+    int mb = BAR_H;
+    fill(mkrect(0, 0, mb - 1, qd_screen_w()), (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
+    fill(mkrect(mb - 1, 0, mb, qd_screen_w()), (RGB){ 0, 0, 0 });
+    for (int i = 0; i < g_nbar; i++) draw_title(i, false);
+}
+
 
 u32 menu_select(Point start) {
     (void)start;
     u32 save = qd_port();
     mport_prepare();
+    bool hidden = rds16(LM_MBarHeight) == 0;
+    Saved barsv = { { 0, 0, 0, 0 }, NULL };
+    if (hidden) { save_under(&barsv, mkrect(0, 0, BAR_H, qd_screen_w())); draw_bar_now(); }
     int open = -1, hil = 0;
     Saved sv = { { 0, 0, 0, 0 }, NULL };
     Rect mr = { 0, 0, 0, 0 };
@@ -423,7 +437,7 @@ u32 menu_select(Point start) {
     for (;;) {
         bool down = ev_mouse_button();
         Point p = ev_mouse_global();
-        int mb = rds16(LM_MBarHeight);
+        int mb = BAR_H;
         int over = -1;
         if (p.v >= 0 && p.v < mb) {
             for (int i = 0; i < g_nbar; i++) { Rect tr; title_rect(i, &tr); if (p.h >= tr.left && p.h < tr.right) over = i; }
@@ -465,6 +479,7 @@ u32 menu_select(Point start) {
         restore_under(&sv);
         if (!hil) draw_title(open, false);
     }
+    if (hidden) { restore_under(&barsv); g_hilited = 0; }
     mport_done();
     qd_set_port(save);
     return result;

@@ -659,7 +659,10 @@ TRAP(FindWindow) {
 
 int wm_find(Point p, u32 *winout) {
     *winout = 0;
-    if (p.v >= 0 && p.v < rds16(LM_MBarHeight)) return inMenuBar;
+    /* the menu bar definition keeps its own height, so the bar area still
+       hits even when an application has hidden the bar (MBarHeight = 0) */
+    extern int menu_bar_height(void);
+    if (p.v >= 0 && p.v < menu_bar_height()) return inMenuBar;
     for (u32 w = wm_first(); w; w = rd32(w + WIN_NEXT)) {
         if (!rd8(w + WIN_VISIBLE)) continue;
         HRgn st; hrgn_from_guest(&st, rd32(w + WIN_STRUC));

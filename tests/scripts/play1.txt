@@ -230,4 +230,7 @@ shot work/shots/p1_9.png
 hold up 40
 wait 30
 shot work/shots/p1_10.png
+key s cmd
+wait 300
+shot work/shots/p1_save.png
 quit

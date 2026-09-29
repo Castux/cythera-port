@@ -1,0 +1,8 @@
+wait 1800
+click 240 270
+wait 120
+shot work/shots/ld_1.png
+key return
+wait 1500
+shot work/shots/ld_2.png
+quit

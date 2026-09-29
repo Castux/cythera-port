@@ -1,0 +1,14 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+move 100 1
+wait 60
+shot work/shots/mb_1.png
+mousedown 45 8
+wait 40
+shot work/shots/mb_2.png
+mouseup 45 8
+wait 30
+quit
