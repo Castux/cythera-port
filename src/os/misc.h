@@ -11,4 +11,5 @@ void guest_call_async(u32 upp, int n, const u32 *args);
 extern bool g_deterministic;
 void vclock_advance_ns(u64 ns);
 void vclock_idle(void);
+void wait_vbl(void);
 #endif

@@ -38,6 +38,7 @@ extern const int g_trap_ndefs;
 u32 trap_resolve_import(const char *lib, const char *name, bool weak);
 const char *trap_name(u32 index);
 extern bool g_trace_traps;
+extern u32 g_trap_epoch; /* incremented on every Toolbox call */
 extern bool g_strict_traps;
 
 /* Initialisation of all managers */

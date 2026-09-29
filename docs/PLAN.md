@@ -84,6 +84,11 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (CPU use): gamma fades spun millions of times per second because the video
+  driver's cscSetGamma returned at once; it now waits for the next vertical blank like the
+  hardware (fades run at 60 steps/s). TickCount busy-waits sleep until the next tick. A
+  minute of startup + loading went from 33 s to 11 s of CPU; idle play costs ~27% of a core,
+  spent in the game's own map renderer (lighting, dithering).
 - 2026-09-29 (status): verified by scripts: quitting (save prompt, ExitToShell), the tutorial
   mechanics listed below, the Register app. Not yet verified, because it's out of reach of cheap
   scripted play: combat, sleeping, shops, travel between maps, magic. The Omen's Test crate

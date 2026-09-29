@@ -8,6 +8,8 @@
  */
 #include "files.h"
 #include "mm.h"
+#include "wm.h"
+#include "misc.h"
 #include "../plat.h"
 #include <dirent.h>
 #include <time.h>
@@ -1089,7 +1091,11 @@ static int video_control(u32 pb, bool status) {
         }
     }
     switch (cs) {
-    case 4: qd_set_gamma(rd32(param)); return noErr;            /* cscSetGamma */
+    case 4: /* cscSetGamma: takes effect at the next vertical blank, which also
+               paces the game's fade loops to the display rate */
+        qd_set_gamma(rd32(param));
+        wait_vbl();
+        return noErr;
     case 1: case 3: case 5: case 6: return noErr;               /* cscKillIO, SetEntries (via SetEntries trap), GrayPage, SetGray */
     default: return -17; /* controlErr */
     }

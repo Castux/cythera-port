@@ -5,6 +5,7 @@
 #include "mm.h"
 #include "files.h"
 #include "misc.h"
+#include "wm.h"
 #include "../config.h"
 #include "../loader/pef.h"
 #include "../host/host.h"
@@ -44,6 +45,13 @@ void vclock_idle(void) {
     if (!g_deterministic) return;
     u64 tick = 1000000000ull * 100 / 6015;
     g_vclock_ns = (g_vclock_ns / tick + 1) * tick;
+}
+/* Wait for the next 60.15 Hz tick (vertical blank), keeping the screen and
+   host events serviced. */
+void wait_vbl(void) {
+    if (g_deterministic) { vclock_idle(); return; }
+    u32 t = tick_count();
+    while (tick_count() == t) ev_idle_frame();
 }
 u64 host_now_us(void) { return (now_ns() - g_start_ns) / 1000; }
 
@@ -134,7 +142,18 @@ TRAP(PrimeTime) {
 }
 
 /* ---- ticks, delays ---- */
-TRAP(TickCount) { static u32 n; u32 t = tick_count(); if ((++n & 0xFFFFF) == 0) LOG_D("TickCount #%u = %u", n, t); RET(t); }
+/* Busy-wait loops (while (TickCount() < t) ...) call TickCount back to back
+   with no other Toolbox call in between; after a few spins, sleep until the
+   next tick instead of burning host CPU. The values returned are the same. */
+TRAP(TickCount) {
+    static u32 last_epoch, last_t; static int spins;
+    u32 t = tick_count();
+    if (g_trap_epoch == last_epoch + 1 && t == last_t) {
+        if (++spins >= 64) { wait_vbl(); t = tick_count(); spins = 0; }
+    } else spins = 0;
+    last_epoch = g_trap_epoch; last_t = t;
+    RET(t);
+}
 
 TRAP(Delay) {
     u32 n = ARG(0), finalp = ARG(1);
