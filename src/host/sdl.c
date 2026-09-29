@@ -128,7 +128,25 @@ static int mac_keycode(SDL_Keycode k, SDL_Scancode sc) {
     }
 }
 
-static u8 mac_char(int kc, SDL_Keycode k, bool shift) {
+/* Option layer of the US Mac keyboard (Mac Roman). Dead keys yield the
+   accent itself. Indexed by the unshifted ASCII key. */
+static u8 mac_option_char(int c, bool shift) {
+    static const char *keys = "`1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./";
+    static const u8 plain[] = { 0x60, 0xC1, 0xAA, 0xA3, 0xA2, 0xB0, 0xA4, 0xA6, 0xA5, 0xBB, 0xBC, 0xD0, 0xAD,
+        0xCF, 0xB7, 0xAB, 0xA8, 0xA0, 0xB4, 0xAC, 0xF6, 0xBF, 0xB9, 0xD2, 0xD4, 0xC7,
+        0x8C, 0xA7, 0xB6, 0xC4, 0xA9, 0xFA, 0xC6, 0xFB, 0xC2, 0xC9, 0xBE,
+        0xBD, 0xC5, 0x8D, 0xC3, 0xBA, 0xF7, 0xB5, 0xB2, 0xB3, 0xD6 };
+    static const u8 shifted[] = { 0x60, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF, 0xE0, 0xA1, 0xE1, 0xE2, 0xD1, 0xB1,
+        0xCE, 0xE3, 0xAB, 0xE4, 0xFF, 0xE5, 0xAC, 0xF6, 0xAF, 0xB8, 0xD3, 0xD5, 0xC8,
+        0x81, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2, 0xAE,
+        0xF3, 0xF4, 0x82, 0xD7, 0xF5, 0xF7, 0xF8, 0xF9, 0xFA, 0xC0 };
+    if (c >= 'A' && c <= 'Z') c += 32;
+    const char *p = c ? strchr(keys, c) : NULL;
+    if (!p) return 0;
+    return shift ? shifted[p - keys] : plain[p - keys];
+}
+
+static u8 mac_char(int kc, SDL_Keycode k, bool shift, bool option) {
     switch (kc) {
     case 0x24: return 0x0D; case 0x4C: return 0x03; case 0x30: return 0x09; case 0x33: return 0x08;
     case 0x35: return 0x1B; case 0x75: return 0x7F; case 0x73: return 0x01; case 0x77: return 0x04;
@@ -142,6 +160,7 @@ static u8 mac_char(int kc, SDL_Keycode k, bool shift) {
     case 0x56: return '4'; case 0x57: return '5'; case 0x58: return '6'; case 0x59: return '7';
     case 0x5B: return '8'; case 0x5C: return '9';
     }
+    if (option && k > 32 && k < 127) { u8 o = mac_option_char((int)k, shift); if (o) return o; }
     if (k >= 'a' && k <= 'z') return (u8)(shift ? k - 32 : k);
     if (k >= 32 && k < 127) {
         if (!shift) return (u8)k;
@@ -215,7 +234,8 @@ void host_pump(bool wait) {
             g_mods = mods_from_sdl((SDL_Keymod)e.key.keysym.mod);
             set_key(kc, down);
             if (kc < 0 || kc == 0x37 || kc == 0x38 || kc == 0x39 || kc == 0x3A || kc == 0x3B) break;
-            u8 ch = mac_char(kc, e.key.keysym.sym, (e.key.keysym.mod & KMOD_SHIFT) != 0);
+            u8 ch = mac_char(kc, e.key.keysym.sym, (e.key.keysym.mod & KMOD_SHIFT) != 0,
+                             (e.key.keysym.mod & KMOD_ALT) != 0);
             push_event((HostEvent){ .type = down ? HEV_KEY_DOWN : HEV_KEY_UP, .mac_key = (u8)kc, .ch = ch,
                                     .mods = g_mods, .repeat = e.key.repeat != 0, .x = g_mx, .y = g_my });
             break;
@@ -342,6 +362,7 @@ static void script_key(const char *name, u16 mods) {
     u8 ch = 0;
     int kc = key_by_name(name, &ch);
     if (kc < 0) { LOG_W("script: unknown key %s", name); return; }
+    if ((mods & 0x800) && strlen(name) == 1) { u8 o = mac_option_char(name[0], (mods & 0x200) != 0); if (o) ch = o; }
     push_event((HostEvent){ .type = HEV_KEY_DOWN, .mac_key = (u8)kc, .ch = ch, .mods = mods, .x = g_mx, .y = g_my });
     push_event((HostEvent){ .type = HEV_KEY_UP, .mac_key = (u8)kc, .ch = ch, .mods = mods, .x = g_mx, .y = g_my });
 }
