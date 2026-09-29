@@ -84,6 +84,12 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (status): verified by scripts: quitting (save prompt, ExitToShell), the tutorial
+  mechanics listed below, the Register app. Not yet verified, because it's out of reach of cheap
+  scripted play: combat, sleeping, shops, travel between maps, magic. The Omen's Test crate
+  puzzle blocks the route to the spiral maze's monsters. All InterfaceLib imports are
+  implemented; the missing ones (Navigation Services, InputSprocket, Contextual Menu Manager,
+  Control Strip) are weak imports of libraries the game treats as absent.
 - 2026-09-29 (tests): CPU unit tests (`make test`, ~37.8k checks against reference models)
   found a real bug: `sraw`/`srawi` computed XER[CA] from the result when rA == rS, which
   broke CodeWarrior's signed divide-by-power-of-two idiom (`srawi` + `addze`: -8/4 gave -1).

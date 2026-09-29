@@ -1,0 +1,15 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+click 566 54
+wait 200
+key down
+wait 40
+key q cmd
+wait 120
+expect Save Game before Quitting
+shot work/shots/q_1.png
+click 240 200
+quit
