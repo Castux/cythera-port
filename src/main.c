@@ -32,6 +32,8 @@ static void usage(void) {
         "  --data DIR        game directory (default: gamedata)\n"
         "  --headless        no window; render offscreen\n"
         "  --script FILE     run an input script (see docs/SCRIPTING.md)\n"
+        "  --soundfont FILE  General MIDI SoundFont for music (default DATA/soundfont.sf2)\n"
+        "  --wav FILE        record audio output (headless testing)\n"
         "  --timeout N       exit after N seconds\n"
         "  --trace-traps     log every Toolbox call\n"
         "  --strict          abort on unimplemented Toolbox calls\n"
@@ -52,6 +54,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--headless")) g_cfg.headless = true;
         else if (!strcmp(a, "--script") && i + 1 < argc) g_cfg.script = argv[++i];
         else if (!strcmp(a, "--sysdir") && i + 1 < argc) g_cfg.sysdir = argv[++i];
+        else if (!strcmp(a, "--soundfont") && i + 1 < argc) g_cfg.soundfont = argv[++i];
+        else if (!strcmp(a, "--wav") && i + 1 < argc) { extern void sound_wav_open(const char *); sound_wav_open(argv[++i]); }
         else if (!strcmp(a, "--timeout") && i + 1 < argc) g_cfg.timeout_s = atoi(argv[++i]);
         else if (!strcmp(a, "--turbo") && i + 1 < argc) { extern int g_turbo; g_turbo = atoi(argv[++i]); }
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;

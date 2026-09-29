@@ -54,6 +54,8 @@ void os_init(void) {
     host_init(g_cfg.screen_w, g_cfg.screen_h, g_cfg.headless, g_cfg.scale);
     qd_init_screen(g_cfg.screen_w, g_cfg.screen_h);
     text_init();
+    extern void sound_init(void);
+    sound_init();
     ev_init();
     if (g_cfg.script) script_load(g_cfg.script);
     g_cpu_poll = cpu_poll;

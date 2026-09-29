@@ -6,6 +6,7 @@ typedef struct {
     const char *data_dir;
     const char *script;
     const char *sysdir;
+    const char *soundfont;
     bool headless;
     int screen_w, screen_h;
     int scale;

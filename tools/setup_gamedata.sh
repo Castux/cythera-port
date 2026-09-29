@@ -18,4 +18,10 @@ python3 -m venv "$TMP/venv"
 mkdir -p "$OUT"
 cp -R "$TMP/vise/files/." "$OUT/"
 cp "$TMP/vise/manifest.csv" "$OUT/.manifest.csv"  # type/creator info
+# General MIDI SoundFont for the QuickTime music (GeneralUser GS, free license)
+if [ ! -f "$OUT/soundfont.sf2" ]; then
+  echo "Downloading GeneralUser GS SoundFont (32 MB)..."
+  curl -fsSL -o "$OUT/soundfont.sf2" \
+    "https://github.com/mrbumpy409/GeneralUser-GS/raw/main/GeneralUser-GS.sf2" || echo "SoundFont download failed; music will use the built-in synth"
+fi
 echo "Game files extracted to $OUT/"

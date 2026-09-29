@@ -75,9 +75,11 @@ static TMEntry *tm_find(u32 task, bool create) {
     return NULL;
 }
 
+void sound_service(void);
 void irq_service(void) {
     if (g_in_irq) return;
     g_in_irq = true;
+    sound_service();
     u64 now = host_now_us();
     for (int i = 0; i < MAX_TM; i++) {
         TMEntry *e = &g_tm[i];
@@ -401,7 +403,6 @@ TRAP(OpenDeskAcc) { RETERR(0); }
 TRAP(SystemEdit) { RET(0); }
 TRAP(SystemClick) { }
 TRAP(GetDCtlEntry) { RET(0); }
-TRAP(SndSoundManagerVersion) { RET(0x03200000); }
 
 void misc_init(void) {
     g_start_ns = now_ns();
