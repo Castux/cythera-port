@@ -166,6 +166,8 @@ TRAP(Gestalt) {
     case FOURCC('p','m','g','r'): v = 0; break;
     case FOURCC('s','c','r','i'): v = 0; break;
     case FOURCC('d','p','l','y'): v = 0; ok = false; break;
+    case FOURCC('q','t','i','m'): v = 0x03008000; break; /* QuickTime 3.0 */
+    case FOURCC('q','t','r','s'): v = 1; break;
     default: ok = false; break;
     }
     if (!ok) {
@@ -386,8 +388,6 @@ TRAP(NMRemove) { RETERR(noErr); }
 TRAP(NMInstall) { RETERR(noErr); }
 TRAP(HMShowBalloon) { RETERR(-850); /* hmBalloonAborted */ }
 TRAP(HMRemoveBalloon) { RETERR(noErr); }
-TRAP(OpenDefaultComponent) { RET(0); }
-TRAP(CloseComponent) { RETERR(noErr); }
 TRAP(CrsrDevNextDevice) { u32 p = ARG(0); if (p) wr32(p, 0); RETERR(-1); }
 TRAP(CrsrDevNewDevice) { RETERR(-1); }
 TRAP(CrsrDevDisposeDevice) { RETERR(-1); }

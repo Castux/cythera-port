@@ -1,0 +1,8 @@
+# boot and take screenshots
+wait 60
+shot work/shots/boot1.png
+wait 120
+shot work/shots/boot2.png
+wait 240
+shot work/shots/boot3.png
+quit

@@ -35,7 +35,7 @@ static void usage(void) {
         "  --timeout N       exit after N seconds\n"
         "  --trace-traps     log every Toolbox call\n"
         "  --strict          abort on unimplemented Toolbox calls\n"
-        "  --screen WxH      emulated screen size (default 800x600)\n"
+        "  --screen WxH      emulated screen size (default 640x480)\n"
         "  --scale N         window scale factor\n"
         "  -v / -q           more / less logging\n");
     exit(2);
@@ -43,8 +43,8 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     g_cfg.data_dir = "gamedata";
-    g_cfg.screen_w = 800;
-    g_cfg.screen_h = 600;
+    g_cfg.screen_w = 640;
+    g_cfg.screen_h = 480;
     g_cfg.scale = 0;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];

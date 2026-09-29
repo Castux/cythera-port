@@ -7,6 +7,9 @@
 #include "misc.h"
 #include "../host/host.h"
 #include "../config.h"
+#include "qd.h"
+#include "wm.h"
+void text_init(void);
 #include <sys/stat.h>
 
 static void cpu_poll(CPU *c) {
@@ -15,6 +18,10 @@ static void cpu_poll(CPU *c) {
     irq_service();
     static u32 n;
     if ((++n & 15) == 0) host_pump(false);
+    static u32 last;
+    extern u32 tick_count(void);
+    u32 t = tick_count();
+    if (t != last) { last = t; qd_present(); }
     if (g_cfg.timeout_s && host_now_us() > (u64)g_cfg.timeout_s * 1000000u) {
         LOG_I("timeout reached");
         host_shutdown();
@@ -38,6 +45,9 @@ void os_init(void) {
     res_open_app(app);
     threads_init(g_cpu);
     host_init(g_cfg.screen_w, g_cfg.screen_h, g_cfg.headless, g_cfg.scale);
+    qd_init_screen(g_cfg.screen_w, g_cfg.screen_h);
+    text_init();
+    ev_init();
     if (g_cfg.script) script_load(g_cfg.script);
     g_cpu_poll = cpu_poll;
 }

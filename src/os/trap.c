@@ -18,7 +18,7 @@ static u32 g_nslots;
 /* Libraries we emulate.  Weak imports from any other library resolve to
    NULL, so the application takes its "library not installed" path. */
 static const char *g_provided_libs[] = {
-    "InterfaceLib", "ThreadsLib", "SoundLib", "MathLib", NULL
+    "InterfaceLib", "ThreadsLib", "SoundLib", "MathLib", "QuickTimeLib", NULL
 };
 
 static const TrapDef *find_def(const char *name) {
@@ -127,4 +127,32 @@ u32 call_upp(u32 upp, int nargs, const u32 *args) {
         return guest_call(proc, nargs, args);
     }
     return guest_call(upp, nargs, args);
+}
+
+/* ---- Mixed Mode: routine descriptors ---- */
+#include "mm.h"
+TRAP(NewRoutineDescriptor) {
+    u32 proc = ARG(0), info = ARG(1); u8 isa = (u8)ARG(2);
+    u32 rd = mm_new_ptr(32, true, ZONE_SYS);
+    wr16(rd, 0xAAFE);
+    wr8(rd + 2, 7);
+    wr16(rd + 10, 0);          /* routineCount - 1 */
+    wr32(rd + 12, info);
+    wr8(rd + 17, isa);
+    wr16(rd + 18, 0);
+    wr32(rd + 20, proc);
+    RET(rd);
+}
+TRAP(NewRoutineDescriptorTrap) { trap_NewRoutineDescriptor(cpu); }
+TRAP(DisposeRoutineDescriptor) { u32 rd = ARG(0); if (rd && rd16(rd) == 0xAAFE) mm_dispose_ptr(rd); }
+
+/* CallUniversalProc(upp, procInfo, ...): count parameters from procInfo. */
+TRAP(CallUniversalProc) {
+    u32 upp = ARG(0), info = ARG(1);
+    int n = 0;
+    if ((info & 0xF) == 2 || (info & 0xF) == 7) n = 4; /* register based: pass what we have */
+    else for (int i = 0; i < 13; i++) { if ((info >> (6 + 2 * i)) & 3) n = i + 1; }
+    u32 a[16];
+    for (int i = 0; i < n; i++) a[i] = ARG(2 + i);
+    RET(call_upp(upp, n, a));
 }
