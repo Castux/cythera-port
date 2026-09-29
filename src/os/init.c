@@ -31,11 +31,15 @@ static int ghit_cmp(const void *a, const void *b) { const GHit *x = a, *y = b; r
 void guest_profile_report(void) {
     int n = 0; while (n < 4096 && g_ghits[n].name) n++;
     qsort(g_ghits, (size_t)n, sizeof(GHit), ghit_cmp);
+    extern u64 g_polls;
+    fprintf(stderr, "guest instructions: ~%.0f million\n", g_polls * (double)CPU_POLL_INTERVAL / 1e6);
     fprintf(stderr, "guest functions (by interpreter samples):\n");
     for (int i = 0; i < n && i < 25; i++) fprintf(stderr, "  %-40s %5.1f%%\n", g_ghits[i].name, 100.0 * g_ghits[i].hits / (g_gtotal ? g_gtotal : 1));
 }
 
+u64 g_polls;
 static void cpu_poll(CPU *c) {
+    g_polls++;
     extern bool g_profile;
     if (g_profile) guest_sample(c->pc);
     static u64 warned_at;
