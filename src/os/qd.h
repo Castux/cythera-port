@@ -202,6 +202,9 @@ void pict_draw(u32 pich, Rect dst);
 bool pict_decode_to_rgb(const u8 *pic, u32 len, int *w, int *h, u32 **rgb);
 
 /* Ports */
+u32 port_grafvars(u32 port);
+void port_mirror_bounds(u32 port);   /* window ports: bounds.topLeft at +8/+10 */
+void port_make_window_port(u32 port);
 void port_init(u32 port, bool color);
 void port_init_color_state(u32 port);
 u32 new_pixpat_from_pattern(const u8 pat[8]);

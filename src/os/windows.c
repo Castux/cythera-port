@@ -382,6 +382,7 @@ u32 wm_create(u32 storage, Rect bounds, const char *title, bool visible, s16 pro
     Rect sb = mkrect(-bounds.top, -bounds.left, qd_screen_h() - bounds.top, qd_screen_w() - bounds.left);
     wr_rect((color ? hderef(rd32(win + PORT_BITS)) : win + PORT_BITS) + 6, sb);
     port_init(win, color);
+    if (color) port_make_window_port(win);
     wr_rect(win + PORT_RECT, mkrect(0, 0, bounds.bottom - bounds.top, bounds.right - bounds.left));
     rgn_set_rect(rd32(win + PORT_VIS), (Rect){ 0, 0, 0, 0 });
     wr16(win + PORT_TXFONT, 0);
@@ -602,6 +603,7 @@ static void move_window(u32 win, int h, int v, bool front) {
         b.left = (s16)(b.left - dx); b.right = (s16)(b.right - dx);
         b.top = (s16)(b.top - dy); b.bottom = (s16)(b.bottom - dy);
         wr_rect(bm + 6, b);
+        port_mirror_bounds(win);
         call_wdef(win, wCalcRgns, 0);
     }
     if (front) {
@@ -974,3 +976,17 @@ TRAP(CheckUpdate) {
 }
 
 TRAP(SetThemeWindowBackground) { RETERR(noErr); }
+
+void wm_debug_dump(void) {
+    for (u32 w = wm_first(); w; w = rd32(w + WIN_NEXT)) {
+        Rect s = rgn_bbox(rd32(w + WIN_STRUC)), c = rgn_bbox(rd32(w + WIN_CONT)), v = rgn_bbox(rd32(w + PORT_VIS));
+        Rect u = rgn_bbox(rd32(w + WIN_UPDATE)), pr = rd_rect(w + PORT_RECT);
+        Surf sf; surf_from_port(w, &sf);
+        WInfo *wi = winfo(w);
+        LOG_I("win %08x vis=%d hil=%d kind=%d proc=%d%s port(%d,%d,%d,%d) bounds(%d,%d) struc(%d,%d,%d,%d) cont(%d,%d,%d,%d) visRgn(%d,%d,%d,%d) upd(%d,%d,%d,%d)",
+              w, rd8(w + WIN_VISIBLE), rd8(w + WIN_HILITED), rds16(w + WIN_KIND), wi ? wi->procid : -1, wi && wi->native ? " native" : "",
+              pr.top, pr.left, pr.bottom, pr.right, sf.bounds.top, sf.bounds.left,
+              s.top, s.left, s.bottom, s.right, c.top, c.left, c.bottom, c.right, v.top, v.left, v.bottom, v.right,
+              u.top, u.left, u.bottom, u.right);
+    }
+}

@@ -81,13 +81,16 @@ void ev_idle_frame(void) {
     misc_poll();
 }
 
-static bool mask_ok(u16 mask, u16 what) { return (mask >> what) & 1; }
+static bool mask_ok(u16 mask, u16 what) {
+    if (what == kHighLevelEvent) return (mask & 0x0400) != 0;
+    return what < 16 && ((mask >> what) & 1);
+}
 
 /* Find and optionally remove the next event matching mask. */
 static bool get_event(u16 mask, Ev *out, bool remove, bool os_only) {
     for (int i = 0; i < g_qn; i++) {
         if (!mask_ok(mask, g_q[i].what)) continue;
-        if (!mask_ok(g_sysmask | (1 << activateEvt) | (1 << updateEvt) | (1 << kHighLevelEvent) | (1 << osEvt), g_q[i].what)) continue;
+        if (!mask_ok(g_sysmask | (1 << activateEvt) | (1 << updateEvt) | 0x0400 | (1 << osEvt), g_q[i].what)) continue;
         /* activate events have priority */
         *out = g_q[i];
         if (remove) { memmove(&g_q[i], &g_q[i + 1], sizeof(Ev) * (size_t)(g_qn - i - 1)); g_qn--; }

@@ -564,7 +564,7 @@ static inline RGB rgb_blend(RGB a, RGB b, u32 wa) { /* wa in 0..65535 weight of 
 
 static RGB op_color(u32 port) {
     if (is_color_port(port)) {
-        u32 gv = rd32(port + PORT_GRAFVARS);
+        u32 gv = port_grafvars(port);
         if (gv && hderef(gv)) { RGB c; rd_rgb(hderef(gv), &c); return c; }
     }
     return (RGB){ 0x8000, 0x8000, 0x8000 };

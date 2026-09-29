@@ -1,0 +1,4 @@
+wait 1800
+dumpwin
+shot work/shots/b4_1.png
+quit

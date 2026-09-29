@@ -366,6 +366,31 @@ void port_init_color_state(u32 port) {
     wr32(port + PORT_FILLPIXPAT, new_pixpat_from_pattern(PAT_BLACK));
 }
 
+/* Window ports keep portBits.bounds.topLeft mirrored at offsets 8/10 (where
+   an old GrafPort has it), because application WDEFs read it there; their
+   grafVars handle is kept here instead. */
+typedef struct { u32 port, gv; } WinGV;
+static WinGV g_wgv[256];
+
+u32 port_grafvars(u32 port) {
+    for (int i = 0; i < 256; i++) if (g_wgv[i].port == port) return g_wgv[i].gv;
+    return rd32(port + PORT_GRAFVARS);
+}
+void port_make_window_port(u32 port) {
+    u32 gv = rd32(port + PORT_GRAFVARS);
+    for (int i = 0; i < 256; i++) if (g_wgv[i].port == port || !g_wgv[i].port) { g_wgv[i].port = port; g_wgv[i].gv = gv; break; }
+    port_mirror_bounds(port);
+}
+void port_mirror_bounds(u32 port) {
+    if (!is_color_port(port)) return;
+    for (int i = 0; i < 256; i++) if (g_wgv[i].port == port) {
+        Rect b = rd_rect(hderef(rd32(port + PORT_BITS)) + PM_BOUNDS);
+        wr16(port + 8, (u16)b.top);
+        wr16(port + 10, (u16)b.left);
+        return;
+    }
+}
+
 /* Initialise the common fields of a port (portBits must already be set). */
 void port_init(u32 port, bool color) {
     Surf s;
@@ -526,6 +551,7 @@ TRAP(SetOrigin) {
     Rect b = rd_rect(bm + 6);
     b.left += dh; b.right += dh; b.top += dv; b.bottom += dv;
     wr_rect(bm + 6, b);
+    port_mirror_bounds(port);
     HRgn r; hrgn_from_guest(&r, rd32(port + PORT_VIS));
     hrgn_offset(&r, dh, dv);
     hrgn_to_guest(&r, rd32(port + PORT_VIS));
@@ -656,7 +682,7 @@ TRAP(GetBackColor) { wr_rgb(ARG(0), port_bk(qd_port())); }
 TRAP(OpColor) {
     u32 port = qd_port();
     if (!is_color_port(port)) return;
-    u32 gv = rd32(port + PORT_GRAFVARS);
+    u32 gv = port_grafvars(port);
     if (gv && hderef(gv)) { RGB c; rd_rgb(ARG(0), &c); wr_rgb(hderef(gv), c); }
 }
 TRAP(HiliteColor) { }
