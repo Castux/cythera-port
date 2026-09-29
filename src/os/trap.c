@@ -107,7 +107,7 @@ u32 g_trap_epoch = 1;
 void trap_dispatch(CPU *c, u32 index) {
     g_trap_epoch++;
     if (index >= g_nslots) fatal("jump to invalid trap slot %u", index);
-    g_last_trap_icount = c->icount;
+    c->last_trap_icount = c->icount;
     TrapSlot *s = &g_slots[index];
     s->calls++;
     if (g_trace_traps) {

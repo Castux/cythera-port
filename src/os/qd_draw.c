@@ -127,6 +127,8 @@ void draw_hrgn(u32 port, const HRgn *shape, const Paint *paint, int mode) {
     hrgn_op(&r, shape, &clip, 1);
     hrgn_free(&clip);
     if (hrgn_empty(&r)) { hrgn_free(&r); return; }
+    /* source modes used with patterns act as the corresponding pattern modes */
+    if ((mode & 0x7F) < 8) mode = (mode & 0x7F) + 8;
     u32 fgpx = pixel_for_rgb(&s, paint->fg), bkpx = pixel_for_rgb(&s, paint->bk);
     PixPatCtx pc;
     bool colorpat = paint->kind == 2;

@@ -38,12 +38,11 @@ void guest_profile_report(void) {
 static void cpu_poll(CPU *c) {
     extern bool g_profile;
     if (g_profile) guest_sample(c->pc);
-    extern u64 g_last_trap_icount;
     static u64 warned_at;
-    if (c->icount - g_last_trap_icount > 300000000ull && warned_at != g_last_trap_icount) {
-        warned_at = g_last_trap_icount;
+    if (c->icount - c->last_trap_icount > 300000000ull && warned_at != c->last_trap_icount) {
+        warned_at = c->last_trap_icount;
         extern void cpu_backtrace(CPU *c, FILE *f);
-        LOG_W("stall: no Toolbox call for %llu instructions", (unsigned long long)(c->icount - g_last_trap_icount));
+        LOG_W("stall: no Toolbox call for %llu instructions", (unsigned long long)(c->icount - c->last_trap_icount));
         cpu_backtrace(c, stderr);
     }
     misc_poll();

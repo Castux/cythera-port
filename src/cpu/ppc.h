@@ -14,6 +14,7 @@ typedef struct CPU {
     u32 pc;
     u32 fpscr;
     u64 icount;
+    u64 last_trap_icount; /* for stall detection */
     int depth;          /* nesting depth of cpu_run() */
     void *thread;       /* owning guest thread (threads.c) */
 } CPU;

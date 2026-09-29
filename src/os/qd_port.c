@@ -1199,14 +1199,22 @@ TRAP(SetEntryUsage) {
     if (usage != -1) wr16(e + 6, (u16)usage);
     if (tol != -1) wr16(e + 8, (u16)tol);
 }
+static u32 g_default_pal;
+void palette_window_disposed(u32 win) { for (int i = 0; i < 256; i++) if (g_win_pal[i][0] == win) { g_win_pal[i][0] = 0; g_win_pal[i][1] = 0; } }
+static void apply_palette(u32 pal);
 TRAP(SetPalette) {
     u32 win = ARG(0), pal = ARG(1);
+    if (win == 0xFFFFFFFFu) { /* the application's default palette */
+        g_default_pal = pal;
+        if (pal) apply_palette(pal);
+        return;
+    }
     for (int i = 0; i < 256; i++) if (g_win_pal[i][0] == win || !g_win_pal[i][0]) { g_win_pal[i][0] = win; g_win_pal[i][1] = pal; break; }
 }
 TRAP(GetPalette) {
     u32 win = ARG(0);
     for (int i = 0; i < 256; i++) if (g_win_pal[i][0] == win) { RET(g_win_pal[i][1]); return; }
-    RET(0);
+    RET(win == 0xFFFFFFFFu ? g_default_pal : 0);
 }
 
 static void apply_palette(u32 pal) {
@@ -1228,6 +1236,7 @@ static void apply_palette(u32 pal) {
 TRAP(ActivatePalette) {
     u32 win = ARG(0);
     for (int i = 0; i < 256; i++) if (g_win_pal[i][0] == win) { if (g_win_pal[i][1]) apply_palette(g_win_pal[i][1]); return; }
+    if (g_default_pal) apply_palette(g_default_pal);
 }
 TRAP(SetEntries) {
     s16 start = ARGS16(0), count = ARGS16(1); u32 table = ARG(2);

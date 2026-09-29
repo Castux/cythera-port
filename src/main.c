@@ -56,6 +56,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--sysdir") && i + 1 < argc) g_cfg.sysdir = argv[++i];
         else if (!strcmp(a, "--soundfont") && i + 1 < argc) g_cfg.soundfont = argv[++i];
         else if (!strcmp(a, "--wav") && i + 1 < argc) { extern void sound_wav_open(const char *); sound_wav_open(argv[++i]); }
+        else if (!strcmp(a, "--render-pict") && i + 2 < argc) { g_cfg.render_pict = argv[++i]; g_cfg.render_out = argv[++i]; g_cfg.headless = true; }
         else if (!strcmp(a, "--timeout") && i + 1 < argc) g_cfg.timeout_s = atoi(argv[++i]);
         else if (!strcmp(a, "--turbo") && i + 1 < argc) { extern int g_turbo; g_turbo = atoi(argv[++i]); }
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;
@@ -91,6 +92,16 @@ int main(int argc, char **argv) {
 
     os_init();
 
+    if (g_cfg.render_pict) {
+        extern void trap_InitGraf(CPU *), trap_InitWindows(CPU *);
+        extern int pict_render_file(const char *in, const char *out);
+        u32 qdg = DATA_ADDR + img.data_size - 256; /* scratch QD globals */
+        CPU f; memset(&f, 0, sizeof f); f.r[3] = qdg; trap_InitGraf(&f);
+        memset(&f, 0, sizeof f); trap_InitWindows(&f);
+        /* use the game's palette */
+        extern u32 res_get(u32 type, s16 id);
+        return pict_render_file(g_cfg.render_pict, g_cfg.render_out);
+    }
     CPU *c = &main_cpu;
     u32 sp = STACK_AREA_END - 0x100;
     wr32(sp, 0);

@@ -504,6 +504,8 @@ static void dispose_window(u32 win, bool free_storage) {
     ctl_dispose_all(win);
     unlink_window(win);
     wi->win = 0;
+    extern void palette_window_disposed(u32 win);
+    palette_window_disposed(win);
     if (vis) wm_recalc(&st);
     hrgn_free(&st);
     rgn_dispose(rd32(win + WIN_STRUC));

@@ -362,3 +362,29 @@ TRAP(ClosePicture) {
     g_rec_pic = 0;
 }
 TRAP(PicComment) { }
+
+/* Debug/test helper: render a PICT file (data fork with 512-byte header)
+   to PNG through our own QuickDraw. */
+#include "../host/host.h"
+int pict_render_file(const char *in, const char *out) {
+    FILE *f = fopen(in, "rb");
+    if (!f) return 1;
+    fseek(f, 0, SEEK_END); long n = ftell(f); fseek(f, 0, SEEK_SET);
+    u8 *d = malloc((size_t)n);
+    if (fread(d, 1, (size_t)n, f) != (size_t)n) { fclose(f); return 1; }
+    fclose(f);
+    u32 h = mm_handle_from_data(d + 512, (u32)(n - 512), ZONE_APP);
+    free(d);
+    Rect fr = rd_rect(hderef(h) + 2);
+    int w = fr.right - fr.left, hh = fr.bottom - fr.top;
+    /* draw into the screen port */
+    extern u32 wm_port(void);
+    u32 port = wm_port();
+    qd_set_port(port);
+    Rect dst = mkrect(0, 0, hh > qd_screen_h() ? qd_screen_h() : hh, w > qd_screen_w() ? qd_screen_w() : w);
+    rgn_set_rect(rd32(port + PORT_VIS), mkrect(0, 0, qd_screen_h(), qd_screen_w()));
+    pict_draw(h, mkrect(0, 0, hh, w));
+    (void)dst;
+    qd_present();
+    return host_screenshot(out) ? 0 : 1;
+}
