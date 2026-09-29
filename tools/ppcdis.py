@@ -211,6 +211,7 @@ class Image:
 
     def disasm(self, start, end, out):
         md = capstone.Cs(capstone.CS_ARCH_PPC, capstone.CS_MODE_32 | capstone.CS_MODE_BIG_ENDIAN)
+        md.skipdata = True
         buf = bytes(self.code[start:end])
         for ins in md.disasm(buf, start):
             txt = f"{ins.mnemonic:8} {ins.op_str}"
