@@ -55,14 +55,14 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M5 — Gameplay
 - [~] Main map view, roster, text log, character/inventory windows work
-- [ ] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do
-- [ ] Save / load games, preferences
+- [~] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do (movement, contextual menu, conversations verified)
+- [x] Save / load games (verified); [ ] preferences dialog
 - [ ] Timing correctness (ticks, animation, heartbeat)
 - **Exit:** play through the opening of the game (Odemia) with save/load.
 
 ## M6 — Audio
-- [ ] Sound Manager (snd resources, SndDoCommand/Immediate, SndPlay, double buffer, callbacks)
-- [ ] QuickTime Music: tune header/sequence parsing, note allocator (NAPlayNote), GM synth
+- [x] Sound Manager (snd resources, SndDoCommand/Immediate, SndPlay, double buffer, callbacks)
+- [x] QuickTime Music: tune header/sequence parsing, note allocator (NAPlayNote), GM synth
 - [ ] Ambient/spot sounds, volume prefs
 - **Exit:** music and sound effects play correctly.
 
@@ -73,7 +73,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [ ] Performance (predecoded instruction cache or block JIT if needed)
 - [ ] Portability: Linux/Windows builds (CI-free manual check), no host-endianness assumptions
   (early Linux findings and a required fix: [LINUX_NOTES.md](LINUX_NOTES.md))
-- [ ] User documentation (README: setup, controls, config)
+- [x] User documentation (README: setup, controls, config)
 - **Exit:** full-feature playable port.
 
 ## Working notes
@@ -82,6 +82,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (later): in-game play works (movement, lighting, contextual menus, conversations,
+  save/load, hidden menu bar, music via QTMA+SoundFont, sound effects). Deterministic test mode added.
 - 2026-09-29: M0-M4 done. Title, main menu, character creation, intro slideshow and
   the first in-game conversation run. Notable findings:
   - The game needs QuickTime 3 and Apple Events ('evnt') to start.
