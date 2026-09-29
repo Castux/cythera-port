@@ -505,6 +505,9 @@ void cpu_run(CPU *c) {
 #include <time.h>
 static u64 host_timebase(void) {
     /* 603/750 time base ticks at bus/4; report a 25 MHz time base. */
+    extern bool g_deterministic;
+    extern u64 g_vclock_ns;
+    if (g_deterministic) return g_vclock_ns / 40;
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (u64)ts.tv_sec * 25000000ull + (u64)ts.tv_nsec / 40;

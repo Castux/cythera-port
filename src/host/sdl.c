@@ -173,7 +173,9 @@ void host_keymap(u8 out[16]) {
 void host_pump(bool wait) {
     script_tick();
     if (g_headless) {
-        if (wait) SDL_Delay(1);
+        extern bool g_deterministic;
+        extern void vclock_idle(void);
+        if (wait) { if (g_deterministic) vclock_idle(); else SDL_Delay(1); }
         return;
     }
     SDL_Event e;
@@ -211,7 +213,9 @@ void host_pump(bool wait) {
             break;
         }
     }
-    if (wait && !any) SDL_Delay(2);
+    extern bool g_deterministic;
+    extern void vclock_idle(void);
+    if (wait && !any) { if (g_deterministic) vclock_idle(); else SDL_Delay(2); }
 }
 
 void host_present(const u8 *pixels, int pitch, int w, int h, const u32 *pal) {

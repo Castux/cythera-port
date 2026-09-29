@@ -40,6 +40,7 @@ void guest_profile_report(void) {
 u64 g_polls;
 static void cpu_poll(CPU *c) {
     g_polls++;
+    if (g_deterministic) vclock_advance_ns((u64)CPU_POLL_INTERVAL * 5); /* 200 MIPS nominal */
     extern bool g_profile;
     if (g_profile) guest_sample(c->pc);
     static u64 warned_at;

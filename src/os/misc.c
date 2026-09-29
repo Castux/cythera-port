@@ -28,10 +28,21 @@
 static u64 g_start_ns;
 
 int g_turbo = 1; /* test option: emulated clock runs this many times faster */
+bool g_deterministic; /* virtual clock driven by executed instructions */
+u64 g_vclock_ns = 1000000000ull;
 static u64 now_ns(void) {
+    if (g_deterministic) return g_vclock_ns;
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ((u64)ts.tv_sec * 1000000000ull + (u64)ts.tv_nsec) * (u64)g_turbo;
+}
+/* Advance the virtual clock (deterministic mode). */
+void vclock_advance_ns(u64 ns) { g_vclock_ns += ns; }
+/* Idle: skip to the next tick instead of sleeping. */
+void vclock_idle(void) {
+    if (!g_deterministic) return;
+    u64 tick = 1000000000ull * 100 / 6015;
+    g_vclock_ns = (g_vclock_ns / tick + 1) * tick;
 }
 u64 host_now_us(void) { return (now_ns() - g_start_ns) / 1000; }
 

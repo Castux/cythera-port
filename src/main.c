@@ -31,7 +31,12 @@ static void usage(void) {
         "usage: cythera [options]\n"
         "  --data DIR        game directory (default: gamedata)\n"
         "  --headless        no window; render offscreen\n"
-        "  --script FILE     run an input script (see docs/SCRIPTING.md)\n"
+        "  --script FILE     run an input script (see README.md, tests/scripts/)\n"
+        "  --sysdir DIR      emulated System Folder (default ~/.cythera-port/System Folder)\n"
+        "  --turbo N         run the emulated clock N times faster (tests)\n"
+        "  --profile         print Toolbox/guest profile at exit\n"
+        "  --deterministic   headless, virtual clock driven by instructions (reproducible tests)\n"
+        "  --render-pict F O render PICT file F to PNG O and exit\n"
         "  --soundfont FILE  General MIDI SoundFont for music (default DATA/soundfont.sf2)\n"
         "  --wav FILE        record audio output (headless testing)\n"
         "  --timeout N       exit after N seconds\n"
@@ -59,6 +64,13 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--render-pict") && i + 2 < argc) { g_cfg.render_pict = argv[++i]; g_cfg.render_out = argv[++i]; g_cfg.headless = true; }
         else if (!strcmp(a, "--timeout") && i + 1 < argc) g_cfg.timeout_s = atoi(argv[++i]);
         else if (!strcmp(a, "--turbo") && i + 1 < argc) { extern int g_turbo; g_turbo = atoi(argv[++i]); }
+        else if (!strcmp(a, "--shot-at-trap") && i + 2 < argc) {
+            extern const char *g_shot_trap, *g_shot_out; extern u32 g_shot_n;
+            static char nm[64]; snprintf(nm, sizeof nm, "%s", argv[++i]);
+            char *c = strchr(nm, ':'); g_shot_n = 1; if (c) { *c = 0; g_shot_n = (u32)atoi(c + 1); }
+            g_shot_trap = nm; g_shot_out = argv[++i];
+        }
+        else if (!strcmp(a, "--deterministic")) { extern bool g_deterministic; g_deterministic = true; g_cfg.headless = true; }
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;
         else if (!strcmp(a, "--profile")) { extern bool g_profile; extern void trap_profile_report(void); g_profile = true; atexit(trap_profile_report); }
         else if (!strcmp(a, "--strict")) g_strict_traps = true;

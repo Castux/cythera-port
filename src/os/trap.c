@@ -104,12 +104,15 @@ void cpu_backtrace(CPU *c, FILE *f) {
 
 u64 g_last_trap_icount;
 u32 g_trap_epoch = 1;
+const char *g_shot_trap, *g_shot_out; u32 g_shot_n;
+void qd_present(void); bool host_screenshot(const char *);
 void trap_dispatch(CPU *c, u32 index) {
     g_trap_epoch++;
     if (index >= g_nslots) fatal("jump to invalid trap slot %u", index);
     c->last_trap_icount = c->icount;
     TrapSlot *s = &g_slots[index];
     s->calls++;
+    if (g_shot_trap && !strcmp(s->name, g_shot_trap) && s->calls == g_shot_n) { qd_present(); host_screenshot(g_shot_out); }
     if (g_trace_traps) {
         u32 off;
         const char *n = sym_lookup(c->lr, &off);

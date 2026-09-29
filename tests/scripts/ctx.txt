@@ -1,0 +1,12 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+mousedown 472 166
+wait 90
+shot work/shots/ctx_1.png
+mouseup 472 166
+wait 60
+shot work/shots/ctx_2.png
+quit

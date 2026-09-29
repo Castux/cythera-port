@@ -830,8 +830,26 @@ void copybits(u32 srcbm, u32 dstbm, Rect sr, Rect dr, int mode, u32 maskrgn, u32
     qd_screen_dirty();
 }
 
+/* debug: CYTHERA_DUMP_COPYBITS=N writes the destination of the N-th CopyBits */
+extern int stbi_write_png(char const *filename, int w, int h, int comp, const void *data, int stride_in_bytes);
+static void dump_surface(u32 bm, const char *path) {
+    Surf s; if (!surf_from_bitmap(bm, &s)) return;
+    int w = s.bounds.right - s.bounds.left, h = s.bounds.bottom - s.bounds.top;
+    u8 *rgb = malloc((size_t)w * (size_t)h * 3);
+    for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) {
+        RGB c = rgb_for_pixel(&s, surf_get(&s, x, y));
+        u8 *p = rgb + ((size_t)y * (size_t)w + (size_t)x) * 3; p[0] = (u8)(c.r >> 8); p[1] = (u8)(c.g >> 8); p[2] = (u8)(c.b >> 8);
+    }
+    stbi_write_png(path, w, h, 3, rgb, w * 3);
+    free(rgb);
+    LOG_I("dumped surface to %s", path);
+}
+static u32 g_cb_count;
 TRAP(CopyBits) {
     u32 s = ARG(0), d = ARG(1);
+    g_cb_count++;
+    static int dump_n = -2;
+    if (dump_n == -2) { const char *e = getenv("CYTHERA_DUMP_COPYBITS"); dump_n = e ? atoi(e) : -1; }
     Rect sr = rd_rect(ARG(2)), dr = rd_rect(ARG(3));
     s16 mode = ARGS16(4);
     u32 mrgn = ARG(5);
@@ -851,6 +869,7 @@ TRAP(CopyBits) {
     }
     struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0);
     copybits(s, d, sr, dr, mode, mrgn, 0, (Rect){ 0, 0, 0, 0 });
+    if ((int)g_cb_count == dump_n) { dump_surface(s, "work/shots/cb_src.png"); dump_surface(d, "work/shots/cb_dst.png"); }
     clock_gettime(CLOCK_MONOTONIC, &t1);
     double ms = (t1.tv_sec - t0.tv_sec) * 1e3 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
     if (ms > 5 && g_log_level >= 3) {
