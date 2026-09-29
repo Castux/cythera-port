@@ -199,6 +199,12 @@ void text_font_info(u32 port, int *ascent, int *descent, int *widmax, int *leadi
 
 /* Pictures */
 void pict_draw(u32 pich, Rect dst);
+/* Picture recording (OpenPicture/ClosePicture) */
+bool pict_recording(u32 port);
+void pict_rec_text(u32 port, int h, int v, const u8 *s, int n);
+void pict_rec_rect(u32 port, int verb, Rect r);   /* 0 frame, 1 paint, 2 erase, 3 invert */
+void pict_rec_line(u32 port, Point from, Point to);
+void pict_rec_unsupported(u32 port, const char *what);
 bool pict_decode_to_rgb(const u8 *pic, u32 len, int *w, int *h, u32 **rgb);
 
 /* Ports */

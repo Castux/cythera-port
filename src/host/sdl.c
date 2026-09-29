@@ -367,6 +367,7 @@ void script_tick(void) {
         LOG_I("script: %s %s", s->cmd, s->arg);
         if (!strcmp(s->cmd, "wait")) { g_script_wait_until = now + (u32)atoi(s->arg); return; }
         else if (!strcmp(s->cmd, "move") && sscanf(s->arg, "%d %d", &x, &y) == 2) { g_mx = x; g_my = y; }
+        else if (!strcmp(s->cmd, "trace")) { extern bool g_trace_traps; g_trace_traps = !strcmp(s->arg, "on"); }
         else if (!strcmp(s->cmd, "click") && sscanf(s->arg, "%d %d", &x, &y) == 2) {
             /* like a human click: the button stays down for a few ticks */
             g_mx = x; g_my = y; g_mdown = true;

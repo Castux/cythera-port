@@ -219,6 +219,11 @@ void qd_invert_hrgn(u32 port, const HRgn *shape) {
 }
 
 static bool pen_visible(u32 port) { return rds16(port + PORT_PNVIS) >= 0; }
+/* shapes other than rects and lines aren't recorded into pictures */
+static bool shape_visible(u32 port, const char *what) {
+    pict_rec_unsupported(port, what);
+    return pen_visible(port);
+}
 
 /* ---------------------------------------------------------------------- */
 /* Shapes                                                                  */
@@ -289,6 +294,7 @@ TRAP(FrameRect) {
     u32 port = qd_port();
     Rect rc = rd_rect(ARG(0));
     if (rgn_recording()) { rgn_record_frame_rect(rc); return; }
+    if (pict_recording(port)) pict_rec_rect(port, 0, rc);
     if (!pen_visible(port)) return;
     int pw, ph; pen_size(port, &pw, &ph);
     HRgn r; frame_rect_rgn(&r, rc, pw, ph);
@@ -298,32 +304,41 @@ TRAP(FrameRect) {
 }
 TRAP(PaintRect) {
     u32 port = qd_port();
+    if (pict_recording(port)) pict_rec_rect(port, 1, rd_rect(ARG(0)));
+    if (!pen_visible(port)) return;
     Paint p; paint_pen(&p, port);
     draw_rect(port, rd_rect(ARG(0)), &p, rds16(port + PORT_PNMODE));
 }
 TRAP(EraseRect) {
     u32 port = qd_port();
+    if (pict_recording(port)) pict_rec_rect(port, 2, rd_rect(ARG(0)));
+    if (!pen_visible(port)) return;
     Paint p; paint_back(&p, port);
     draw_rect(port, rd_rect(ARG(0)), &p, patCopy);
 }
 TRAP(InvertRect) {
     HRgn r; Rect rc = rd_rect(ARG(0));
+    if (pict_recording(qd_port())) pict_rec_rect(qd_port(), 3, rc);
+    if (!pen_visible(qd_port())) return;
     hrgn_rect(&r, rc.top, rc.left, rc.bottom, rc.right);
     qd_invert_hrgn(qd_port(), &r);
     hrgn_free(&r);
 }
 TRAP(FillRect) {
     u32 port = qd_port();
+    if (!shape_visible(port, "FillRect")) return;
     Paint p; paint_fill(&p, port, ARG(1));
     draw_rect(port, rd_rect(ARG(0)), &p, patCopy);
 }
 TRAP(FillCRect) {
     u32 port = qd_port();
+    if (!shape_visible(port, "FillCRect")) return;
     Paint p; pixpat_to_paint(&p, port, ARG(1));
     draw_rect(port, rd_rect(ARG(0)), &p, patCopy);
 }
 
 static void round_rect_op(CPU *cpu, int which) {
+    if (!shape_visible(qd_port(), "round rect")) return;
     u32 port = qd_port();
     Rect rc = rd_rect(ARG(0));
     int ow = ARGS16(1), oh = ARGS16(2);
@@ -347,6 +362,7 @@ TRAP(EraseRoundRect) { round_rect_op(cpu, 2); }
 TRAP(InvertRoundRect) { round_rect_op(cpu, 3); }
 TRAP(FillRoundRect) {
     u32 port = qd_port();
+    if (!shape_visible(port, "FillRoundRect")) return;
     Rect rc = rd_rect(ARG(0));
     HRgn shape; oval_rgn(&shape, rc, ARGS16(1), ARGS16(2));
     Paint p; paint_fill(&p, port, ARG(3));
@@ -356,6 +372,7 @@ TRAP(FillRoundRect) {
 
 static void oval_op(CPU *cpu, int which) {
     u32 port = qd_port();
+    if (!shape_visible(port, "oval")) return;
     Rect rc = rd_rect(ARG(0));
     HRgn shape; oval_rgn(&shape, rc, rc.right - rc.left, rc.bottom - rc.top);
     Paint p;
@@ -389,6 +406,7 @@ TRAP(FrameRgn) {
 }
 TRAP(PaintRgn) {
     u32 port = qd_port();
+    if (!shape_visible(port, "PaintRgn")) return;
     HRgn s; hrgn_from_guest(&s, ARG(0));
     Paint p; paint_pen(&p, port);
     draw_hrgn(port, &s, &p, rds16(port + PORT_PNMODE));
@@ -396,14 +414,16 @@ TRAP(PaintRgn) {
 }
 TRAP(EraseRgn) {
     u32 port = qd_port();
+    if (!shape_visible(port, "EraseRgn")) return;
     HRgn s; hrgn_from_guest(&s, ARG(0));
     Paint p; paint_back(&p, port);
     draw_hrgn(port, &s, &p, patCopy);
     hrgn_free(&s);
 }
-TRAP(InvertRgn) { HRgn s; hrgn_from_guest(&s, ARG(0)); qd_invert_hrgn(qd_port(), &s); hrgn_free(&s); }
+TRAP(InvertRgn) { if (!shape_visible(qd_port(), "InvertRgn")) return; HRgn s; hrgn_from_guest(&s, ARG(0)); qd_invert_hrgn(qd_port(), &s); hrgn_free(&s); }
 TRAP(FillRgn) {
     u32 port = qd_port();
+    if (!shape_visible(port, "FillRgn")) return;
     HRgn s; hrgn_from_guest(&s, ARG(0));
     Paint p; paint_fill(&p, port, ARG(1));
     draw_hrgn(port, &s, &p, patCopy);
@@ -411,6 +431,7 @@ TRAP(FillRgn) {
 }
 TRAP(FillCRgn) {
     u32 port = qd_port();
+    if (!shape_visible(port, "FillCRgn")) return;
     HRgn s; hrgn_from_guest(&s, ARG(0));
     Paint p; pixpat_to_paint(&p, port, ARG(1));
     draw_hrgn(port, &s, &p, patCopy);
@@ -436,6 +457,7 @@ static void line_to(u32 port, int x1, int y1) {
         return;
     }
     if (rgn_recording()) return;
+    if (pict_recording(port)) pict_rec_line(port, (Point){ (s16)y0, (s16)x0 }, (Point){ (s16)y1, (s16)x1 });
     if (!pen_visible(port)) return;
     int pw, ph; pen_size(port, &pw, &ph);
     if (pw <= 0 || ph <= 0) return;
@@ -530,6 +552,7 @@ static void poly_rgn(u32 poly, HRgn *out) {
 }
 TRAP(PaintPoly) {
     u32 port = qd_port();
+    if (!shape_visible(port, "PaintPoly")) return;
     HRgn r; poly_rgn(ARG(0), &r);
     Paint p; paint_pen(&p, port);
     draw_hrgn(port, &r, &p, rds16(port + PORT_PNMODE));
@@ -537,6 +560,7 @@ TRAP(PaintPoly) {
 }
 TRAP(FillPoly) {
     u32 port = qd_port();
+    if (!shape_visible(port, "FillPoly")) return;
     HRgn r; poly_rgn(ARG(0), &r);
     Paint p; paint_fill(&p, port, ARG(1));
     draw_hrgn(port, &r, &p, patCopy);
@@ -544,6 +568,7 @@ TRAP(FillPoly) {
 }
 TRAP(ErasePoly) {
     u32 port = qd_port();
+    if (!shape_visible(port, "ErasePoly")) return;
     HRgn r; poly_rgn(ARG(0), &r);
     Paint p; paint_back(&p, port);
     draw_hrgn(port, &r, &p, patCopy);
@@ -853,6 +878,7 @@ TRAP(CopyBits) {
     Rect sr = rd_rect(ARG(2)), dr = rd_rect(ARG(3));
     s16 mode = ARGS16(4);
     u32 mrgn = ARG(5);
+    if (d == qd_port() + PORT_BITS) pict_rec_unsupported(qd_port(), "CopyBits");
     if (g_log_level >= 3) {
         Surf a = {0}, b = {0};
         surf_from_bitmap(s, &a); surf_from_bitmap(d, &b);

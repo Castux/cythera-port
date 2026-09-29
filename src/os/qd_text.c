@@ -353,6 +353,15 @@ void text_draw(u32 port, const u8 *str, int n) {
     int x0 = rds16(port + PORT_PNLOC + 2), y0 = rds16(port + PORT_PNLOC);
     int total = 0;
     for (int i = 0; i < n; i++) total += char_adv(port, &s, str[i]);
+    if (pict_recording(port)) {
+        int x = x0;
+        for (int i = 0; i < n; i += 255) {
+            int k = n - i < 255 ? n - i : 255;
+            pict_rec_text(port, x, y0, str + i, k);
+            for (int j = 0; j < k; j++) x += char_adv(port, &s, str[i + j]);
+        }
+    }
+    if (rds16(port + PORT_PNVIS) < 0) { wr16(port + PORT_PNLOC + 2, (u16)(x0 + total)); return; }
     int pad = 4 + (s.face & italic ? s.ascent / 2 : 0);
     int W = total + 2 * pad + s.f->widmax, H = s.f->height + 4;
     int top = y0 - s.ascent - 1;

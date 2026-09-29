@@ -82,6 +82,10 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (pictures): QuickDraw picture recording (OpenPicture) now records text,
+  lines and rects. In-game notes and books (TWScrollText) record their text into a
+  picture, so they were blank before. Shape drawing honors a hidden pen, as in real
+  QuickDraw. Script command `trace on|off` limits trap tracing to part of a run.
 - 2026-09-29 (registration): the separate "Register Cythera" PPC app runs unmodified
   (`--app "Register Cythera"`) and validates codes. Added the Scrap Manager
   (synced with the host clipboard) and fixed thin TrueType stems vanishing

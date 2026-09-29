@@ -333,33 +333,101 @@ TRAP(KillPicture) {
     else mm_dispose_handle(h);
 }
 
-/* Picture recording: produce an empty v2 picture of the given frame. */
-static u32 g_rec_pic;
+/* ---- Picture recording ----
+   Drawing into a port with an open picture is appended as v2 opcodes to a
+   host buffer (text, lines, rects and the state they depend on). The pen is
+   hidden while recording, so nothing reaches the port itself. */
+static struct {
+    u32 port, h;
+    u8 *b; u32 n, cap;
+    bool sync;                 /* recorded state below is valid */
+    s16 font, size, mode, pnmode, pnh, pnw;
+    u8 face;
+    RGB fg, bk;
+    bool warned;
+} R;
+
+static void rec_bytes(const void *d, u32 n) {
+    if (R.n + n > R.cap) { R.cap = (R.n + n) * 2 + 256; R.b = realloc(R.b, R.cap); }
+    memcpy(R.b + R.n, d, n); R.n += n;
+}
+static void rec16(u16 v) { u8 b[2]; put_be16(b, v); rec_bytes(b, 2); }
+static void rec8(u8 v) { rec_bytes(&v, 1); }
+static void rec_pad(void) { if (R.n & 1) rec8(0); }
+static void rec_rect(Rect r) { rec16((u16)r.top); rec16((u16)r.left); rec16((u16)r.bottom); rec16((u16)r.right); }
+static bool rgb_eq(RGB a, RGB b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
+
+bool pict_recording(u32 port) { return R.h && port == R.port; }
+
+static void rec_colors(u32 port) {
+    if (!is_color_port(port)) return;
+    RGB fg, bk; rd_rgb(port + PORT_RGBFG, &fg); rd_rgb(port + PORT_RGBBK, &bk);
+    if (!R.sync || !rgb_eq(fg, R.fg)) { rec16(0x001A); rec16(fg.r); rec16(fg.g); rec16(fg.b); R.fg = fg; }
+    if (!R.sync || !rgb_eq(bk, R.bk)) { rec16(0x001B); rec16(bk.r); rec16(bk.g); rec16(bk.b); R.bk = bk; }
+}
+static void rec_text_state(u32 port) {
+    s16 font = rds16(port + PORT_TXFONT), size = rds16(port + PORT_TXSIZE), mode = rds16(port + PORT_TXMODE);
+    u8 face = rd8(port + PORT_TXFACE);
+    if (!R.sync || font != R.font) { rec16(0x0003); rec16((u16)font); R.font = font; }
+    if (!R.sync || face != R.face) { rec16(0x0004); rec8(face); rec_pad(); R.face = face; }
+    if (!R.sync || mode != R.mode) { rec16(0x0005); rec16((u16)mode); R.mode = mode; }
+    if (!R.sync || size != R.size) { rec16(0x000D); rec16((u16)size); R.size = size; }
+}
+static void rec_pen_state(u32 port) {
+    s16 pnh = rds16(port + PORT_PNSIZE), pnw = rds16(port + PORT_PNSIZE + 2), pnmode = rds16(port + PORT_PNMODE);
+    if (!R.sync || pnh != R.pnh || pnw != R.pnw) { rec16(0x0007); rec16((u16)pnh); rec16((u16)pnw); R.pnh = pnh; R.pnw = pnw; }
+    if (!R.sync || pnmode != R.pnmode) { rec16(0x0008); rec16((u16)pnmode); R.pnmode = pnmode; }
+}
+
+void pict_rec_text(u32 port, int h, int v, const u8 *str, int n) {
+    rec_text_state(port); rec_colors(port); R.sync = true;
+    /* LongText carries at most 255 characters; callers pass chunks */
+    if (n > 255) n = 255;
+    rec16(0x0028); rec16((u16)v); rec16((u16)h); rec8((u8)n); rec_bytes(str, (u32)n); rec_pad();
+}
+void pict_rec_rect(u32 port, int verb, Rect r) {
+    rec_pen_state(port); rec_colors(port); R.sync = true;
+    rec16((u16)(0x0030 + verb)); rec_rect(r);
+}
+void pict_rec_line(u32 port, Point a, Point b) {
+    rec_pen_state(port); rec_colors(port); R.sync = true;
+    rec16(0x0020); rec16((u16)a.v); rec16((u16)a.h); rec16((u16)b.v); rec16((u16)b.h);
+}
+void pict_rec_unsupported(u32 port, const char *what) {
+    if (!pict_recording(port) || R.warned) return;
+    R.warned = true;
+    LOG_W("picture recording: %s not recorded", what);
+}
+
 TRAP(OpenPicture) {
     Rect f = rd_rect(ARG(0));
-    u32 h = mm_new_handle(40, true, ZONE_APP);
-    u32 p = hderef(h);
-    wr16(p, 40); wr_rect(p + 2, f);
-    wr16(p + 10, 0x0011); wr16(p + 12, 0x02FF);
-    wr16(p + 14, 0x0C00);
-    wr32(p + 16, 0xFFFE0000u);
-    wr32(p + 20, 72u << 16); wr32(p + 24, 72u << 16);
-    wr_rect(p + 28, f);
-    wr32(p + 36, 0); /* reserved + ... */
-    mm_set_handle_size(h, 42);
-    wr16(hderef(h) + 40, 0x00FF);
-    wr16(hderef(h), 42);
-    g_rec_pic = h;
     u32 port = qd_port();
-    wr32(port + PORT_PICSAVE, h);
+    free(R.b);
+    memset(&R, 0, sizeof R);
+    R.port = port;
+    R.h = mm_new_handle(0, false, ZONE_APP);
+    /* v2 extended header */
+    rec16(0); rec_rect(f);
+    rec16(0x0011); rec16(0x02FF);
+    rec16(0x0C00); rec16(0xFFFE); rec16(0);
+    rec16(72); rec16(0); rec16(72); rec16(0);
+    rec_rect(f); rec16(0); rec16(0);
+    rec16(0x001E); /* DefHilite */
+    rec16(0x0001); rec16(10); rec_rect(f); /* clip */
+    wr32(port + PORT_PICSAVE, R.h);
     wr16(port + PORT_PNVIS, (u16)(rds16(port + PORT_PNVIS) - 1));
-    RET(h);
+    RET(R.h);
 }
 TRAP(ClosePicture) {
-    u32 port = qd_port();
+    if (!R.h) return;
+    u32 port = R.port;
+    rec16(0x00FF);
+    put_be16(R.b, (u16)R.n); /* picSize: low 16 bits */
+    if (mm_set_handle_size(R.h, R.n)) gmemcpy_to(hderef(R.h), R.b, R.n);
     wr32(port + PORT_PICSAVE, 0);
     wr16(port + PORT_PNVIS, (u16)(rds16(port + PORT_PNVIS) + 1));
-    g_rec_pic = 0;
+    free(R.b);
+    memset(&R, 0, sizeof R);
 }
 TRAP(PicComment) { }
 
