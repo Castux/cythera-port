@@ -1,0 +1,96 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+click 566 54
+wait 200
+key down
+wait 40
+key down
+wait 40
+key up
+wait 40
+dclick 470 190
+wait 120
+shot work/shots/tut_1.png
+key right
+wait 30
+key right
+wait 30
+key right
+wait 30
+key right
+wait 30
+shot work/shots/tut_2.png
+key down
+wait 30
+key down
+wait 30
+key down
+wait 30
+key left
+wait 30
+shot work/shots/tut_3.png
+dclick 470 197
+wait 60
+key down
+wait 30
+key down
+wait 30
+shot work/shots/tut_4.png
+key right
+wait 30
+key right
+wait 30
+dclick 502 165
+wait 90
+shot work/shots/tut_5.png
+mousedown 247 103
+wait 10
+move 300 250
+wait 5
+move 362 415
+wait 10
+mouseup 362 415
+wait 60
+shot work/shots/tut_6.png
+key escape
+wait 30
+click 560 250
+wait 30
+key left
+wait 30
+key left
+wait 30
+key up
+wait 30
+key up
+wait 30
+key up
+wait 30
+key up
+wait 30
+key up
+wait 30
+key right
+wait 30
+shot work/shots/tut_7.png
+dclick 502 165
+wait 90
+shot work/shots/tut_8.png
+click 362 415
+wait 90
+shot work/shots/tut_9.png
+dclick 207 125
+wait 30
+shot work/shots/tut_10.png
+click 505 165
+wait 90
+shot work/shots/tut_11.png
+dclick 505 165
+wait 60
+dclick 505 165
+wait 300
+shot work/shots/tut_12.png
+quit

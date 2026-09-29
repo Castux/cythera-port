@@ -454,6 +454,7 @@ TRAP(DrawChar) { u8 c = (u8)ARG(0); text_draw(qd_port(), &c, 1); }
 TRAP(DrawString) {
     u32 s = ARG(0);
     u8 n = rd8(s);
+    if (g_trace_traps) LOG_I("  text \"%.*s\"", n, (const char *)gptr(s + 1, n));
     text_draw(qd_port(), gptr(s + 1, n), n);
 }
 TRAP(DrawText) {
@@ -461,6 +462,7 @@ TRAP(DrawText) {
     if (count <= 0) return;
     u8 *tmp = malloc((size_t)count);
     gmemcpy_from(tmp, buf + (u32)first, (u32)count);
+    if (g_trace_traps) LOG_I("  text \"%.*s\"", count, (const char *)tmp);
     text_draw(qd_port(), tmp, count);
     free(tmp);
 }

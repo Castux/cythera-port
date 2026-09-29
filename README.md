@@ -98,6 +98,9 @@ game finds it.
 - `tools/ppcdis.py` is a symbolizing PowerPC disassembler for the game binary
   (function names come from the CodeWarrior traceback tables);
   `tools/rsrc.py` and `tools/pef.py` parse resource forks and PEF containers.
+- `tools/delv_props.py` lists the game's maps and the objects on each (positions,
+  names, containers), using [delvmod](https://github.com/BryceSchroeder/delvmod)
+  cloned into `work/delvmod`. Handy for writing scripted play-throughs.
 
 ## License / credits
 
