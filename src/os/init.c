@@ -12,7 +12,32 @@
 void text_init(void);
 #include <sys/stat.h>
 
+/* guest PC sampling (--profile) */
+#include "../loader/pef.h"
+typedef struct { const char *name; u32 hits; } GHit;
+static GHit g_ghits[4096];
+static u32 g_gtotal;
+static void guest_sample(u32 pc) {
+    u32 off;
+    const char *n = sym_lookup(pc, &off);
+    if (!n) n = "?";
+    g_gtotal++;
+    for (int i = 0; i < 4096; i++) {
+        if (g_ghits[i].name == n) { g_ghits[i].hits++; return; }
+        if (!g_ghits[i].name) { g_ghits[i].name = n; g_ghits[i].hits = 1; return; }
+    }
+}
+static int ghit_cmp(const void *a, const void *b) { const GHit *x = a, *y = b; return (int)y->hits - (int)x->hits; }
+void guest_profile_report(void) {
+    int n = 0; while (n < 4096 && g_ghits[n].name) n++;
+    qsort(g_ghits, (size_t)n, sizeof(GHit), ghit_cmp);
+    fprintf(stderr, "guest functions (by interpreter samples):\n");
+    for (int i = 0; i < n && i < 25; i++) fprintf(stderr, "  %-40s %5.1f%%\n", g_ghits[i].name, 100.0 * g_ghits[i].hits / (g_gtotal ? g_gtotal : 1));
+}
+
 static void cpu_poll(CPU *c) {
+    extern bool g_profile;
+    if (g_profile) guest_sample(c->pc);
     extern u64 g_last_trap_icount;
     static u64 warned_at;
     if (c->icount - g_last_trap_icount > 300000000ull && warned_at != g_last_trap_icount) {

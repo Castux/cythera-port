@@ -81,7 +81,7 @@ typedef struct {
     u32 handle, hash;
     int n;
     RGB rgb[256];
-    u8 *inv;   /* 32768-entry RGB555 -> index */
+    u16 *inv;  /* 262144-entry RGB666 -> index (0xFFFF = not computed) */
 } CtCache;
 #define CT_CACHE 16
 static CtCache g_ct[CT_CACHE];
@@ -98,11 +98,17 @@ static u32 ctab_hash(u32 h) {
     return x ^ (u32)n;
 }
 
+extern u32 g_trap_epoch;
+static u32 g_ct_epoch[CT_CACHE];
 static CtCache *ct_get(u32 h) {
     if (!h || !hderef(h)) return NULL;
+    /* validate each table at most once per Toolbox call */
+    for (int i = 0; i < CT_CACHE; i++)
+        if (g_ct[i].handle == h && g_ct_epoch[i] == g_trap_epoch) return &g_ct[i];
     u32 hash = ctab_hash(h);
-    for (int i = 0; i < CT_CACHE; i++) if (g_ct[i].handle == h && g_ct[i].hash == hash) return &g_ct[i];
+    for (int i = 0; i < CT_CACHE; i++) if (g_ct[i].handle == h && g_ct[i].hash == hash) { g_ct_epoch[i] = g_trap_epoch; return &g_ct[i]; }
     CtCache *c = &g_ct[g_ct_next];
+    g_ct_epoch[g_ct_next] = g_trap_epoch;
     g_ct_next = (g_ct_next + 1) % CT_CACHE;
     free(c->inv);
     memset(c, 0, sizeof *c);
@@ -127,7 +133,7 @@ static CtCache *ct_get(u32 h) {
     return c;
 }
 
-void ctab_invalidate(u32 h) { for (int i = 0; i < CT_CACHE; i++) if (g_ct[i].handle == h) g_ct[i].handle = 0; }
+void ctab_invalidate(u32 h) { for (int i = 0; i < CT_CACHE; i++) if (g_ct[i].handle == h) { g_ct[i].handle = 0; g_ct_epoch[i] = 0; } }
 RGB ctab_color(u32 h, int i) { CtCache *c = ct_get(h); return c && i >= 0 && i < 256 ? c->rgb[i] : (RGB){ 0, 0, 0 }; }
 int ctab_count(u32 h) { CtCache *c = ct_get(h); return c ? c->n : 0; }
 u32 ctab_seed(u32 h) { return h && hderef(h) ? rd32(hderef(h)) : 0; }
@@ -145,24 +151,20 @@ static int nearest(const CtCache *c, int r8, int g8, int b8) {
 int ctab_nearest(u32 h, RGB col) {
     CtCache *c = ct_get(h);
     if (!c || !c->n) return 0;
-    /* exact match first */
-    for (int i = 0; i < c->n; i++)
-        if (c->rgb[i].r == col.r && c->rgb[i].g == col.g && c->rgb[i].b == col.b) return i;
     if (!c->inv) {
-        c->inv = malloc(32768);
-        memset(c->inv, 0xFF, 32768);
-        /* lazily filled: mark unknown as 0xFF and compute on demand below */
+        c->inv = malloc(sizeof(u16) * 262144);
+        memset(c->inv, 0xFF, sizeof(u16) * 262144);
     }
-    int key = ((col.r >> 11) << 10) | ((col.g >> 11) << 5) | (col.b >> 11);
-    u8 v = c->inv[key];
-    if (v == 0xFF) {
-        int r8 = col.r >> 8, g8 = col.g >> 8, b8 = col.b >> 8;
-        int n = nearest(c, r8, g8, b8);
-        c->inv[key] = (u8)n;
-        return n;
+    u32 key = ((u32)(col.r >> 10) << 12) | ((u32)(col.g >> 10) << 6) | (u32)(col.b >> 10);
+    u16 v = c->inv[key];
+    if (v == 0xFFFF) {
+        v = (u16)nearest(c, col.r >> 8, col.g >> 8, col.b >> 8);
+        c->inv[key] = v;
     }
     return v;
 }
+
+u32 ctab_hash_of(u32 h) { CtCache *c = ct_get(h); return c ? c->hash ^ c->handle : 0; }
 
 /* ---------------------------------------------------------------------- */
 /* Surfaces                                                                */

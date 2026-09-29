@@ -59,6 +59,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--timeout") && i + 1 < argc) g_cfg.timeout_s = atoi(argv[++i]);
         else if (!strcmp(a, "--turbo") && i + 1 < argc) { extern int g_turbo; g_turbo = atoi(argv[++i]); }
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;
+        else if (!strcmp(a, "--profile")) { extern bool g_profile; extern void trap_profile_report(void); g_profile = true; atexit(trap_profile_report); }
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
         else if (!strcmp(a, "--screen") && i + 1 < argc) {
             if (sscanf(argv[++i], "%dx%d", &g_cfg.screen_w, &g_cfg.screen_h) != 2) usage();

@@ -2,6 +2,7 @@
  * CopyBits and friends. */
 #include "qd.h"
 #include <math.h>
+#include <time.h>
 
 bool is_gworld(u32 port);
 
@@ -131,6 +132,27 @@ void draw_hrgn(u32 port, const HRgn *shape, const Paint *paint, int mode) {
     bool colorpat = paint->kind == 2;
     if (colorpat) { pixpat_ctx(&pc, paint->pixpat, &s); if (!pc.ok) colorpat = false; }
     mode &= 0x7F;
+    if (s.depth == 8 && (mode == patCopy || mode == patOr) && (paint->kind == 0 || (paint->kind == 1 && !colorpat))) {
+        bool solid = paint->kind == 0;
+        if (!solid) { solid = true; for (int i = 0; i < 8; i++) if (paint->pat[i] != 0xFF && paint->pat[i] != 0) solid = false;
+                      if (solid && paint->pat[0] == 0 && mode == patOr) { hrgn_free(&r); return; } }
+        if (solid) {
+            u8 v = (u8)(paint->kind == 0 || paint->pat[0] == 0xFF ? fgpx : bkpx);
+            bool allsame = true; for (int i = 1; i < 8 && paint->kind == 1; i++) if (paint->pat[i] != paint->pat[0]) allsame = false;
+            if (allsame) {
+                for (int i = 0; i < r.nb; i++) {
+                    const Band *b = &r.b[i];
+                    for (int y = b->y0; y < b->y1; y++) {
+                        u8 *row = g_mem + s.base + (u32)((y - s.bounds.top) * s.rowbytes);
+                        for (int k = 0; k + 1 < b->n; k += 2) memset(row + (b->x[k] - s.bounds.left), v, (size_t)(b->x[k + 1] - b->x[k]));
+                    }
+                }
+                hrgn_free(&r);
+                qd_screen_dirty();
+                return;
+            }
+        }
+    }
     u32 hipx = pixel_for_rgb(&s, g_hilite);
     for (int i = 0; i < r.nb; i++) {
         const Band *b = &r.b[i];
@@ -572,6 +594,31 @@ static RGB op_color(u32 port) {
     return (RGB){ 0x8000, 0x8000, 0x8000 };
 }
 
+static RGB arith(int mode, RGB s, RGB d, RGB op);
+u32 ctab_hash_of(u32 h);
+
+/* Cached result tables for 8-bit arithmetic transfer modes: t[src][dst]. */
+typedef struct { u32 sh, dh; RGB op; int mode; u8 *t; } ArithTab;
+static ArithTab g_at[8];
+static int g_at_next;
+static const u8 *arith_table(const Surf *src, const Surf *dst, int mode, RGB op) {
+    u32 sh = ctab_hash_of(src->ctab), dh = ctab_hash_of(dst->ctab);
+    for (int i = 0; i < 8; i++) {
+        ArithTab *a = &g_at[i];
+        if (a->t && a->sh == sh && a->dh == dh && a->mode == mode && a->op.r == op.r && a->op.g == op.g && a->op.b == op.b) return a->t;
+    }
+    ArithTab *a = &g_at[g_at_next];
+    g_at_next = (g_at_next + 1) % 8;
+    if (!a->t) a->t = malloc(65536);
+    a->sh = sh; a->dh = dh; a->mode = mode; a->op = op;
+    RGB sc[256], dc[256];
+    for (int i = 0; i < 256; i++) { sc[i] = rgb_for_pixel(src, (u32)i); dc[i] = rgb_for_pixel(dst, (u32)i); }
+    for (int x = 0; x < 256; x++)
+        for (int y = 0; y < 256; y++)
+            a->t[x * 256 + y] = (u8)pixel_for_rgb(dst, arith(mode, sc[x], dc[y], op));
+    return a->t;
+}
+
 static RGB arith(int mode, RGB s, RGB d, RGB op) {
     RGB r;
     switch (mode) {
@@ -647,6 +694,44 @@ void copybits(u32 srcbm, u32 dstbm, Rect sr, Rect dr, int mode, u32 maskrgn, u32
     RGB opc = port ? op_color(port) : (RGB){ 0x8000, 0x8000, 0x8000 };
     bool one_bit = src.depth == 1;
     int srw = src.bounds.right - src.bounds.left, srh = src.bounds.bottom - src.bounds.top;
+    const u8 *atab = NULL;
+
+    /* fast path: unscaled 8-bit to 8-bit copy without masks/arithmetic */
+    bool fast = src.depth == 8 && dst.depth == 8 && !have_mask && sw == dw && sh == dh && xl.valid &&
+                (mode == srcCopy || mode == transparent);
+    if (fast) {
+        int ox = sr.left - dr.left - src.bounds.left, oy = sr.top - dr.top - src.bounds.top;
+        for (int i = 0; i < reg.nb; i++) {
+            const Band *b = &reg.b[i];
+            for (int y = b->y0; y < b->y1; y++) {
+                int sy = y + oy;
+                if (sy < 0 || sy >= srh) continue;
+                const u8 *srow = snap ? snap + (size_t)(sy - (int)snap_base) * (size_t)src.rowbytes
+                                      : g_mem + src.base + (u32)(sy * src.rowbytes);
+                u8 *drow = g_mem + dst.base + (u32)((y - dst.bounds.top) * dst.rowbytes);
+                for (int k = 0; k + 1 < b->n; k += 2) {
+                    int x0 = b->x[k], x1 = b->x[k + 1];
+                    if (x0 + ox < 0) x0 = -ox;
+                    if (x1 + ox > srw) x1 = srw - ox;
+                    if (x1 <= x0) continue;
+                    const u8 *sp = srow + x0 + ox;
+                    u8 *dp = drow + (x0 - dst.bounds.left);
+                    int n = x1 - x0;
+                    if (mode == srcCopy) {
+                        if (xl.identity) memmove(dp, sp, (size_t)n);
+                        else for (int q = 0; q < n; q++) dp[q] = xl.map[sp[q]];
+                    } else {
+                        u8 bkv = (u8)src_bkpx;
+                        for (int q = 0; q < n; q++) if (sp[q] != bkv) dp[q] = xl.map[sp[q]];
+                    }
+                }
+            }
+        }
+        free(snap);
+        hrgn_free(&reg);
+        qd_screen_dirty();
+        return;
+    }
 
     for (int i = 0; i < reg.nb; i++) {
         const Band *b = &reg.b[i];
@@ -703,6 +788,11 @@ void copybits(u32 srcbm, u32 dstbm, Rect sr, Rect dr, int mode, u32 maskrgn, u32
                         if (sv == src_bkpx) continue;
                         m = srcCopy;
                     }
+                    if (weight == 65535 && m >= blend && m <= adMin && src.depth == 8 && dst.depth == 8) {
+                        if (!atab) atab = arith_table(&src, &dst, m, opc);
+                        surf_put(&dst, dx, dy, atab[(sv & 0xFF) * 256 + (surf_get(&dst, dx, dy) & 0xFF)]);
+                        continue;
+                    }
                     if (weight != 65535 || (m >= blend && m <= adMin)) {
                         RGB sc = rgb_for_pixel(&src, sv), dc = rgb_for_pixel(&dst, surf_get(&dst, dx, dy));
                         RGB rc = (m >= blend && m <= adMin) ? arith(m, sc, dc, opc) : sc;
@@ -757,7 +847,16 @@ TRAP(CopyBits) {
               d, b.base, b.depth, b.bounds.top, b.bounds.left, b.bounds.bottom, b.bounds.right,
               sr.top, sr.left, sr.bottom, sr.right, dr.top, dr.left, dr.bottom, dr.right, mode, mrgn);
     }
+    struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0);
     copybits(s, d, sr, dr, mode, mrgn, 0, (Rect){ 0, 0, 0, 0 });
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    double ms = (t1.tv_sec - t0.tv_sec) * 1e3 + (t1.tv_nsec - t0.tv_nsec) / 1e6;
+    if (ms > 5 && g_log_level >= 3) {
+        Surf a = {0}, b = {0}; surf_from_bitmap(s, &a); surf_from_bitmap(d, &b);
+        LOG_D("slow CopyBits %.1f ms: d%d->d%d sr(%d,%d,%d,%d) dr(%d,%d,%d,%d) mode %d mask %08x vis %u bytes clip %u bytes",
+              ms, a.depth, b.depth, sr.top, sr.left, sr.bottom, sr.right, dr.top, dr.left, dr.bottom, dr.right, mode, mrgn,
+              mm_handle_size(rd32(qd_port() + PORT_VIS)), mm_handle_size(rd32(qd_port() + PORT_CLIP)));
+    }
 }
 
 TRAP(CopyMask) {

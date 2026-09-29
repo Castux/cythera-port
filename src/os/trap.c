@@ -10,10 +10,38 @@ typedef struct {
     const char *name;
     void (*fn)(CPU *);
     u32 calls;
+    u64 ns;       /* inclusive host time (--profile) */
 } TrapSlot;
+bool g_profile;
+#include <time.h>
+static u64 prof_now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts); return (u64)ts.tv_sec * 1000000000ull + (u64)ts.tv_nsec; }
+static u64 g_prof_start;
+static TrapSlot *g_prof_stack[64];
+static u64 g_prof_t0[64];
+static int g_prof_sp;
+u64 g_prof_guest_ns;
 
 static TrapSlot g_slots[TRAP_COUNT];
 static u32 g_nslots;
+static int prof_cmp(const void *a, const void *b) {
+    const TrapSlot *x = *(TrapSlot *const *)a, *y = *(TrapSlot *const *)b;
+    return x->ns < y->ns ? 1 : x->ns > y->ns ? -1 : 0;
+}
+void trap_profile_report(void) {
+    if (!g_profile) return;
+    static TrapSlot *v[TRAP_COUNT];
+    int n = 0;
+    for (u32 i = 0; i < TRAP_COUNT; i++) if (g_slots[i].calls) v[n++] = &g_slots[i];
+    qsort(v, (size_t)n, sizeof v[0], prof_cmp);
+    u64 total = prof_now() - g_prof_start;
+    u64 tt = 0;
+    for (int i = 0; i < n; i++) tt += v[i]->ns;
+    fprintf(stderr, "profile: %.2f s wall, %.2f s in Toolbox (exclusive), rest in the interpreter\n", total / 1e9, tt / 1e9);
+    extern void guest_profile_report(void);
+    guest_profile_report();
+    for (int i = 0; i < n && i < 30; i++)
+        fprintf(stderr, "  %-28s %8u calls %8.3f s %5.1f%%\n", v[i]->name, v[i]->calls, v[i]->ns / 1e9, 100.0 * (double)v[i]->ns / (double)total);
+}
 
 /* Libraries we emulate.  Weak imports from any other library resolve to
    NULL, so the application takes its "library not installed" path. */
@@ -75,7 +103,9 @@ void cpu_backtrace(CPU *c, FILE *f) {
 }
 
 u64 g_last_trap_icount;
+u32 g_trap_epoch = 1;
 void trap_dispatch(CPU *c, u32 index) {
+    g_trap_epoch++;
     if (index >= g_nslots) fatal("jump to invalid trap slot %u", index);
     g_last_trap_icount = c->icount;
     TrapSlot *s = &g_slots[index];
@@ -87,7 +117,19 @@ void trap_dispatch(CPU *c, u32 index) {
               n ? n : "?", n ? off : 0);
     }
     if (s->fn) {
-        s->fn(c);
+        if (g_profile && g_prof_sp < 64) {
+            u64 now = prof_now();
+            if (!g_prof_start) g_prof_start = now;
+            if (g_prof_sp > 0) g_prof_stack[g_prof_sp - 1]->ns += now - g_prof_t0[g_prof_sp - 1];
+            g_prof_stack[g_prof_sp] = s;
+            g_prof_t0[g_prof_sp] = now;
+            g_prof_sp++;
+            s->fn(c);
+            g_prof_sp--;
+            now = prof_now();
+            s->ns += now - g_prof_t0[g_prof_sp];
+            if (g_prof_sp > 0) g_prof_t0[g_prof_sp - 1] = now;
+        } else s->fn(c);
         return;
     }
     if (s->calls <= 3) {
@@ -113,7 +155,10 @@ u32 guest_call(u32 tvector, int nargs, const u32 *args) {
     c->r[2] = rd32(tvector + 4);
     c->lr = RET_SENTINEL;
     c->pc = rd32(tvector);
+    u64 pt = 0;
+    if (g_profile && g_prof_sp > 0) { pt = prof_now(); g_prof_stack[g_prof_sp - 1]->ns += pt - g_prof_t0[g_prof_sp - 1]; }
     cpu_run(c);
+    if (g_profile && g_prof_sp > 0) { u64 now = prof_now(); g_prof_t0[g_prof_sp - 1] = now; g_prof_guest_ns += now - pt; }
     u32 ret = c->r[3];
     c->r[1] = save_r1; c->r[2] = save_r2; c->lr = save_lr; c->pc = save_pc; c->ctr = save_ctr;
     return ret;
