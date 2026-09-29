@@ -94,9 +94,11 @@ game finds it.
 
 ## Developer tools
 
+- `make test` runs the PowerPC interpreter's unit tests; `tests/run.sh [SCRIPT...]`
+  replays the scripted scenarios (hermetic: it never touches `~/.cythera-port`).
 - `--headless --script FILE` runs without a window and replays scripted input
   (`wait`, `click`, `move`, `key`, `hold`, `type`, `shot file.png`, `bt`,
-  `dumpwin`, `trace on|off`, `quit`). See `tests/scripts/`. A first line
+  `dumpwin`, `trace on|off`, `expect TEXT`, `quit`). See `tests/scripts/`. A first line
   `# app: NAME` makes `tests/run.sh` run another application.
 - `--turbo N` runs the emulated clock N× faster (for tests); `--timeout N` sets
   a time limit.

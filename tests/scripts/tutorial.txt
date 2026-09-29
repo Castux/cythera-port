@@ -13,6 +13,7 @@ key up
 wait 40
 dclick 470 190
 wait 120
+expect Use lever
 shot work/shots/tut_1.png
 key right
 wait 30
@@ -34,6 +35,7 @@ wait 30
 shot work/shots/tut_3.png
 dclick 470 197
 wait 60
+expect Use secret door
 key down
 wait 30
 key down
@@ -45,6 +47,7 @@ key right
 wait 30
 dclick 502 165
 wait 90
+expect Use crate
 shot work/shots/tut_5.png
 mousedown 247 103
 wait 10
@@ -54,6 +57,7 @@ move 362 415
 wait 10
 mouseup 362 415
 wait 60
+expect Take a key
 shot work/shots/tut_6.png
 key escape
 wait 30
@@ -87,11 +91,13 @@ wait 30
 shot work/shots/tut_10.png
 click 505 165
 wait 90
+expect It is now unlocked
 shot work/shots/tut_11.png
 dclick 505 165
 wait 60
 dclick 505 165
 wait 300
+expect Use ladder
 shot work/shots/tut_12.png
 key escape
 wait 20
@@ -120,6 +126,7 @@ wait 30
 shot work/shots/tut_15.png
 dclick 207 192
 wait 30
+expect The fuse is now lit
 shot work/shots/tut_16.png
 mousedown 207 192
 wait 10
@@ -163,6 +170,7 @@ key up
 wait 20
 key down
 wait 20
+expect The door is destroyed
 shot work/shots/tut_22.png
 shot work/shots/tut_22.png
 key right
@@ -199,5 +207,6 @@ move 502 165
 wait 10
 mouseup 502 165
 wait 60
+expect South
 shot work/shots/tut_1.png
 quit

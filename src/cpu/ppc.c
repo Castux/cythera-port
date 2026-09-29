@@ -368,14 +368,14 @@ void cpu_run(CPU *c) {
             case 792: { /* sraw */
                 u32 n = b & 0x3F; s32 s = (s32)R[rD];
                 if (n & 0x20) { R[rA] = s < 0 ? 0xFFFFFFFFu : 0; set_ca(c, s < 0); }
-                else { R[rA] = (u32)(s >> n); set_ca(c, s < 0 && n && (R[rD] << (32 - n))); }
+                else { R[rA] = (u32)(s >> n); set_ca(c, s < 0 && n && ((u32)s << (32 - n))); }
                 if (rc) update_cr0(c, R[rA]);
                 break;
             }
             case 824: { /* srawi */
                 int n = rB; s32 s = (s32)R[rD];
                 R[rA] = (u32)(s >> n);
-                set_ca(c, s < 0 && n && (R[rD] << (32 - n)));
+                set_ca(c, s < 0 && n && ((u32)s << (32 - n)));
                 if (rc) update_cr0(c, R[rA]);
                 break;
             }

@@ -14,6 +14,7 @@ wait 40
 shot work/shots/sc_1.png
 dclick 470 130
 wait 150
+expect Welcome, Human
 shot work/shots/sc_2.png
 wait 60
 wait 240
@@ -22,5 +23,6 @@ mousedown 405 242
 wait 60
 mouseup 405 242
 wait 30
+expect down the ladder
 shot work/shots/sc_4.png
 quit

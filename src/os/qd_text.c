@@ -348,7 +348,23 @@ void text_font_info(u32 port, int *ascent, int *descent, int *widmax, int *leadi
     *ascent = s.ascent; *descent = s.descent; *widmax = s.widmax; *leading = s.leading;
 }
 
+/* Recently drawn strings, for the test scripts' "expect" command. */
+#define SEEN_N 256
+static char g_seen[SEEN_N][128];
+static int g_seen_pos;
+static void remember_text(const u8 *str, int n) {
+    if (n > 127) n = 127;
+    memcpy(g_seen[g_seen_pos], str, (size_t)n);
+    g_seen[g_seen_pos][n] = 0;
+    g_seen_pos = (g_seen_pos + 1) % SEEN_N;
+}
+bool text_seen(const char *sub) {
+    for (int i = 0; i < SEEN_N; i++) if (g_seen[i][0] && strstr(g_seen[i], sub)) return true;
+    return false;
+}
+
 void text_draw(u32 port, const u8 *str, int n) {
+    remember_text(str, n);
     Styled s; styled(port, &s);
     int x0 = rds16(port + PORT_PNLOC + 2), y0 = rds16(port + PORT_PNLOC);
     int total = 0;

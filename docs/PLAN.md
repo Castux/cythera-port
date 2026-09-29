@@ -22,7 +22,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] PEF loader: sections, pidata unpack, relocations, import binding to trap TVectors
 - [x] PPC interpreter: integer, branch, CR, load/store (incl. lmw/stmw/string), FPU
 - [x] Trap dispatch + `guest_call` for callbacks; unimplemented-trap logging with symbolized backtraces
-- [ ] CPU unit tests (deferred; the game itself exercises the CPU heavily)
+- [x] CPU unit tests (`make test`)
 - **Exit:** `main` runs until the first unimplemented Toolbox call, with a clean trace.
 
 ## M2 — Core OS services (get through startup)
@@ -84,6 +84,11 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (tests): CPU unit tests (`make test`, ~37.8k checks against reference models)
+  found a real bug: `sraw`/`srawi` computed XER[CA] from the result when rA == rS, which
+  broke CodeWarrior's signed divide-by-power-of-two idiom (`srawi` + `addze`: -8/4 gave -1).
+  The scripted test runner is now hermetic (temporary System Folder and Saved Games, built
+  from `tests/fixture.txt`) and scripts can assert on-screen text with `expect`.
 - 2026-09-29 (tutorial): Omen's Test plays through, scripted: reading notes, lever and gate,
   secret door, containers, taking items (dropped on the roster portrait), key on a lock,
   ladder, lighting and throwing a bomb (turn-based fuse), sliding crates. `CYTHERA_WATCH`

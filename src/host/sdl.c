@@ -423,6 +423,11 @@ void script_tick(void) {
         LOG_I("script: %s %s", s->cmd, s->arg);
         if (!strcmp(s->cmd, "wait")) { g_script_wait_until = now + (u32)atoi(s->arg); return; }
         else if (!strcmp(s->cmd, "move") && sscanf(s->arg, "%d %d", &x, &y) == 2) { g_mx = x; g_my = y; }
+        else if (!strcmp(s->cmd, "expect")) {
+            /* Mac Roman text drawn recently (e.g. a message) must contain arg */
+            extern bool text_seen(const char *sub);
+            if (!text_seen(s->arg)) LOG_E("EXPECT FAILED: \"%s\" not on screen (script line %d)", s->arg, g_script_pc);
+        }
         else if (!strcmp(s->cmd, "trace")) { extern bool g_trace_traps; g_trace_traps = !strcmp(s->arg, "on"); }
         else if (!strcmp(s->cmd, "click") && sscanf(s->arg, "%d %d", &x, &y) == 2) {
             /* like a human click: the button stays down for a few ticks */
