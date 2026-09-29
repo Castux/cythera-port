@@ -225,6 +225,8 @@ static void oval_rgn(HRgn *r, Rect rc, int ow, int oh) {
     free(m);
 }
 
+void qd_oval_rgn(HRgn *r, Rect rc, int ow, int oh) { oval_rgn(r, rc, ow, oh); }
+
 static void frame_hrgn_of(HRgn *out, const HRgn *shape, int pw, int ph) {
     /* outline = shape minus shape eroded by pen size */
     HRgn er, tmp;
@@ -741,6 +743,20 @@ TRAP(CopyBits) {
     Rect sr = rd_rect(ARG(2)), dr = rd_rect(ARG(3));
     s16 mode = ARGS16(4);
     u32 mrgn = ARG(5);
+    if (g_log_level >= 3) {
+        Surf a = {0}, b = {0};
+        surf_from_bitmap(s, &a); surf_from_bitmap(d, &b);
+        int nz = 0;
+        for (int yy = sr.top; yy < sr.bottom; yy++) for (int xx = sr.left; xx < sr.right; xx++) {
+            int px = xx - a.bounds.left, py = yy - a.bounds.top;
+            if (px >= 0 && py >= 0 && px < a.bounds.right - a.bounds.left && py < a.bounds.bottom - a.bounds.top && surf_get(&a, px, py)) nz++;
+        }
+        LOG_D("CopyBits nonzero src pixels %d", nz);
+        LOG_D("CopyBits src %08x(base %08x rb %d d%d b(%d,%d,%d,%d) ct %08x) dst %08x(base %08x d%d b(%d,%d,%d,%d)) sr(%d,%d,%d,%d) dr(%d,%d,%d,%d) mode %d mask %08x",
+              s, a.base, a.rowbytes, a.depth, a.bounds.top, a.bounds.left, a.bounds.bottom, a.bounds.right, a.ctab,
+              d, b.base, b.depth, b.bounds.top, b.bounds.left, b.bounds.bottom, b.bounds.right,
+              sr.top, sr.left, sr.bottom, sr.right, dr.top, dr.left, dr.bottom, dr.right, mode, mrgn);
+    }
     copybits(s, d, sr, dr, mode, mrgn, 0, (Rect){ 0, 0, 0, 0 });
 }
 

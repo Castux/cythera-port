@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--script") && i + 1 < argc) g_cfg.script = argv[++i];
         else if (!strcmp(a, "--sysdir") && i + 1 < argc) g_cfg.sysdir = argv[++i];
         else if (!strcmp(a, "--timeout") && i + 1 < argc) g_cfg.timeout_s = atoi(argv[++i]);
+        else if (!strcmp(a, "--turbo") && i + 1 < argc) { extern int g_turbo; g_turbo = atoi(argv[++i]); }
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
         else if (!strcmp(a, "--screen") && i + 1 < argc) {

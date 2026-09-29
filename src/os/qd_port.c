@@ -949,7 +949,6 @@ static int alloc_gworld(u32 gw, int depth, Rect bounds, u32 ctab, bool create) {
         wr32(gw + GW_EXTRA_PIX, pix);
         wr_rect(gw + PORT_RECT, bounds);
         rgn_set_rect(rd32(gw + PORT_VIS), bounds);
-        rgn_set_rect(rd32(gw + PORT_CLIP), bounds);
         wr_rect(hderef(rd32(gw + GW_EXTRA_DEV)) + GD_RECT, bounds);
     }
     return noErr;
@@ -965,8 +964,6 @@ TRAP(NewGWorld) {
     qd_set_port(save);
     if (err) { mm_dispose_ptr(gw); wr32(gwp, 0); RETERR(err); return; }
     wr32(gwp, gw);
-    /* the clip region of a new GWorld is its bounds */
-    rgn_set_rect(rd32(gw + PORT_CLIP), bounds);
     LOG_D("NewGWorld %08x depth %d (%d,%d,%d,%d)", gw, depth, bounds.top, bounds.left, bounds.bottom, bounds.right);
     RETERR(noErr);
 }

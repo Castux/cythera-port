@@ -79,7 +79,8 @@ typedef struct { char *path; s32 parent; char name[64]; } Dir;
 static Dir g_dirs[4096];
 static s32 g_ndirs = 3; /* 0,1 unused; 2 = root */
 static char g_sysdir_path[1024];
-static s32 g_sysfolder_id, g_prefs_id;
+static s32 g_sysfolder_id, g_prefs_id, g_saves_id;
+s32 files_saves_dir(void) { return g_saves_id; }
 
 bool vfs_is_dir(const char *p) { struct stat st; return !stat(p, &st) && S_ISDIR(st.st_mode); }
 bool vfs_exists(const char *p) { struct stat st; return !stat(p, &st); }
@@ -474,6 +475,12 @@ void files_init(const char *root, const char *sysdir) {
     mkdir_p(prefs);
     g_sysfolder_id = vfs_dir_id_for(sysdir, 2, "System Folder");
     g_prefs_id = vfs_dir_id_for(prefs, g_sysfolder_id, "Preferences");
+    char saves[1100];
+    snprintf(saves, sizeof saves, "%s/../Saved Games", sysdir);
+    mkdir_p(saves);
+    char sabs[1100];
+    if (!realpath(saves, sabs)) snprintf(sabs, sizeof sabs, "%s", saves);
+    g_saves_id = vfs_dir_id_for(sabs, 2, "Saved Games");
     wr16(0x0210, (u16)VOL_REFNUM); /* BootDrive */
     LOG_I("volume root %s, system folder %s", abs, sysdir);
 }
@@ -1077,4 +1084,19 @@ static u32 g_drvq;
 TRAP(GetDrvQHdr) {
     if (!g_drvq) g_drvq = sys_alloc(10);
     RET(g_drvq);
+}
+
+/* List plain files of a directory (Mac names), sorted. */
+int vfs_list_files(s32 dirid, char (*names)[64], int max) {
+    const char *dp = vfs_dir_path(dirid);
+    if (!dp) return 0;
+    Ent *v; int n = list_dir(dp, &v);
+    int k = 0;
+    for (int i = 0; i < n && k < max; i++) {
+        char hp[1100]; snprintf(hp, sizeof hp, "%s/%s", dp, v[i].host);
+        if (vfs_is_dir(hp)) continue;
+        snprintf(names[k++], 64, "%s", v[i].mac);
+    }
+    free(v);
+    return k;
 }

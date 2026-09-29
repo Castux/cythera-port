@@ -27,10 +27,11 @@
 
 static u64 g_start_ns;
 
+int g_turbo = 1; /* test option: emulated clock runs this many times faster */
 static u64 now_ns(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (u64)ts.tv_sec * 1000000000ull + (u64)ts.tv_nsec;
+    return ((u64)ts.tv_sec * 1000000000ull + (u64)ts.tv_nsec) * (u64)g_turbo;
 }
 u64 host_now_us(void) { return (now_ns() - g_start_ns) / 1000; }
 

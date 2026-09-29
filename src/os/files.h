@@ -7,6 +7,8 @@
 #define ROOT_DIRID   2
 
 void files_init(const char *root, const char *sysdir);
+s32 files_saves_dir(void);
+int vfs_list_files(s32 dirid, char (*names)[64], int max);
 
 /* Resolve a (vRefNum, dirID, name) triple.  On success fills host path;
    returns noErr, fnfErr (dir exists, file missing) or dirNFErr/bdNamErr.

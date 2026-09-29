@@ -1486,6 +1486,15 @@ static int stbtt_InitFont_internal(stbtt_fontinfo *info, unsigned char *data, in
             break;
       }
    }
+   /* cythera-port: accept a Macintosh Roman cmap when no Unicode one exists
+      (classic Mac TrueType fonts); codes are then Mac Roman. */
+   if (info->index_map == 0) {
+      for (i=0; i < numTables; ++i) {
+         stbtt_uint32 encoding_record = cmap + 4 + 8 * i;
+         if (ttUSHORT(data+encoding_record) == STBTT_PLATFORM_ID_MAC && ttUSHORT(data+encoding_record+2) == 0)
+            info->index_map = cmap + ttULONG(data+encoding_record+4);
+      }
+   }
    if (info->index_map == 0)
       return 0;
 

@@ -1,0 +1,12 @@
+wait 1800
+click 240 193
+wait 120
+shot work/shots/ng_1.png
+type Hero
+key return
+wait 400
+dumpwin
+shot work/shots/ng_2.png
+wait 400
+shot work/shots/ng_3.png
+quit

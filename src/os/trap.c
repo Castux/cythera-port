@@ -117,8 +117,34 @@ u32 guest_call(u32 tvector, int nargs, const u32 *args) {
     return ret;
 }
 
+/* Known 68k code snippets reached through Mixed Mode (the emulated
+   machine has no 68k CPU). Returns true and sets *ret if recognised. */
+static u32 g_fake_sr = 0x2000;
+static bool hle_68k(u32 code, int nargs, const u32 *args, u32 *ret) {
+    u32 w0 = rd32(code), w1 = rd32(code + 4);
+    if (w0 == 0x40C0007Cu && w1 == 0x07004E75u) { /* move sr,d0; ori #$700,sr; rts */
+        *ret = g_fake_sr; g_fake_sr |= 0x0700; return true;
+    }
+    if (w0 == 0x46C04E75u) { /* move d0,sr; rts */
+        g_fake_sr = nargs > 0 ? (args[0] & 0xFFFF) : 0x2000; *ret = 0; return true;
+    }
+    if ((w0 >> 16) == 0x4E75) { *ret = 0; return true; } /* rts */
+    return false;
+}
+
+static bool is_tvector(u32 p) {
+    u32 code = rd32(p);
+    return code >= CODE_ADDR && code < CODE_ADDR + 0x00100000u && !(code & 3);
+}
+
 u32 call_upp(u32 upp, int nargs, const u32 *args) {
     if (!upp) fatal("call_upp: NULL");
+    if (rd16(upp) != 0xAAFE && !is_tvector(upp) && !(rd32(upp) >= TRAP_BASE && rd32(upp) < TRAP_END)) {
+        u32 r;
+        if (hle_68k(upp, nargs, args, &r)) return r;
+        LOG_W("call_upp: unknown 68k code at %08x: %08x %08x", upp, rd32(upp), rd32(upp + 4));
+        return 0;
+    }
     if (rd16(upp) == 0xAAFE) {
         /* RoutineDescriptor: first routine record's procDescriptor */
         u32 proc = rd32(upp + 20);

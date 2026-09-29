@@ -106,7 +106,8 @@ static bool load_nfnt(Font *f, const u8 *d, u32 len, int target_size, int native
     (void)frw;
     int n = last - first + 3;
     u32 bits_off = 26, loc_off = bits_off + (u32)(rowwords * 2 * frh), ow_off = loc_off + (u32)(n * 2);
-    if (ow_off + (u32)n * 2 > len || first < 0 || last > 255 || first > last) return false;
+    /* some fonts omit the final owTable entry; tolerate a short table */
+    if (ow_off + (u32)(n - 1) * 2 > len || first < 0 || last > 255 || first > last) return false;
     double sc = native_size > 0 ? (double)target_size / native_size : 1.0;
     if (sc < 0.25) sc = 1;
     int H = (int)(frh * sc + 0.5);
@@ -119,10 +120,11 @@ static bool load_nfnt(Font *f, const u8 *d, u32 len, int target_size, int native
     int rowbytes = rowwords * 2;
     for (int c = 0; c < 256; c++) {
         int ci = (c >= first && c <= last) ? c - first : last - first + 1; /* missing glyph */
-        u16 ow = be16(d + ow_off + 2 * (u32)ci);
+#define OWT(k) (ow_off + 2 * (u32)(k) + 2 <= len ? be16(d + ow_off + 2 * (u32)(k)) : 0xFFFF)
+        u16 ow = OWT(ci);
         if (ow == 0xFFFF) {
             ci = last - first + 1;
-            ow = be16(d + ow_off + 2 * (u32)ci);
+            ow = OWT(ci);
             if (ow == 0xFFFF) { f->g[c].adv = 0; continue; }
             if (c < 32) { f->g[c].adv = 0; f->g[c].w = 0; continue; }
         }
@@ -190,6 +192,61 @@ static bool load_sfnt(Font *f, const u8 *d, u32 len, int size) {
     return true;
 }
 
+/* ---- host font substitution for classic system families ---- */
+static const char *const *host_font_candidates(int family) {
+    static const char *const chicago[] = { "Charcoal.ttf", "ChicagoFLF.ttf", "Chicago.ttf", "/System/Library/Fonts/Geneva.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "C:/Windows/Fonts/tahomabd.ttf", NULL };
+    static const char *const geneva[] = { "Geneva.ttf", "/System/Library/Fonts/Geneva.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/tahoma.ttf", NULL };
+    static const char *const monaco[] = { "Monaco.ttf", "/System/Library/Fonts/Monaco.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "C:/Windows/Fonts/consola.ttf", NULL };
+    static const char *const times[] = { "Times.ttf", "/System/Library/Fonts/Times.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", "C:/Windows/Fonts/times.ttf", NULL };
+    static const char *const helv[] = { "Helvetica.ttf", "/System/Library/Fonts/Helvetica.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/arial.ttf", NULL };
+    static const char *const courier[] = { "Courier.ttf", "/System/Library/Fonts/Courier.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "C:/Windows/Fonts/cour.ttf", NULL };
+    switch (family) {
+    case 0: return chicago;
+    case 4: return monaco;
+    case 2: case 20: return times;
+    case 21: return helv;
+    case 22: return courier;
+    default: return geneva;
+    }
+}
+
+static u8 *load_host_font(int family, u32 *len) {
+    static struct { int family; u8 *data; u32 len; bool tried; } cache[8];
+    int slot = family == 0 ? 0 : family == 4 ? 1 : (family == 2 || family == 20) ? 2 : family == 21 ? 3 : family == 22 ? 4 : 5;
+    if (cache[slot].tried) { *len = cache[slot].len; return cache[slot].data; }
+    cache[slot].tried = true;
+    const char *dir = getenv("CYTHERA_FONT_DIR");
+    for (const char *const *c = host_font_candidates(family); *c; c++) {
+        char path[1024];
+        if ((*c)[0] == '/' || (*c)[1] == ':') snprintf(path, sizeof path, "%s", *c);
+        else if (dir) snprintf(path, sizeof path, "%s/%s", dir, *c);
+        else continue;
+        FILE *f = fopen(path, "rb");
+        if (!f) continue;
+        fseek(f, 0, SEEK_END);
+        long n = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        u8 *d = malloc((size_t)n);
+        if (fread(d, 1, (size_t)n, f) == (size_t)n) {
+            fclose(f);
+            cache[slot].data = d; cache[slot].len = (u32)n;
+            LOG_I("font family %d substituted by %s", family, path);
+            *len = (u32)n;
+            return d;
+        }
+        fclose(f);
+        free(d);
+    }
+    *len = 0;
+    return NULL;
+}
+
 /* Resolve family/size into a Font (without synthesised styles). */
 static Font *get_font(int family, int size) {
     if (family == 1) family = rds16(LM_ApFontID);
@@ -232,6 +289,12 @@ static Font *get_font(int family, int size) {
             if (nf) { ok = load_nfnt(f, nf, len, size, bestsize); free(nf); }
         }
     }
+    if (!ok && !fond) {
+        u32 hl;
+        u8 *hd = load_host_font(family, &hl);
+        if (hd) ok = load_sfnt(f, hd, hl, size);
+    }
+    LOG_D("get_font(%d, %d): FOND %s, %s", family, size, fond ? "found" : "missing", ok ? "loaded" : "builtin fallback");
     free(fond);
     if (!ok) builtin_font(f, size);
     return f;
