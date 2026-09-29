@@ -1,0 +1,8 @@
+# Game data and derived artifacts (copyrighted; never commit)
+work/
+gamedata/
+build/
+*.o
+.venv/
+__pycache__/
+.DS_Store
