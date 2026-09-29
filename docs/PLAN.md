@@ -87,7 +87,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - 2026-09-29 (status): verified by scripts: quitting (save prompt, ExitToShell), the tutorial
   mechanics listed below, the Register app. Not yet verified, because it's out of reach of cheap
   scripted play: combat, sleeping, shops, travel between maps, magic. The Omen's Test crate
-  puzzle blocks the route to the spiral maze's monsters. All InterfaceLib imports are
+  puzzle is solved by the tutorial script; the spiral maze's egg spawners didn't produce
+  monsters when walked past (probably conditional). All InterfaceLib imports are
   implemented; the missing ones (Navigation Services, InputSprocket, Contextual Menu Manager,
   Control Strip) are weak imports of libraries the game treats as absent.
 - 2026-09-29 (tests): CPU unit tests (`make test`, ~37.8k checks against reference models)

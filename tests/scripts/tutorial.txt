@@ -209,4 +209,66 @@ mouseup 502 165
 wait 60
 expect South
 shot work/shots/tut_1.png
+mousedown 438 125
+wait 3
+move 438 145
+wait 3
+move 438 165
+wait 10
+mouseup 438 165
+wait 60
+shot work/shots/tut_p1.png
+mousedown 470 124
+wait 3
+move 454 128
+wait 3
+move 438 133
+wait 10
+mouseup 438 133
+wait 60
+shot work/shots/tut_p2.png
+key up
+wait 30
+shot work/shots/tut_p3.png
+mousedown 502 126
+wait 3
+move 502 145
+wait 3
+move 502 165
+wait 10
+mouseup 502 165
+wait 60
+shot work/shots/tut_p4.png
+dclick 502 133
+wait 60
+expect Use lever
+shot work/shots/tut_p5.png
+mousedown 502 158
+wait 3
+move 502 145
+wait 3
+move 502 133
+wait 10
+mouseup 502 133
+wait 60
+shot work/shots/tut_p6.png
+key right
+wait 30
+mousedown 470 200
+wait 3
+move 454 198
+wait 3
+move 438 197
+wait 10
+mouseup 438 197
+wait 60
+shot work/shots/tut_p7.png
+key down
+wait 30
+key right
+wait 30
+key right
+wait 30
+expect North
+shot work/shots/tut_p8.png
 quit
