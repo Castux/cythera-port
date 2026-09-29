@@ -52,6 +52,7 @@ Useful options (`./build/cythera --help` lists them all):
 | `--scale N` | window scale factor (default: as large as fits) |
 | `--screen WxH` | emulated screen size (default 640x480, as the game was designed for) |
 | `--soundfont FILE` | General MIDI SoundFont for the music |
+| `--app NAME` | run another application from the game folder |
 | `-v` / `-q` | more / less logging |
 
 Preferences and saved games are kept in `~/.cythera-port/`
@@ -70,8 +71,17 @@ Option is Alt.
 
 ## Registration
 
-Cythera was shareware. The original registration dialog is kept as is; enter
-the registration code you received when you bought the game.
+Cythera was shareware. Ambrosia's registration application, included with the
+game, runs under the port as well:
+
+```sh
+./build/cythera --app "Register Cythera"
+```
+
+Choose *Enter License Code* and enter your name, number of copies and code
+exactly as you received them. Pasting from the host clipboard works (⌘V). The
+license is saved in `~/.cythera-port/System Folder/Preferences`, where the
+game finds it.
 
 ## Developer tools
 

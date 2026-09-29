@@ -35,6 +35,10 @@ bool host_screenshot(const char *path);
 void host_set_cursor(const u8 *rgba32x32, int hotx, int hoty, bool visible);
 bool host_is_headless(void);
 
+/* Clipboard text (UTF-8). get returns a malloc'd string, or NULL if empty. */
+char *host_clipboard_get(void);
+void host_clipboard_set(const char *utf8);
+
 /* Scripted input (tests) */
 void script_load(const char *path);
 void script_tick(void);

@@ -1,0 +1,8 @@
+wait 1800
+click 506 193
+wait 300
+shot work/shots/ab_1.png
+click 320 440
+wait 300
+shot work/shots/ab_2.png
+quit

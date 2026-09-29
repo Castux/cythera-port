@@ -77,7 +77,7 @@ void os_init(void) {
     files_init(g_cfg.data_dir, sysdir);
     res_init();
     char app[1100];
-    snprintf(app, sizeof app, "%s/Cythera", g_cfg.data_dir);
+    snprintf(app, sizeof app, "%s/%s", g_cfg.data_dir, g_cfg.app);
     res_open_app(app);
     threads_init(g_cpu);
     host_init(g_cfg.screen_w, g_cfg.screen_h, g_cfg.headless, g_cfg.scale);

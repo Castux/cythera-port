@@ -8,6 +8,7 @@ typedef struct {
     const char *sysdir;
     const char *soundfont;
     const char *render_pict, *render_out;
+    const char *app;  /* application file name in data_dir */
     bool headless;
     int screen_w, screen_h;
     int scale;

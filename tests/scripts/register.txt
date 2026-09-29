@@ -1,0 +1,16 @@
+# app: Register Cythera
+wait 200
+click 540 430
+wait 100
+click 242 203
+wait 100
+type Test User
+key tab
+type 1
+key tab
+type ABCD-EFGH
+wait 20
+click 540 430
+wait 100
+shot work/shots/register_5.png
+quit

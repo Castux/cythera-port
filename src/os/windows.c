@@ -930,12 +930,7 @@ TRAP(GrowWindow) {
 
 static bool track_part(u32 win, Point pt, int part) {
     (void)pt;
-    bool in = true;
-    while (ev_mouse_button()) {
-        u32 w2;
-        in = wm_find(ev_mouse_global(), &w2) == part && w2 == win;
-        ev_idle_frame();
-    }
+    while (ev_mouse_button()) ev_idle_frame();
     u32 w2;
     return wm_find(ev_mouse_global(), &w2) == part && w2 == win;
 }

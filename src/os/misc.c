@@ -5,6 +5,7 @@
 #include "mm.h"
 #include "files.h"
 #include "misc.h"
+#include "../config.h"
 #include "../loader/pef.h"
 #include "../host/host.h"
 #include <time.h>
@@ -201,7 +202,7 @@ TRAP(GetCurrentProcess) { u32 p = ARG(0); wr32(p, 0); wr32(p + 4, 2); RETERR(noE
 TRAP(GetProcessInformation) {
     u32 info = ARG(1);
     u32 namep = rd32(info + 4), specp = rd32(info + 56);
-    if (namep) c_to_pstr("Cythera", namep, 31);
+    if (namep) c_to_pstr(g_cfg.app, namep, 31);
     wr32(info + 8, 0); wr32(info + 12, 2);
     wr32(info + 16, FOURCC('A','P','P','L'));
     wr32(info + 20, FOURCC('D','e','l','v'));
@@ -211,7 +212,7 @@ TRAP(GetProcessInformation) {
     wr32(info + 36, mm_free_bytes(ZONE_APP));
     wr32(info + 40, 0); wr32(info + 44, 0);
     wr32(info + 48, 0); wr32(info + 52, tick_count());
-    if (specp) fsspec_write(specp, VOL_REFNUM, ROOT_DIRID, "Cythera");
+    if (specp) fsspec_write(specp, VOL_REFNUM, ROOT_DIRID, g_cfg.app);
     RETERR(noErr);
 }
 
@@ -426,7 +427,7 @@ void misc_init(void) {
     wr16(LM_SysFontFam, 0);
     wr16(LM_SysFontSize, 12);
     wr16(LM_MBarHeight, 20);
-    c_to_pstr("Cythera", LM_CurApName, 31);
+    c_to_pstr(g_cfg.app, LM_CurApName, 31);
 }
 
 void misc_poll(void) {

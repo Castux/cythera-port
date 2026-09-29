@@ -82,6 +82,10 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (registration): the separate "Register Cythera" PPC app runs unmodified
+  (`--app "Register Cythera"`) and validates codes. Added the Scrap Manager
+  (synced with the host clipboard) and fixed thin TrueType stems vanishing
+  at small sizes.
 - 2026-09-29 (later): in-game play works (movement, lighting, contextual menus, conversations,
   save/load, hidden menu bar, music via QTMA+SoundFont, sound effects). Deterministic test mode added.
 - 2026-09-29: M0-M4 done. Title, main menu, character creation, intro slideshow and

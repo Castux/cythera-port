@@ -31,6 +31,7 @@ static void usage(void) {
         "usage: cythera [options]\n"
         "  --data DIR        game directory (default: gamedata)\n"
         "  --headless        no window; render offscreen\n"
+        "  --app NAME        run another application from the game folder (e.g. \"Register Cythera\")\n"
         "  --script FILE     run an input script (see README.md, tests/scripts/)\n"
         "  --sysdir DIR      emulated System Folder (default ~/.cythera-port/System Folder)\n"
         "  --turbo N         run the emulated clock N times faster (tests)\n"
@@ -50,6 +51,7 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     g_cfg.data_dir = "gamedata";
+    g_cfg.app = "Cythera";
     g_cfg.screen_w = 640;
     g_cfg.screen_h = 480;
     g_cfg.scale = 0;
@@ -57,6 +59,7 @@ int main(int argc, char **argv) {
         const char *a = argv[i];
         if (!strcmp(a, "--data") && i + 1 < argc) g_cfg.data_dir = argv[++i];
         else if (!strcmp(a, "--headless")) g_cfg.headless = true;
+        else if (!strcmp(a, "--app") && i + 1 < argc) g_cfg.app = argv[++i];
         else if (!strcmp(a, "--script") && i + 1 < argc) g_cfg.script = argv[++i];
         else if (!strcmp(a, "--sysdir") && i + 1 < argc) g_cfg.sysdir = argv[++i];
         else if (!strcmp(a, "--soundfont") && i + 1 < argc) g_cfg.soundfont = argv[++i];
@@ -87,7 +90,7 @@ int main(int argc, char **argv) {
     if (!g_mem) fatal("cannot allocate guest memory");
 
     char path[1024];
-    snprintf(path, sizeof path, "%s/Cythera", g_cfg.data_dir);
+    snprintf(path, sizeof path, "%s/%s", g_cfg.data_dir, g_cfg.app);
     size_t len;
     u8 *pefbuf = read_file(path, &len);
     if (!pefbuf) fatal("cannot read %s (run tools/setup_gamedata.sh first)", path);

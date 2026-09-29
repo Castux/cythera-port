@@ -26,6 +26,19 @@ static u16 g_mods;
 
 bool host_is_headless(void) { return g_headless; }
 
+static char *g_clip; /* headless clipboard */
+char *host_clipboard_get(void) {
+    if (g_headless) return g_clip ? strdup(g_clip) : NULL;
+    if (!SDL_HasClipboardText()) return NULL;
+    char *t = SDL_GetClipboardText(), *r = (t && *t) ? strdup(t) : NULL;
+    SDL_free(t);
+    return r;
+}
+void host_clipboard_set(const char *utf8) {
+    if (g_headless) { free(g_clip); g_clip = strdup(utf8); return; }
+    SDL_SetClipboardText(utf8);
+}
+
 static void push_event(HostEvent e) {
     int n = (g_evt + 1) % EVQ;
     if (n == g_evh) return;

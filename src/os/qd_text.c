@@ -184,7 +184,13 @@ static bool load_sfnt(Font *f, const u8 *d, u32 len, int size) {
         for (int y = 0; y < h; y++) {
             int yy = f->ascent + y0 + y;
             if (yy < 0 || yy >= f->height) continue;
-            for (int x = 0; x < w; x++) g->img[(size_t)yy * (size_t)w + (size_t)x] = tmp[(size_t)y * (size_t)w + (size_t)x] >= 128;
+            const u8 *src = tmp + (size_t)y * (size_t)w;
+            u8 *dst = g->img + (size_t)yy * (size_t)w;
+            int on = 0, best = 0;
+            for (int x = 0; x < w; x++) { dst[x] = src[x] >= 128; on |= dst[x]; if (src[x] > src[best]) best = x; }
+            /* a thin stem straddling two pixel columns has <50% coverage in
+               each: keep its strongest pixel so i, l, | don't vanish */
+            if (!on && src[best] >= 48) dst[best] = 1;
         }
         free(tmp);
         if (g->adv > f->widmax) f->widmax = g->adv;

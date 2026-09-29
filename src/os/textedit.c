@@ -5,6 +5,9 @@
  * Style runs of styled TE records are kept host-side. */
 #include "wm.h"
 #include "misc.h"
+#include "mm.h"
+#include "files.h"
+#include "../host/host.h"
 
 #define TE_DEST     0
 #define TE_VIEW     8
@@ -674,7 +677,63 @@ TRAP(TETextBox) {
     mm_dispose_handle(te);
 }
 
-/* ---- scrap ---- */
+/* ---- scrap ----
+   The TextEdit scrap doubles as the desk scrap (TEXT only) and is kept in
+   sync with the host clipboard, CR line breaks <-> LF. */
+static void scrap_export(void) {
+    char *mr = malloc(g_scraplen + 1), *utf = malloc(g_scraplen * 3 + 1);
+    for (u32 i = 0; i < g_scraplen; i++) mr[i] = g_scrap[i] == '\r' ? '\n' : (char)g_scrap[i];
+    mr[g_scraplen] = 0;
+    macroman_to_utf8(mr, utf, g_scraplen * 3 + 1);
+    host_clipboard_set(utf);
+    free(mr); free(utf);
+}
+static void scrap_import(void) {
+    char *utf = host_clipboard_get();
+    if (!utf) return;
+    size_t n = strlen(utf);
+    char *mr = malloc(n + 1);
+    utf8_to_macroman(utf, mr, n + 1);
+    free(g_scrap);
+    g_scraplen = 0;
+    g_scrap = malloc(strlen(mr) + 1);
+    for (char *c = mr; *c; c++) {
+        if (*c == '\r' && c[1] == '\n') continue;
+        g_scrap[g_scraplen++] = *c == '\n' ? '\r' : (u8)*c;
+    }
+    free(mr); free(utf);
+}
+
+/* GetScrap(Handle dest, ResType type, long *offset) -> length or noTypeErr */
+TRAP(GetScrap) {
+    u32 h = ARG(0), type = ARG(1), offp = ARG(2);
+    if (type != FOURCC('T','E','X','T')) { RET((u32)-102); return; }
+    scrap_import();
+    if (!g_scrap) { RET((u32)-102); return; }
+    if (h) {
+        if (!mm_set_handle_size(h, g_scraplen)) { RETERR(memFullErr); return; }
+        if (g_scraplen) gmemcpy_to(hderef(h), g_scrap, g_scraplen);
+    }
+    if (offp) wr32(offp, 0);
+    RET(g_scraplen);
+}
+TRAP(ZeroScrap) { free(g_scrap); g_scrap = NULL; g_scraplen = 0; RETERR(noErr); }
+TRAP(PutScrap) {
+    u32 len = ARG(0), type = ARG(1), src = ARG(2);
+    if (type == FOURCC('T','E','X','T')) {
+        free(g_scrap);
+        g_scraplen = len;
+        g_scrap = malloc(len + 1);
+        if (len) gmemcpy_from(g_scrap, src, len);
+        scrap_export();
+    }
+    RETERR(noErr);
+}
+TRAP(LoadScrap) { RETERR(noErr); }
+TRAP(UnloadScrap) { RETERR(noErr); }
+TRAP(TEFromScrap) { scrap_import(); RETERR(noErr); }
+TRAP(TEToScrap) { RETERR(noErr); }
+
 static void te_copy(u32 te) {
     u32 p = te_rec(te);
     int s0 = rds16(p + TE_SELSTART), s1 = rds16(p + TE_SELEND);
@@ -682,6 +741,7 @@ static void te_copy(u32 te) {
     g_scraplen = (u32)(s1 - s0);
     g_scrap = malloc(g_scraplen + 1);
     if (g_scraplen) gmemcpy_from(g_scrap, hderef(te_text(te)) + (u32)s0, g_scraplen);
+    scrap_export();
 }
 TRAP(TECopy) { te_copy(ARG(0)); }
 TRAP(TECut) {
@@ -698,6 +758,7 @@ TRAP(TEPaste) {
     u32 te = ARG(0);
     u32 p = te_rec(te);
     int s0 = rds16(p + TE_SELSTART), s1 = rds16(p + TE_SELEND);
+    scrap_import();
     text_replace(te, s0, s1, g_scrap, (int)g_scraplen);
     p = te_rec(te);
     wr16(p + TE_SELSTART, (u16)(s0 + (int)g_scraplen)); wr16(p + TE_SELEND, (u16)(s0 + (int)g_scraplen));
