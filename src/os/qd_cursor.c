@@ -1,6 +1,7 @@
 /* Cursors and color icons. */
 #include "qd.h"
 #include "resources.h"
+#include "mm.h"
 #include "../host/host.h"
 
 static int g_hide_level;
@@ -30,7 +31,40 @@ TRAP(InitCursor) {
     if (g_qd_theport_ptr) set_bw_cursor(g_qd_theport_ptr - 108);
 }
 TRAP(SetCursor) { set_bw_cursor(ARG(0)); }
-TRAP(GetCursor) { RET(res_get(FOURCC('C','U','R','S'), ARGS16(0))); }
+/* The System file's standard cursors (iBeamCursor, crossCursor, plusCursor,
+   watchCursor), redrawn: there is no System file. data, mask, hotspot v,h. */
+static const u16 k_sys_curs[4][34] = {
+    { 0x0C60, 0x0280, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100,
+      0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0280, 0x0C60,
+      0x1EF0, 0x07C0, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380,
+      0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x0380, 0x07C0, 0x1EF0, 11, 7 },
+    { 0x0400, 0x0400, 0x0400, 0x0400, 0x0400, 0xFFE0, 0x0400, 0x0400,
+      0x0400, 0x0400, 0x0400, 0, 0, 0, 0, 0,
+      0x0E00, 0x0E00, 0x0E00, 0x0E00, 0xFFE0, 0xFFE0, 0xFFE0, 0x0E00,
+      0x0E00, 0x0E00, 0x0E00, 0x0E00, 0, 0, 0, 0, 5, 5 },
+    { 0, 0x0E00, 0x0A00, 0x0A00, 0x0A00, 0xFBE0, 0x8020, 0xFBE0,
+      0x0A00, 0x0A00, 0x0A00, 0x0E00, 0, 0, 0, 0,
+      0, 0x0E00, 0x0E00, 0x0E00, 0x0E00, 0xFFE0, 0xFFE0, 0xFFE0,
+      0x0E00, 0x0E00, 0x0E00, 0x0E00, 0, 0, 0, 0, 6, 6 },
+    { 0x3F00, 0x3F00, 0x3F00, 0x3F00, 0x4080, 0x8440, 0x8440, 0x8460,
+      0x9C40, 0x8040, 0x8040, 0x4080, 0x3F00, 0x3F00, 0x3F00, 0x3F00,
+      0x3F00, 0x3F00, 0x3F00, 0x3F00, 0x7F80, 0xFFC0, 0xFFC0, 0xFFE0,
+      0xFFC0, 0xFFC0, 0xFFC0, 0x7F80, 0x3F00, 0x3F00, 0x3F00, 0x3F00, 8, 8 },
+};
+TRAP(GetCursor) {
+    s16 id = ARGS16(0);
+    u32 h = res_get(FOURCC('C','U','R','S'), id);
+    if (!h && id >= 1 && id <= 4) {
+        static u32 sys[4];
+        if (!sys[id - 1]) {
+            u8 b[68];
+            for (int i = 0; i < 34; i++) put_be16(b + 2 * i, k_sys_curs[id - 1][i]);
+            sys[id - 1] = mm_handle_from_data(b, 68, ZONE_SYS);
+        }
+        h = sys[id - 1];
+    }
+    RET(h);
+}
 TRAP(HideCursor) { g_hide_level--; apply_cursor(); }
 TRAP(ShowCursor) { if (g_hide_level < 0) g_hide_level++; apply_cursor(); }
 TRAP(ObscureCursor) { }
