@@ -93,6 +93,8 @@ game finds it.
   a time limit.
 - `--trace-traps` logs every Toolbox call with symbolized callers, and
   `--profile` prints Toolbox and guest-function hot spots.
+- `CYTHERA_WATCH=off,...` logs the registers each time execution reaches the given
+  code offsets (hex, as printed by `tools/ppcdis.py`): a cheap breakpoint.
 - `--wav FILE` records the audio output; `--render-pict FILE OUT.png` renders a
   PICT file.
 - `tools/ppcdis.py` is a symbolizing PowerPC disassembler for the game binary

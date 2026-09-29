@@ -123,6 +123,29 @@ static void do_stsw(CPU *c, int rs, u32 ea, u32 n) {
 
 static u64 host_timebase(void);
 
+#define MAX_WATCH 32
+static struct { u32 addr, word; } g_watch[MAX_WATCH];
+static int g_nwatch;
+void cpu_watch_add(u32 addr) {
+    if (g_nwatch == MAX_WATCH || (addr & 3)) return;
+    g_watch[g_nwatch].addr = addr;
+    g_watch[g_nwatch].word = rd32(addr);
+    wr32(addr, 0); /* primary opcode 0: illegal */
+    g_nwatch++;
+}
+bool cpu_watch_hit(CPU *c, u32 pc, u32 *w) {
+    for (int i = 0; i < g_nwatch; i++) {
+        if (g_watch[i].addr != pc) continue;
+        u32 *r = c->r;
+        LOG_I("watch %06x: r0=%08x r1=%08x r3=%08x r4=%08x r5=%08x r6=%08x r7=%08x r8=%08x "
+              "r29=%08x r30=%08x r31=%08x lr=%08x",
+              pc - CODE_ADDR, r[0], r[1], r[3], r[4], r[5], r[6], r[7], r[8], r[29], r[30], r[31], c->lr);
+        *w = g_watch[i].word;
+        return true;
+    }
+    return false;
+}
+
 void cpu_run(CPU *c) {
     c->depth++;
     int my_depth = c->depth;
@@ -145,6 +168,7 @@ void cpu_run(CPU *c) {
         }
         if (__builtin_expect(pc & 3, 0)) fatal("misaligned PC %08x", pc);
         u32 w = rd32(pc);
+        if (__builtin_expect((w >> 26) == 0, 0)) cpu_watch_hit(c, pc, &w);
         u32 npc = pc + 4;
         c->icount++;
         int op = w >> 26;

@@ -82,6 +82,10 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-29 (tutorial): Omen's Test plays through, scripted: reading notes, lever and gate,
+  secret door, containers, taking items (dropped on the roster portrait), key on a lock,
+  ladder, lighting and throwing a bomb (turn-based fuse), sliding crates. `CYTHERA_WATCH`
+  watchpoints and `tools/delv_props.py` make it practical to follow game logic.
 - 2026-09-29 (pictures): QuickDraw picture recording (OpenPicture) now records text,
   lines and rects. In-game notes and books (TWScrollText) record their text into a
   picture, so they were blank before. Shape drawing honors a hidden pen, as in real

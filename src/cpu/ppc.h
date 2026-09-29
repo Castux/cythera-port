@@ -32,4 +32,10 @@ void trap_dispatch(CPU *c, u32 index);
 extern void (*g_cpu_poll)(CPU *c);
 #define CPU_POLL_INTERVAL 20000
 
+/* Debug watchpoints: log registers each time execution reaches addr.
+   The instruction is patched with an illegal opcode, so there's no cost
+   until it is hit. */
+void cpu_watch_add(u32 addr);
+bool cpu_watch_hit(CPU *c, u32 pc, u32 *w);
+
 #endif

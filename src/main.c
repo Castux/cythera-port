@@ -103,6 +103,14 @@ int main(int argc, char **argv) {
         fatal("%s is not a PowerPC PEF container", path);
     free(pefbuf);
     sym_scan_tracebacks(img.code_addr, img.code_size);
+    /* CYTHERA_WATCH=off,off,... (hex code offsets, as in tools/ppcdis.py) */
+    for (const char *w = getenv("CYTHERA_WATCH"); w && *w; ) {
+        char *end;
+        u32 off = (u32)strtoul(w, &end, 16);
+        if (end == w) break;
+        cpu_watch_add(img.code_addr + off);
+        w = *end ? end + 1 : end;
+    }
     LOG_I("loaded code %#x bytes @%08x, data %#x bytes @%08x, %d imports",
           img.code_size, img.code_addr, img.data_size, img.data_addr, img.nimports);
 

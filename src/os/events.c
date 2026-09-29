@@ -222,6 +222,7 @@ TRAP(GetMouse) {
     u32 port = qd_port();
     if (port && surf_from_port(port, &s)) { p.h = (s16)(p.h + s.bounds.left); p.v = (s16)(p.v + s.bounds.top); }
     wr_point(pp, p);
+    if (g_trace_traps) LOG_I("  mouse local (%d,%d)", p.h, p.v);
 }
 TRAP(Button) { RET(ev_mouse_button()); }
 TRAP(StillDown) {
