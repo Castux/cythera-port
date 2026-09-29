@@ -56,7 +56,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M5 — Gameplay
 - [~] Main map view, roster, text log, character/inventory windows work
 - [~] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do (movement, contextual menu, conversations verified)
-- [x] Save / load games (verified); [ ] preferences dialog
+- [x] Save / load games (verified); [x] preferences dialog
 - [ ] Timing correctness (ticks, animation, heartbeat)
 - **Exit:** play through the opening of the game (Odemia) with save/load.
 
