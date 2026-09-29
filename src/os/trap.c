@@ -5,6 +5,14 @@
 
 bool g_trace_traps;
 bool g_strict_traps;
+const char *g_trace_only; /* comma-separated names, or NULL for all */
+static bool trace_match(const char *n) {
+    if (!g_trace_only) return true;
+    size_t l = strlen(n);
+    for (const char *p = g_trace_only; (p = strstr(p, n)); p += l)
+        if ((p == g_trace_only || p[-1] == ',') && (p[l] == ',' || !p[l])) return true;
+    return false;
+}
 
 typedef struct {
     const char *name;
@@ -113,7 +121,7 @@ void trap_dispatch(CPU *c, u32 index) {
     TrapSlot *s = &g_slots[index];
     s->calls++;
     if (g_shot_trap && !strcmp(s->name, g_shot_trap) && s->calls == g_shot_n) { qd_present(); host_screenshot(g_shot_out); }
-    if (g_trace_traps) {
+    if (g_trace_traps && trace_match(s->name)) {
         u32 off;
         const char *n = sym_lookup(c->lr, &off);
         LOG_I("trap %s(%08x %08x %08x %08x) from %s+%#x", s->name, c->r[3], c->r[4], c->r[5], c->r[6],

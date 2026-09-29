@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
         }
         else if (!strcmp(a, "--deterministic")) { extern bool g_deterministic; g_deterministic = true; g_cfg.headless = true; }
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;
+        else if (!strcmp(a, "--trace-only") && i + 1 < argc) { extern const char *g_trace_only; g_trace_only = argv[++i]; g_trace_traps = true; }
         else if (!strcmp(a, "--profile")) { extern bool g_profile; extern void trap_profile_report(void); g_profile = true; atexit(trap_profile_report); }
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
         else if (!strcmp(a, "--screen") && i + 1 < argc) {

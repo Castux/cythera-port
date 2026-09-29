@@ -20,7 +20,9 @@ typedef struct {
     s16 procid;
     bool native;      /* native standard WDEF */
     bool zoomed;
+    HRgn lastvis;     /* visible part of the structure after the last recalc */
 } WInfo;
+static HRgn g_desk_lastvis;
 
 #define MAX_WIN 128
 static WInfo g_wi[MAX_WIN];
@@ -225,12 +227,18 @@ static void paint_desktop(const HRgn *g) {
     hrgn_free(&v);
 }
 
+/* Recompute visRgns. Parts of windows (and the desktop) that became
+   visible since the last call are repainted: frames redrawn, content
+   erased and added to the update region. `damage` (global) forces a
+   repaint of an area even if its visibility did not change. */
 void wm_recalc(const HRgn *damage) {
     HRgn gray; gray_hrgn(&gray);
     HRgn covered = { 0, NULL };
     for (u32 w = wm_first(); w; w = rd32(w + WIN_NEXT)) {
+        WInfo *wi = winfo(w);
         if (!rd8(w + WIN_VISIBLE)) {
             rgn_set_rect(rd32(w + PORT_VIS), (Rect){ 0, 0, 0, 0 });
+            if (wi) { hrgn_free(&wi->lastvis); }
             continue;
         }
         HRgn st, ct, vs = { 0, NULL }, vc = { 0, NULL };
@@ -239,47 +247,49 @@ void wm_recalc(const HRgn *damage) {
         hrgn_op(&vs, &st, &gray, 1);
         hrgn_op(&vs, &vs, &covered, 2);
         hrgn_op(&vc, &ct, &vs, 1);
-        /* port visRgn in local coordinates */
         HRgn loc; hrgn_copy(&loc, &vc);
         wm_global_rgn_to_local(w, &loc);
         hrgn_to_guest(&loc, rd32(w + PORT_VIS));
         hrgn_free(&loc);
-        if (damage) {
-            HRgn d = { 0, NULL };
-            hrgn_op(&d, damage, &vs, 1);
-            if (!hrgn_empty(&d)) {
-                HRgn fr = { 0, NULL }, cn = { 0, NULL };
-                hrgn_op(&fr, &d, &ct, 2);
-                hrgn_op(&cn, &d, &ct, 1);
-                if (!hrgn_empty(&cn)) {
-                    erase_content_global(w, &cn);
-                    HRgn up, nu = { 0, NULL };
-                    hrgn_from_guest(&up, rd32(w + WIN_UPDATE));
-                    hrgn_op(&nu, &up, &cn, 0);
-                    hrgn_to_guest(&nu, rd32(w + WIN_UPDATE));
-                    hrgn_free(&up); hrgn_free(&nu);
-                }
-                if (!hrgn_empty(&fr)) {
-                    u32 save = qd_port();
-                    qd_set_port(g_wmport);
-                    wm_port_set_vis(&fr);
-                    call_wdef(w, wDraw, 0);
-                    qd_set_port(save);
-                }
-                hrgn_free(&fr); hrgn_free(&cn);
+        /* newly exposed = now visible - previously visible (+ forced damage) */
+        HRgn d = { 0, NULL };
+        if (wi) hrgn_op(&d, &vs, &wi->lastvis, 2); else hrgn_copy(&d, &vs);
+        if (damage) { HRgn dd = { 0, NULL }; hrgn_op(&dd, damage, &vs, 1); hrgn_op(&d, &d, &dd, 0); hrgn_free(&dd); }
+        if (!hrgn_empty(&d)) {
+            HRgn fr = { 0, NULL }, cn = { 0, NULL };
+            hrgn_op(&fr, &d, &ct, 2);
+            hrgn_op(&cn, &d, &ct, 1);
+            if (!hrgn_empty(&cn)) {
+                erase_content_global(w, &cn);
+                HRgn up, nu = { 0, NULL };
+                hrgn_from_guest(&up, rd32(w + WIN_UPDATE));
+                hrgn_op(&nu, &up, &cn, 0);
+                hrgn_to_guest(&nu, rd32(w + WIN_UPDATE));
+                hrgn_free(&up); hrgn_free(&nu);
             }
-            hrgn_free(&d);
+            if (!hrgn_empty(&fr)) {
+                u32 save = qd_port();
+                qd_set_port(g_wmport);
+                wm_port_set_vis(&fr);
+                call_wdef(w, wDraw, 0);
+                qd_set_port(save);
+            }
+            hrgn_free(&fr); hrgn_free(&cn);
         }
+        hrgn_free(&d);
+        if (wi) { hrgn_free(&wi->lastvis); hrgn_copy(&wi->lastvis, &vs); }
         hrgn_op(&covered, &covered, &st, 0);
         hrgn_free(&st); hrgn_free(&ct); hrgn_free(&vs); hrgn_free(&vc);
     }
-    if (damage) {
-        HRgn desk = { 0, NULL };
-        hrgn_op(&desk, damage, &gray, 1);
-        hrgn_op(&desk, &desk, &covered, 2);
-        if (!hrgn_empty(&desk)) paint_desktop(&desk);
-        hrgn_free(&desk);
-    }
+    /* desktop */
+    HRgn desk = { 0, NULL }, dexp = { 0, NULL };
+    hrgn_op(&desk, &gray, &covered, 2);
+    hrgn_op(&dexp, &desk, &g_desk_lastvis, 2);
+    if (damage) { HRgn dd = { 0, NULL }; hrgn_op(&dd, damage, &desk, 1); hrgn_op(&dexp, &dexp, &dd, 0); hrgn_free(&dd); }
+    if (!hrgn_empty(&dexp)) paint_desktop(&dexp);
+    hrgn_free(&g_desk_lastvis);
+    g_desk_lastvis = desk;
+    hrgn_free(&dexp);
     /* restore WMgrPort vis to the whole gray region */
     hrgn_to_guest(&gray, rd32(g_wmport + PORT_VIS));
     hrgn_free(&gray); hrgn_free(&covered);
@@ -289,9 +299,8 @@ void wm_recalc(const HRgn *damage) {
 void wm_invalidate_global(const HRgn *g) { wm_recalc(g); }
 
 static void damage_struct(u32 w) {
-    HRgn st; hrgn_from_guest(&st, rd32(w + WIN_STRUC));
-    wm_recalc(&st);
-    hrgn_free(&st);
+    (void)w;
+    wm_recalc(NULL);
 }
 
 void wm_draw_frame(u32 w) {
@@ -506,7 +515,8 @@ static void dispose_window(u32 win, bool free_storage) {
     wi->win = 0;
     extern void palette_window_disposed(u32 win);
     palette_window_disposed(win);
-    if (vis) wm_recalc(&st);
+    hrgn_free(&wi->lastvis);
+    if (vis) wm_recalc(NULL);
     hrgn_free(&st);
     rgn_dispose(rd32(win + WIN_STRUC));
     rgn_dispose(rd32(win + WIN_CONT));
@@ -537,9 +547,7 @@ void wm_show(u32 win, bool show) {
         }
         damage_struct(win);
     } else {
-        HRgn st; hrgn_from_guest(&st, rd32(win + WIN_STRUC));
-        wm_recalc(&st);
-        hrgn_free(&st);
+        wm_recalc(NULL);
         if (oldfront == win) {
             wr8(win + WIN_HILITED, 0);
             u32 f = wm_front();
@@ -580,11 +588,9 @@ TRAP(BringToFront) {
 TRAP(SendBehind) {
     u32 win = ARG(0), behind = ARG(1);
     if (!winfo(win)) return;
-    HRgn st; hrgn_from_guest(&st, rd32(win + WIN_STRUC));
     unlink_window(win);
     link_window(win, behind ? behind : 0);
-    wm_recalc(&st);
-    hrgn_free(&st);
+    wm_recalc(NULL);
     wm_activate_changed();
 }
 TRAP(HiliteWindow) {
