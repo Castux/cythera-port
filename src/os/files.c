@@ -1074,10 +1074,30 @@ TRAP(PBDTSetCommentSync) { pb_done(cpu, ARG(0), paramErr, false); }
 TRAP(PBHCopyFileSync) { pb_done(cpu, ARG(0), paramErr, false); }
 TRAP(PBCatSearchSync) { pb_done(cpu, ARG(0), paramErr, false); }
 
-/* Device driver calls: no CD-ROM driver is present. */
-TRAP(PBControlSync) { pb_done(cpu, ARG(0), -28 /* notOpenErr */, false); }
-TRAP(PBControlAsync) { pb_done(cpu, ARG(0), -28, true); }
-TRAP(PBStatusSync) { pb_done(cpu, ARG(0), -28, false); }
+/* Device driver calls. The only driver present is the main screen's video
+   driver (refnum -50), which supports the gamma table calls; there is no
+   CD-ROM driver. */
+extern u32 qd_gamma_table(void);
+extern void qd_set_gamma(u32 table);
+static int video_control(u32 pb, bool status) {
+    u16 cs = rd16(pb + 26);
+    u32 param = pb + 28;
+    if (status) {
+        switch (cs) {
+        case 8: wr32(param, qd_gamma_table()); return noErr;   /* cscGetGamma */
+        case 2: wr16(param, 0x83); return noErr;               /* cscGetMode */
+        default: return -18; /* statusErr */
+        }
+    }
+    switch (cs) {
+    case 4: qd_set_gamma(rd32(param)); return noErr;            /* cscSetGamma */
+    case 1: case 3: case 5: case 6: return noErr;               /* cscKillIO, SetEntries (via SetEntries trap), GrayPage, SetGray */
+    default: return -17; /* controlErr */
+    }
+}
+TRAP(PBControlSync) { u32 pb = ARG(0); pb_done(cpu, pb, rds16(pb + 24) == -50 ? video_control(pb, false) : -28, false); }
+TRAP(PBControlAsync) { u32 pb = ARG(0); pb_done(cpu, pb, rds16(pb + 24) == -50 ? video_control(pb, false) : -28, true); }
+TRAP(PBStatusSync) { u32 pb = ARG(0); pb_done(cpu, pb, rds16(pb + 24) == -50 ? video_control(pb, true) : -28, false); }
 
 /* Drive queue: empty. */
 static u32 g_drvq;

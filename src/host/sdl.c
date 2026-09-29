@@ -365,6 +365,12 @@ void script_tick(void) {
             for (const char *p = s->arg; *p; p++) { char n[2] = { *p, 0 }; script_key(n, (*p >= 'A' && *p <= 'Z') ? 0x200 : 0); }
             g_script_wait_until = now + 2;
             return;
+        } else if (!strcmp(s->cmd, "bt")) {
+            extern _Thread_local struct CPU *g_cpu;
+            extern void cpu_backtrace(struct CPU *c, FILE *f);
+            if (g_cpu) cpu_backtrace(g_cpu, stderr);
+            extern void threads_debug_dump(void);
+            threads_debug_dump();
         } else if (!strcmp(s->cmd, "dumpwin")) {
             extern void wm_debug_dump(void);
             wm_debug_dump();

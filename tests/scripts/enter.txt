@@ -24,6 +24,10 @@ click 320 240
 wait 300
 click 320 240
 wait 600
-dumpwin
+wait 1500
 shot work/shots/en_3.png
+wait 1500
+bt
+dumpwin
+shot work/shots/en_4.png
 quit

@@ -13,7 +13,14 @@ void text_init(void);
 #include <sys/stat.h>
 
 static void cpu_poll(CPU *c) {
-    (void)c;
+    extern u64 g_last_trap_icount;
+    static u64 warned_at;
+    if (c->icount - g_last_trap_icount > 300000000ull && warned_at != g_last_trap_icount) {
+        warned_at = g_last_trap_icount;
+        extern void cpu_backtrace(CPU *c, FILE *f);
+        LOG_W("stall: no Toolbox call for %llu instructions", (unsigned long long)(c->icount - g_last_trap_icount));
+        cpu_backtrace(c, stderr);
+    }
     misc_poll();
     irq_service();
     static u32 n;

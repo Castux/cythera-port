@@ -120,7 +120,7 @@ TRAP(PrimeTime) {
 }
 
 /* ---- ticks, delays ---- */
-TRAP(TickCount) { RET(tick_count()); }
+TRAP(TickCount) { static u32 n; u32 t = tick_count(); if ((++n & 0xFFFFF) == 0) LOG_D("TickCount #%u = %u", n, t); RET(t); }
 
 TRAP(Delay) {
     u32 n = ARG(0), finalp = ARG(1);

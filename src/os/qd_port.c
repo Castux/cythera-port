@@ -308,12 +308,50 @@ int qd_screen_h(void) { return g_sh; }
 void qd_screen_dirty(void) { g_screen_dirty = true; }
 u32 qd_cur_device(void) { u32 d = rd32(LM_TheGDevice); return d ? d : g_screen_gd; }
 
-void menu_draw_overlay(u32 *pal); /* menus.c: nothing, kept for symmetry */
+/* Video driver gamma: a 1-channel, 256-entry, 8-bit GammaTbl. */
+static u32 g_gamma_tbl;          /* guest GammaTbl returned by cscGetGamma */
+static u8 g_gamma[3][256];
+static bool g_gamma_identity = true;
+
+u32 qd_gamma_table(void) {
+    if (!g_gamma_tbl) {
+        g_gamma_tbl = sys_alloc(12 + 256);
+        wr16(g_gamma_tbl + 6, 1); wr16(g_gamma_tbl + 8, 256); wr16(g_gamma_tbl + 10, 8);
+        for (int i = 0; i < 256; i++) wr8(g_gamma_tbl + 12 + (u32)i, (u8)i);
+    }
+    return g_gamma_tbl;
+}
+
+void qd_set_gamma(u32 t) {
+    if (!t) { /* NULL resets to the default (linear) table */
+        for (int c = 0; c < 3; c++) for (int i = 0; i < 256; i++) g_gamma[c][i] = (u8)i;
+        g_gamma_identity = true;
+        qd_screen_dirty();
+        return;
+    }
+    int form = rd16(t + 4), chans = rd16(t + 6), cnt = rd16(t + 8), width = rd16(t + 10);
+    u32 data = t + 12 + (u32)form;
+    if (cnt != 256 || width != 8 || chans < 1) return;
+    g_gamma_identity = true;
+    for (int c = 0; c < 3; c++)
+        for (int i = 0; i < 256; i++) {
+            g_gamma[c][i] = rd8(data + (u32)((chans == 3 ? c : 0) * 256 + i));
+            if (g_gamma[c][i] != i) g_gamma_identity = false;
+        }
+    /* keep our guest copy in sync so cscGetGamma reflects the current table */
+    u32 mine = qd_gamma_table();
+    if (t != mine) for (int i = 0; i < 256; i++) wr8(mine + 12 + (u32)i, g_gamma[0][i]);
+    qd_screen_dirty();
+}
 
 void qd_present(void) {
     static u32 pal[256];
     CtCache *c = ct_get(g_screen_ctab);
-    for (int i = 0; i < 256; i++) pal[i] = (u32)(c->rgb[i].r >> 8) << 16 | (u32)(c->rgb[i].g >> 8) << 8 | (c->rgb[i].b >> 8);
+    for (int i = 0; i < 256; i++) {
+        u32 r = c->rgb[i].r >> 8, g = c->rgb[i].g >> 8, b = c->rgb[i].b >> 8;
+        if (!g_gamma_identity) { r = g_gamma[0][r]; g = g_gamma[1][g]; b = g_gamma[2][b]; }
+        pal[i] = r << 16 | g << 8 | b;
+    }
     host_present(g_mem + g_screen_base, g_srow, g_sw, g_sh, pal);
     g_screen_dirty = false;
 }
