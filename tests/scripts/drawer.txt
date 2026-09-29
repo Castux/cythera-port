@@ -1,0 +1,17 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+mousedown 160 344
+wait 10
+move 160 300
+wait 10
+move 160 200
+wait 10
+move 160 150
+wait 10
+mouseup 160 150
+wait 120
+shot work/shots/ui_todo.png
+quit

@@ -1,0 +1,11 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+mousedown 362 404
+wait 6
+mouseup 362 404
+wait 200
+shot work/shots/ui_char1.png
+quit

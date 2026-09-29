@@ -455,7 +455,33 @@ TRAP(TrackControl) {
 }
 
 TRAP(DragControl) { }
-TRAP(GetAuxiliaryControlRecord) { u32 hp = ARG(1); if (hp) wr32(hp, 0); RET(0); }
+/* AuxCtlRec: acNext acOwner acCTable acFlags acReserved acRefCon (22 bytes).
+   Every control gets one, with the default control color table. */
+typedef struct { u32 ctl, aux; } AuxEnt;
+static AuxEnt g_aux[MAX_CTL];
+static u32 default_cctb(void) {
+    static u32 h;
+    if (h) return h;
+    h = mm_new_handle(8 + 4 * 8, true, ZONE_SYS);
+    u32 p = hderef(h);
+    wr16(p + 6, 3);
+    RGB c[4] = { { 0, 0, 0 }, { 0xFFFF, 0xFFFF, 0xFFFF }, { 0, 0, 0 }, { 0xFFFF, 0xFFFF, 0xFFFF } };
+    for (int i = 0; i < 4; i++) { wr16(p + 8 + 8 * (u32)i, (u16)i); wr_rgb(p + 10 + 8 * (u32)i, c[i]); }
+    return h;
+}
+TRAP(GetAuxiliaryControlRecord) {
+    u32 c = ARG(0), hp = ARG(1);
+    u32 aux = 0;
+    for (int i = 0; i < MAX_CTL; i++) if (g_aux[i].ctl == c) { aux = g_aux[i].aux; break; }
+    if (!aux) {
+        aux = mm_new_handle(22, true, ZONE_APP);
+        wr32(hderef(aux) + 4, c);
+        wr32(hderef(aux) + 8, default_cctb());
+        for (int i = 0; i < MAX_CTL; i++) if (!g_aux[i].ctl) { g_aux[i].ctl = c; g_aux[i].aux = aux; break; }
+    }
+    if (hp) wr32(hp, aux);
+    RET(1);
+}
 
 /* Appearance Manager control calls (Appearance is reported absent). */
 TRAP(CreateRootControl) { u32 p = ARG(1); if (p) wr32(p, 0); RETERR(-30581); }

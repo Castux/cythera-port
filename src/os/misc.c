@@ -417,6 +417,10 @@ TRAP(GetDCtlEntry) { RET(0); }
 
 void misc_init(void) {
     g_start_ns = now_ns();
+    /* 68k exception vectors at 0x08-0xFF point into ROM on a real Mac, so
+       stray NULL-relative reads there see nonzero values (the app relies on
+       this when walking off the end of the window list). */
+    for (u32 a = 0x08; a < 0x100; a += 4) wr32(a, FAKEROM_START + 0x1000u + a * 0x10);
     wr32(LM_DoubleTime, 30);
     wr32(LM_CaretTime, 32);
     wr16(LM_SysFontFam, 0);

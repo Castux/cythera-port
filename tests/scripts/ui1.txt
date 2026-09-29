@@ -1,0 +1,30 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+click 363 416
+wait 8
+click 363 416
+wait 200
+shot work/shots/ui_char.png
+key w cmd
+wait 100
+click 160 344
+wait 200
+shot work/shots/ui_todo.png
+click 160 344
+wait 100
+click 480 344
+wait 200
+shot work/shots/ui_journal.png
+click 480 344
+wait 100
+mousedown 45 8
+wait 10
+move 60 172
+wait 10
+mouseup 60 172
+wait 200
+shot work/shots/ui_prefs.png
+quit

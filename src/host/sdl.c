@@ -324,6 +324,7 @@ static int key_by_name(const char *n, u8 *ch) {
 
 static int g_hold_kc = -1;
 static u32 g_hold_until;
+static bool g_click_pending; static int g_click_x, g_click_y; static u32 g_click_up_at;
 static void script_key(const char *name, u16 mods) {
     u8 ch = 0;
     int kc = key_by_name(name, &ch);
@@ -335,6 +336,10 @@ static void script_key(const char *name, u16 mods) {
 void script_tick(void) {
     if (!g_script) return;
     u32 now = tick_count();
+    if (g_click_pending && (s32)(now - g_click_up_at) >= 0) {
+        g_click_pending = false; g_mdown = false;
+        push_event((HostEvent){ .type = HEV_MOUSE_UP, .x = g_click_x, .y = g_click_y });
+    }
     if (g_hold_kc >= 0 && (s32)(now - g_hold_until) >= 0) {
         set_key(g_hold_kc, false);
         push_event((HostEvent){ .type = HEV_KEY_UP, .mac_key = (u8)g_hold_kc, .x = g_mx, .y = g_my });
@@ -350,9 +355,18 @@ void script_tick(void) {
         if (!strcmp(s->cmd, "wait")) { g_script_wait_until = now + (u32)atoi(s->arg); return; }
         else if (!strcmp(s->cmd, "move") && sscanf(s->arg, "%d %d", &x, &y) == 2) { g_mx = x; g_my = y; }
         else if (!strcmp(s->cmd, "click") && sscanf(s->arg, "%d %d", &x, &y) == 2) {
-            g_mx = x; g_my = y;
+            /* like a human click: the button stays down for a few ticks */
+            g_mx = x; g_my = y; g_mdown = true;
             push_event((HostEvent){ .type = HEV_MOUSE_DOWN, .x = x, .y = y });
-            push_event((HostEvent){ .type = HEV_MOUSE_UP, .x = x, .y = y });
+            g_click_pending = true; g_click_x = x; g_click_y = y; g_click_up_at = now + 6;
+            g_script_wait_until = now + 12;
+            return;
+        } else if (!strcmp(s->cmd, "dclick") && sscanf(s->arg, "%d %d", &x, &y) == 2) {
+            g_mx = x; g_my = y;
+            for (int k = 0; k < 2; k++) {
+                push_event((HostEvent){ .type = HEV_MOUSE_DOWN, .x = x, .y = y });
+                push_event((HostEvent){ .type = HEV_MOUSE_UP, .x = x, .y = y });
+            }
             g_script_wait_until = now + 10;
             return;
         } else if (!strcmp(s->cmd, "mousedown") && sscanf(s->arg, "%d %d", &x, &y) == 2) {
@@ -394,6 +408,13 @@ void script_tick(void) {
             if (g_cpu) cpu_backtrace(g_cpu, stderr);
             extern void threads_debug_dump(void);
             threads_debug_dump();
+        } else if (!strcmp(s->cmd, "peek")) {
+            unsigned a = 0, cnt = 16;
+            sscanf(s->arg, "%x %u", &a, &cnt);
+            extern u8 *g_mem;
+            char buf[512]; int o = 0;
+            for (unsigned i = 0; i < cnt && i < 128; i++) o += snprintf(buf + o, sizeof buf - (size_t)o, "%02x%s", g_mem[a + i], (i & 1) ? " " : "");
+            LOG_I("peek %08x: %s", a, buf);
         } else if (!strcmp(s->cmd, "dumpwin")) {
             extern void wm_debug_dump(void);
             wm_debug_dump();

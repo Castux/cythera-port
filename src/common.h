@@ -31,7 +31,9 @@ typedef int64_t s64;
 #define SYSZONE_START    0x00400000u   /* OS-owned structures */
 #define SYSZONE_END      0x01000000u
 #define APPZONE_START    0x01000000u   /* application heap */
-#define APPZONE_END      0x0C000000u
+#define APPZONE_END      0x0BF00000u
+#define FAKEROM_START    0x0BF00000u   /* zero-filled, what low-memory vectors point to */
+#define FAKEROM_END      0x0C000000u
 #define STACK_AREA_START 0x0C000000u
 #define STACK_AREA_END   0x10000000u
 
