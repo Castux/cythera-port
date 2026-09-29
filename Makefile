@@ -2,6 +2,11 @@
 CC      ?= cc
 SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null || pkg-config --cflags sdl2)
 SDL_LIBS   := $(shell sdl2-config --libs 2>/dev/null || pkg-config --libs sdl2)
+ifeq ($(OS),Windows_NT)
+# plain main() with a console for the log (see SDL_SetMainReady in host/sdl.c)
+SDL_LIBS   := $(filter-out -lSDL2main -mwindows,$(SDL_LIBS))
+EXE        := .exe
+endif
 CFLAGS  ?= -O2 -g
 override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS)
 override LDLIBS += $(SDL_LIBS) -lm -lpthread
@@ -13,9 +18,9 @@ GEN     := $(BUILD)/gen/trap_table.c
 OBJS    := $(SRCS:%.c=$(BUILD)/%.o) $(BUILD)/gen/trap_table.o
 DEPS    := $(OBJS:.o=.d)
 
-all: $(BUILD)/cythera
+all: $(BUILD)/cythera$(EXE)
 
-$(BUILD)/cythera: $(OBJS)
+$(BUILD)/cythera$(EXE): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 $(GEN): $(OS_SRCS) tools/gen_traps.py

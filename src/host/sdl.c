@@ -58,6 +58,7 @@ void host_init(int w, int h, bool headless, int scale) {
     g_rgb = calloc((size_t)w * (size_t)h, 4);
     g_mx = w / 2; g_my = h / 2;
     if (headless) return;
+    SDL_SetMainReady(); /* our main() is not SDL_main */
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) < 0) fatal("SDL_Init: %s", SDL_GetError());
     if (scale <= 0) {
         SDL_DisplayMode dm;

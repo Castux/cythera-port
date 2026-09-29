@@ -72,7 +72,9 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Window scaling, fullscreen, HiDPI, configurable screen size
 - [ ] Performance (predecoded instruction cache or block JIT if needed)
 - [ ] Portability: Linux/Windows builds (CI-free manual check), no host-endianness assumptions
-  (early Linux findings and a required fix: [LINUX_NOTES.md](LINUX_NOTES.md))
+  (early Linux findings and a required fix: [LINUX_NOTES.md](LINUX_NOTES.md)).
+  Linux builds and runs; Windows shims are in `src/plat.h` (mkdir, realpath, home
+  directory, SDL main) but the MinGW build is untested.
 - [x] User documentation (README: setup, controls, config)
 - **Exit:** full-feature playable port.
 

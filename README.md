@@ -27,6 +27,11 @@ sudo apt install build-essential libsdl2-dev unar python3-venv
 make
 ```
 
+Windows: build in an [MSYS2](https://www.msys2.org/) MinGW64 shell
+(`pacman -S make mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 python`), then `make`.
+The data setup script needs a Unix shell with `unar` (WSL works). The Windows
+build hasn't been tested yet; macOS and Linux have.
+
 ## Installing the game data
 
 ```sh

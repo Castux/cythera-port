@@ -10,7 +10,7 @@
 #include "qd.h"
 #include "wm.h"
 void text_init(void);
-#include <sys/stat.h>
+#include "../plat.h"
 
 /* guest PC sampling (--profile) */
 #include "../loader/pef.h"
@@ -71,7 +71,7 @@ void os_init(void) {
     char sysdir[1024];
     if (g_cfg.sysdir) snprintf(sysdir, sizeof sysdir, "%s", g_cfg.sysdir);
     else {
-        const char *home = getenv("HOME");
+        const char *home = plat_home();
         snprintf(sysdir, sizeof sysdir, "%s/.cythera-port/System Folder", home ? home : ".");
     }
     files_init(g_cfg.data_dir, sysdir);

@@ -8,12 +8,10 @@
  */
 #include "files.h"
 #include "mm.h"
+#include "../plat.h"
 #include <dirent.h>
-#include <sys/stat.h>
 #include <time.h>
-#include <unistd.h>
 #include <errno.h>
-#include <limits.h>
 
 /* ---------------------------------------------------------------------- */
 /* Mac Roman                                                               */
@@ -103,8 +101,8 @@ const char *vfs_dir_name(s32 id) { return (id >= 2 && id < g_ndirs) ? g_dirs[id]
 static void mkdir_p(const char *path) {
     char tmp[1024];
     snprintf(tmp, sizeof tmp, "%s", path);
-    for (char *p = tmp + 1; *p; p++) if (*p == '/') { *p = 0; mkdir(tmp, 0755); *p = '/'; }
-    mkdir(tmp, 0755);
+    for (char *p = tmp + 1; *p; p++) if (*p == '/') { *p = 0; plat_mkdir(tmp); *p = '/'; }
+    plat_mkdir(tmp);
 }
 
 static bool is_hidden_host_name(const char *n) {
@@ -466,7 +464,7 @@ int fsspec_hostpath(u32 spec, char *hostpath, size_t hsz) {
 
 void files_init(const char *root, const char *sysdir) {
     char abs[PATH_MAX];
-    if (!realpath(root, abs)) fatal("data directory %s not found", root);
+    if (!plat_realpath(root, abs)) fatal("data directory %s not found", root);
     g_dirs[2].path = strdup(abs);
     g_dirs[2].parent = 1;
     snprintf(g_dirs[2].name, sizeof g_dirs[2].name, "Cythera");
@@ -480,7 +478,7 @@ void files_init(const char *root, const char *sysdir) {
     snprintf(saves, sizeof saves, "%s/../Saved Games", sysdir);
     mkdir_p(saves);
     char sabs[PATH_MAX];
-    if (!realpath(saves, sabs)) snprintf(sabs, sizeof sabs, "%s", saves);
+    if (!plat_realpath(saves, sabs)) snprintf(sabs, sizeof sabs, "%s", saves);
     g_saves_id = vfs_dir_id_for(sabs, 2, "Saved Games");
     wr16(0x0210, (u16)VOL_REFNUM); /* BootDrive */
     LOG_I("volume root %s, system folder %s", abs, sysdir);
