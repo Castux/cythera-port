@@ -1,0 +1,29 @@
+wait 1800
+click 240 193
+wait 120
+type Hero
+key return
+wait 600
+click 414 414
+wait 900
+click 320 240
+wait 300
+shot work/shots/en_1.png
+click 320 240
+wait 300
+click 320 240
+wait 300
+click 320 240
+wait 300
+shot work/shots/en_2.png
+click 320 240
+wait 300
+click 320 240
+wait 300
+click 320 240
+wait 300
+click 320 240
+wait 600
+dumpwin
+shot work/shots/en_3.png
+quit
