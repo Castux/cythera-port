@@ -38,7 +38,7 @@ which is why the bug never shows up there.
 This is a fortify check, not real memory corruption: an ASan+UBSan build with
 `-D_FORTIFY_SOURCE=0` runs cleanly past this point.
 
-### Fix
+### Fix (applied)
 
 In `src/os/files.c`, size both buffers with `PATH_MAX` (add
 `#include <limits.h>` if it isn't already pulled in; it built fine without it

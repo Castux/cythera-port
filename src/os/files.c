@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
 /* ---------------------------------------------------------------------- */
 /* Mac Roman                                                               */
@@ -464,7 +465,7 @@ int fsspec_hostpath(u32 spec, char *hostpath, size_t hsz) {
 }
 
 void files_init(const char *root, const char *sysdir) {
-    char abs[1024];
+    char abs[PATH_MAX];
     if (!realpath(root, abs)) fatal("data directory %s not found", root);
     g_dirs[2].path = strdup(abs);
     g_dirs[2].parent = 1;
@@ -478,7 +479,7 @@ void files_init(const char *root, const char *sysdir) {
     char saves[1100];
     snprintf(saves, sizeof saves, "%s/../Saved Games", sysdir);
     mkdir_p(saves);
-    char sabs[1100];
+    char sabs[PATH_MAX];
     if (!realpath(saves, sabs)) snprintf(sabs, sizeof sabs, "%s", saves);
     g_saves_id = vfs_dir_id_for(sabs, 2, "Saved Games");
     wr16(0x0210, (u16)VOL_REFNUM); /* BootDrive */

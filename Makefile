@@ -3,8 +3,8 @@ CC      ?= cc
 SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null || pkg-config --cflags sdl2)
 SDL_LIBS   := $(shell sdl2-config --libs 2>/dev/null || pkg-config --libs sdl2)
 CFLAGS  ?= -O2 -g
-CFLAGS  += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS)
-LDLIBS  += $(SDL_LIBS) -lm -lpthread
+override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS)
+override LDLIBS += $(SDL_LIBS) -lm -lpthread
 
 BUILD   := build
 SRCS    := $(wildcard src/*.c src/cpu/*.c src/loader/*.c src/os/*.c src/host/*.c)
