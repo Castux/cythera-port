@@ -318,6 +318,8 @@ static int key_by_name(const char *n, u8 *ch) {
     return -1;
 }
 
+static int g_hold_kc = -1;
+static u32 g_hold_until;
 static void script_key(const char *name, u16 mods) {
     u8 ch = 0;
     int kc = key_by_name(name, &ch);
@@ -329,6 +331,11 @@ static void script_key(const char *name, u16 mods) {
 void script_tick(void) {
     if (!g_script) return;
     u32 now = tick_count();
+    if (g_hold_kc >= 0 && (s32)(now - g_hold_until) >= 0) {
+        set_key(g_hold_kc, false);
+        push_event((HostEvent){ .type = HEV_KEY_UP, .mac_key = (u8)g_hold_kc, .x = g_mx, .y = g_my });
+        g_hold_kc = -1;
+    }
     while (g_script_pc < g_script_n) {
         if ((s32)(g_script_wait_until - now) > 0) return;
         /* don't run ahead of the app: wait for the event queue to drain */
@@ -360,6 +367,18 @@ void script_tick(void) {
             if (strstr(mod, "ctrl")) m |= 0x1000;
             script_key(name, m);
             g_script_wait_until = now + 2;
+            return;
+        } else if (!strcmp(s->cmd, "hold")) {
+            char name[64] = {0}; int ticks = 30;
+            sscanf(s->arg, "%63s %d", name, &ticks);
+            u8 ch = 0;
+            int kc = key_by_name(name, &ch);
+            if (kc >= 0) {
+                set_key(kc, true);
+                push_event((HostEvent){ .type = HEV_KEY_DOWN, .mac_key = (u8)kc, .ch = ch, .x = g_mx, .y = g_my });
+                g_hold_kc = kc; g_hold_until = now + (u32)ticks;
+                g_script_wait_until = now + (u32)ticks + 2;
+            }
             return;
         } else if (!strcmp(s->cmd, "type")) {
             for (const char *p = s->arg; *p; p++) { char n[2] = { *p, 0 }; script_key(n, (*p >= 'A' && *p <= 'Z') ? 0x200 : 0); }
