@@ -50,6 +50,7 @@ Useful options (`./build/cythera --help` lists them all):
 |---|---|
 | `--data DIR` | game directory (default `gamedata`) |
 | `--scale N` | window scale factor (default: as large as fits) |
+| `--fullscreen` | start fullscreen |
 | `--screen WxH` | emulated screen size (default 640x480, as the game was designed for) |
 | `--soundfont FILE` | General MIDI SoundFont for the music |
 | `--app NAME` | run another application from the game folder |
@@ -68,6 +69,9 @@ Option is Alt.
   screen, where the menu bar would be, to open the File menu (save, load,
   preferences, quit).
 - **Hold the mouse button** on an object or character to get the contextual menu.
+- **Drag** items onto your portrait in the party roster (bottom right) to pick them up.
+- **Alt+Enter** (or **Ctrl+⌘+F** on macOS) toggles fullscreen. The window can be
+  resized freely; the picture is scaled by whole multiples to keep pixels sharp.
 
 ## Registration
 

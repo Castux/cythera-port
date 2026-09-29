@@ -19,6 +19,7 @@ typedef struct {
 
 void host_init(int w, int h, bool headless, int scale);
 void host_shutdown(void);
+void host_set_fullscreen(bool on);
 /* Process pending host events; if `wait`, sleep briefly when idle. */
 void host_pump(bool wait);
 bool host_next_event(HostEvent *ev);

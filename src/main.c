@@ -45,6 +45,7 @@ static void usage(void) {
         "  --strict          abort on unimplemented Toolbox calls\n"
         "  --screen WxH      emulated screen size (default 640x480)\n"
         "  --scale N         window scale factor\n"
+        "  --fullscreen      start in fullscreen (toggle: Alt+Enter, or Ctrl+Cmd+F on macOS)\n"
         "  -v / -q           more / less logging\n");
     exit(2);
 }
@@ -59,6 +60,7 @@ int main(int argc, char **argv) {
         const char *a = argv[i];
         if (!strcmp(a, "--data") && i + 1 < argc) g_cfg.data_dir = argv[++i];
         else if (!strcmp(a, "--headless")) g_cfg.headless = true;
+        else if (!strcmp(a, "--fullscreen")) g_cfg.fullscreen = true;
         else if (!strcmp(a, "--app") && i + 1 < argc) g_cfg.app = argv[++i];
         else if (!strcmp(a, "--script") && i + 1 < argc) g_cfg.script = argv[++i];
         else if (!strcmp(a, "--sysdir") && i + 1 < argc) g_cfg.sysdir = argv[++i];

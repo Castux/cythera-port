@@ -81,6 +81,7 @@ void os_init(void) {
     res_open_app(app);
     threads_init(g_cpu);
     host_init(g_cfg.screen_w, g_cfg.screen_h, g_cfg.headless, g_cfg.scale);
+    if (g_cfg.fullscreen) host_set_fullscreen(true);
     qd_init_screen(g_cfg.screen_w, g_cfg.screen_h);
     text_init();
     extern void sound_init(void);

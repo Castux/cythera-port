@@ -83,6 +83,10 @@ void host_shutdown(void) {
     if (!g_headless) SDL_Quit();
 }
 
+static bool g_cur_set;
+static void make_cursor(void);
+static void toggle_fullscreen(void);
+
 /* ---- key translation ---- */
 static int mac_keycode(SDL_Keycode k, SDL_Scancode sc) {
     switch (sc) {
@@ -234,6 +238,13 @@ void host_pump(bool wait) {
             g_mods = mods_from_sdl((SDL_Keymod)e.key.keysym.mod);
             set_key(kc, down);
             if (kc < 0 || kc == 0x37 || kc == 0x38 || kc == 0x39 || kc == 0x3A || kc == 0x3B) break;
+            /* Alt+Enter or Ctrl+Cmd+F: toggle fullscreen (not seen by the game) */
+            SDL_Keymod km = (SDL_Keymod)e.key.keysym.mod;
+            if ((e.key.keysym.sym == SDLK_RETURN && (km & KMOD_ALT)) ||
+                (e.key.keysym.sym == SDLK_f && (km & KMOD_CTRL) && (km & KMOD_GUI))) {
+                if (down && !e.key.repeat) toggle_fullscreen();
+                break;
+            }
             u8 ch = mac_char(kc, e.key.keysym.sym, (e.key.keysym.mod & KMOD_SHIFT) != 0,
                              (e.key.keysym.mod & KMOD_ALT) != 0);
             push_event((HostEvent){ .type = down ? HEV_KEY_DOWN : HEV_KEY_UP, .mac_key = (u8)kc, .ch = ch,
@@ -241,6 +252,7 @@ void host_pump(bool wait) {
             break;
         }
         case SDL_WINDOWEVENT:
+            if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && g_cur_set) make_cursor();
             if (e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) push_event((HostEvent){ .type = HEV_FOCUS_IN });
             if (e.window.event == SDL_WINDOWEVENT_FOCUS_LOST) push_event((HostEvent){ .type = HEV_FOCUS_OUT });
             break;
@@ -280,18 +292,24 @@ bool host_screenshot(const char *path) {
     return ok != 0;
 }
 
-void host_set_cursor(const u8 *rgba, int hotx, int hoty, bool visible) {
-    if (g_headless) return;
-    if (!visible) { SDL_ShowCursor(SDL_DISABLE); return; }
-    SDL_Surface *s = SDL_CreateRGBSurfaceWithFormatFrom((void *)rgba, 16, 16, 32, 64, SDL_PIXELFORMAT_RGBA32);
+/* The cursor image is kept so it can be re-scaled when the window size changes. */
+static u8 g_cur_rgba[16 * 16 * 4];
+static int g_cur_hx, g_cur_hy;
+
+static int window_scale(void) {
+    int pw, ph;
+    SDL_GetWindowSize(g_win, &pw, &ph); /* points: cursors are sized in points */
+    int sc = pw / g_w < ph / g_h ? pw / g_w : ph / g_h;
+    return sc < 1 ? 1 : sc;
+}
+
+static void make_cursor(void) {
+    SDL_Surface *s = SDL_CreateRGBSurfaceWithFormatFrom(g_cur_rgba, 16, 16, 32, 64, SDL_PIXELFORMAT_RGBA32);
     if (!s) return;
-    int sc = 1;
-    int ww, wh;
-    SDL_GetWindowSize(g_win, &ww, &wh);
-    sc = ww / g_w; if (sc < 1) sc = 1;
+    int sc = window_scale();
     SDL_Surface *big = SDL_CreateRGBSurfaceWithFormat(0, 16 * sc, 16 * sc, 32, SDL_PIXELFORMAT_RGBA32);
     SDL_BlitScaled(s, NULL, big, NULL);
-    SDL_Cursor *c = SDL_CreateColorCursor(big, hotx * sc, hoty * sc);
+    SDL_Cursor *c = SDL_CreateColorCursor(big, g_cur_hx * sc, g_cur_hy * sc);
     SDL_FreeSurface(s);
     SDL_FreeSurface(big);
     if (c) {
@@ -299,7 +317,23 @@ void host_set_cursor(const u8 *rgba, int hotx, int hoty, bool visible) {
         if (g_cursor) SDL_FreeCursor(g_cursor);
         g_cursor = c;
     }
+}
+
+void host_set_cursor(const u8 *rgba, int hotx, int hoty, bool visible) {
+    if (g_headless) return;
+    if (!visible) { SDL_ShowCursor(SDL_DISABLE); return; }
+    memcpy(g_cur_rgba, rgba, sizeof g_cur_rgba);
+    g_cur_hx = hotx; g_cur_hy = hoty; g_cur_set = true;
+    make_cursor();
     SDL_ShowCursor(SDL_ENABLE);
+}
+
+void host_set_fullscreen(bool on) {
+    if (g_headless) return;
+    SDL_SetWindowFullscreen(g_win, on ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+}
+static void toggle_fullscreen(void) {
+    host_set_fullscreen(!(SDL_GetWindowFlags(g_win) & SDL_WINDOW_FULLSCREEN_DESKTOP));
 }
 
 /* ---------------------------------------------------------------------- */

@@ -69,7 +69,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M7 — Completeness & polish
 - [ ] Sweep every imported call for correctness; replace all stubs used at runtime
 - [ ] Slideshows, cutscenes, end-game, credits
-- [ ] Window scaling, fullscreen, HiDPI, configurable screen size
+- [x] Window scaling, fullscreen, HiDPI, configurable screen size
 - [ ] Performance (predecoded instruction cache or block JIT if needed)
 - [ ] Portability: Linux/Windows builds (CI-free manual check), no host-endianness assumptions
   (early Linux findings and a required fix: [LINUX_NOTES.md](LINUX_NOTES.md))
