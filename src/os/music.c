@@ -48,8 +48,14 @@ extern SDL_AudioDeviceID music_audio_device(void);
 /* ---- fallback synth (used when no SoundFont is available) ---- */
 typedef struct { bool on; int ch; int key; double freq, phase; float amp, env; bool released; int prog; bool drum; u32 noise; } Voice;
 static Voice g_v[48];
-static float g_chvol[128], g_chpan[128];
-static int g_chprog[128]; static bool g_chdrum[128];
+/* Synth channels: MAX_PARTS per tune player, then the note allocator's. */
+#define NA_CHAN0 (MAX_PLAYERS * MAX_PARTS)
+#define NA_NCHAN 8
+#define NCHAN (NA_CHAN0 + NA_NCHAN)
+static float g_chvol[NCHAN], g_chpan[NCHAN];
+static float g_chctl[NCHAN];  /* volume controller of the part */
+static float g_chgain[NCHAN]; /* volume of the tune player owning the channel (TuneSetVolume) */
+static int g_chprog[NCHAN]; static bool g_chdrum[NCHAN];
 
 static void fb_note_on(int ch, int key, float vel) {
     Voice *v = NULL;
@@ -97,7 +103,13 @@ static void syn_note_on(int ch, int key, int vel) {
     if (g_tsf) tsf_channel_note_on(g_tsf, ch, key, vel / 127.0f); else fb_note_on(ch, key, vel / 127.0f);
 }
 static void syn_note_off(int ch, int key) { if (g_tsf) tsf_channel_note_off(g_tsf, ch, key); else fb_note_off(ch, key); }
-static void syn_volume(int ch, float v) { g_chvol[ch] = v; if (g_tsf) tsf_channel_set_volume(g_tsf, ch, v); }
+static void syn_apply_volume(int ch) {
+    float v = g_chctl[ch] * g_chgain[ch];
+    g_chvol[ch] = v;
+    if (g_tsf) tsf_channel_set_volume(g_tsf, ch, v);
+}
+static void syn_volume(int ch, float v) { g_chctl[ch] = v; syn_apply_volume(ch); }
+static void syn_gain(int ch, float g) { g_chgain[ch] = g; syn_apply_volume(ch); }
 static void syn_pan(int ch, float p) { g_chpan[ch] = p; if (g_tsf) tsf_channel_set_pan(g_tsf, ch, p); }
 static void syn_pitchbend(int ch, double semis) {
     if (!g_tsf) return;
@@ -236,18 +248,16 @@ void music_render(float *out, int n) {
             seq_events(p);
         }
         memset(tmp, 0, sizeof tmp);
-        float vol = 0;
-        for (int i = 0; i < MAX_PLAYERS; i++) if (g_pl[i].used && g_pl[i].volume > vol) vol = (float)g_pl[i].volume;
         if (g_tsf) tsf_render_float(g_tsf, tmp, m, 0);
         else fb_render(tmp, m);
-        for (int j = 0; j < 2 * m; j++) out[2 * k + j] += tmp[j] * vol;
+        for (int j = 0; j < 2 * m; j++) out[2 * k + j] += tmp[j];
     }
     SDL_UnlockMutex(g_mx);
 }
 
 void music_init(void) {
     g_mx = SDL_CreateMutex();
-    for (int i = 0; i < 128; i++) { g_chvol[i] = 1; g_chpan[i] = 0.5f; }
+    for (int i = 0; i < NCHAN; i++) { g_chvol[i] = g_chctl[i] = g_chgain[i] = 1; g_chpan[i] = 0.5f; }
     char path[1100];
     const char *cands[3] = { g_cfg.soundfont, NULL, NULL };
     snprintf(path, sizeof path, "%s/soundfont.sf2", g_cfg.data_dir);
@@ -274,8 +284,8 @@ Player *player_of(u32 inst, bool create) {
         Player *p = &g_pl[i];
         memset(p, 0, sizeof *p);
         p->used = true; p->inst = inst; p->scale = 600; p->volume = 1.0;
-        p->chan_base = i * 32;
-        for (int k = 0; k < MAX_PARTS; k++) p->program[k] = -1;
+        p->chan_base = i * MAX_PARTS;
+        for (int k = 0; k < MAX_PARTS; k++) { p->program[k] = -1; syn_gain(p->chan_base + k, 1.0f); }
         return p;
     }
     return NULL;
@@ -307,7 +317,13 @@ TRAP(TuneSetTimeScale) {
 TRAP(TuneSetVolume) {
     SDL_LockMutex(g_mx);
     Player *p = player_of(ARG(0), true);
-    if (p) p->volume = ARG(1) / 65536.0;
+    /* the volume of this tune's parts only: note allocator channels and
+       other tune players are unaffected */
+    if (p) {
+        p->volume = (s32)ARG(1) / 65536.0;
+        if (p->volume < 0) p->volume = 0;
+        for (int k = 0; k < MAX_PARTS; k++) syn_gain(p->chan_base + k, (float)p->volume);
+    }
     SDL_UnlockMutex(g_mx);
     RETERR(noErr);
 }
@@ -375,7 +391,7 @@ TRAP(NANewNoteChannel) {
     for (int i = 0; i < 32; i++) if (!g_nc[i].used) {
         g_nc[i].used = true;
         g_nc[i].handle = mm_new_ptr(8, true, ZONE_SYS);
-        g_nc[i].ch = 120 + (i % 8);
+        g_nc[i].ch = NA_CHAN0 + (i % NA_NCHAN);
         u32 gm = req ? rd32(req + 8 + 72) : 1;
         SDL_LockMutex(g_mx);
         syn_program(g_nc[i].ch, gm > 16384 ? 0 : (int)((gm ? gm - 1 : 0) & 127), gm > 16384);

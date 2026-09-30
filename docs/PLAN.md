@@ -63,7 +63,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M6 — Audio
 - [x] Sound Manager (snd resources, SndDoCommand/Immediate, SndPlay, double buffer, callbacks)
 - [x] QuickTime Music: tune header/sequence parsing, note allocator (NAPlayNote), GM synth
-- [ ] Ambient/spot sounds, volume prefs
+- [x] Ambient/spot sounds, volume prefs
 - **Exit:** music and sound effects play correctly.
 
 ## M7 — Completeness & polish
@@ -90,6 +90,21 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
   ID's high byte is the TOC page, encryption is chosen by the caller (the VM always decrypts),
   `asnd` rates are Fixed, `8EFF` is a sized image, and the scenario `clut` differs
   from delvmod's palette in 4 entries.
+- 2026-09-30 (audio): ambient, spot and positional sounds are the game's own work: its
+  SoundTool library mixes up to 8 voices (panning, distance attenuation, pitch jitter, loops)
+  into one 22 kHz stereo double buffer, so the Toolbox side is `SndPlayDoubleBuffer` and the
+  output volume (see [ANALYSIS.md §2.2](ANALYSIS.md#22-engine-class-inventory-from-symbols)). Checked with WAV captures: the same
+  interface sound peaks at 6154 / 9969 / 2399 at effects volume 5 / 8 / 2 (0xA0 / 0x100 /
+  0x40), an explosion plays about twice as loud on one side, and with test-only torch sound
+  sources in Omen's Test the ambient loop keeps playing and moves from left to right as
+  the player walks. Fixes: `SetDefaultOutputVolume` takes separate left and right levels
+  and also scales the music, as the Mac's output volume did (so music is quieter at lower
+  effects volumes, as in the original); `TuneSetVolume` sets only that tune's parts (it was
+  applied to everything, which silenced note-allocator notes when music was off); tune
+  players' synth channels no longer overlap each other or the note channels (they also went
+  past the end of the channel arrays); rate conversion interpolates linearly;
+  `SndGetInfo` answers sample rate/size/channels; `SndChannelStatus` fields are at the right
+  offsets. The Prefs sliders, Mute and System Volume boxes persist (`tests/scripts/volume.txt`).
 - 2026-09-29 (CPU use): gamma fades spun millions of times per second because the video
   driver's cscSetGamma returned at once; it now waits for the next vertical blank like the
   hardware (fades run at 60 steps/s). TickCount busy-waits sleep until the next tick. A

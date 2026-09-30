@@ -101,6 +101,22 @@ unusually easy to reverse engineer.
   per-resource encryption), `TPixCache*`, `TJournalSegment`, `TStream`.
 - **Audio:** `TAudio` (sounds, ambient, spot sounds), `GMSTune` (QuickTime
   Music Architecture tunes), CD-audio control (`PBControlSync`).
+  Sound effects go through Ambrosia's SoundTool, statically linked without
+  traceback names (around 0xb7600): a software mixer of 8 voices into one
+  stereo 8-bit double-buffered channel (`SndPlayDoubleBuffer`, at the rate
+  `SndGetInfo('srat')` reports, else 22254.54 Hz). Panning, distance
+  attenuation (`CalcStereo`: per ear, a linear pan times 256/distance in
+  tiles, capped at 128, over a 31x31 tile neighbourhood), random
+  pitch (±12%), looping ambient sounds (`TAudio::CalcAmbient`, `LoopCB`) and
+  spot sounds that follow moving objects (`TSoundTracker`) are all computed
+  in that mixer; the game never uses `SndDoCommand`. Ambient sources are
+  props whose type has the `SoundEffects` property (0x3B) and sound props
+  added by `TViewer::SetStage`, plus the `PlayAmbientSound` script call.
+  The sound-effects volume (0-8, or -1 for "System Volume") is applied with
+  `SetDefaultOutputVolume(v * 32)`, i.e. the Mac's output volume, which also
+  scales the music; the system volume is read with `GetDefaultOutputVolume`
+  at start and restored at quit. Volume 0 shuts SoundTool (and the music)
+  down. The music volume (0-8) is `TuneSetVolume(v << 13)`.
 
 ### 2.3 Resource forks
 
