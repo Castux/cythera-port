@@ -703,6 +703,7 @@ static int run_alert(s16 id, u32 filter, int kind) {
     u32 dl;
     u8 *ditl = res_load_raw(FOURCC('D','I','T','L'), ditl_id, &dl);
     if (!ditl) return 1;
+    u32 save = qd_port(); /* Alert returns with the caller's port current */
     u32 dlg = new_dialog(0, r, "", false, 1, 0xFFFFFFFFu, false, 0, ditl, dl, 0);
     free(ditl);
     dinfo(dlg)->is_alert = true;
@@ -747,6 +748,7 @@ static int run_alert(s16 id, u32 filter, int kind) {
     }
     mm_dispose_ptr(ep); mm_dispose_ptr(hitp);
     dispose_dialog(dlg, true);
+    if (save != dlg) qd_set_port(save);
     return hit;
 }
 
@@ -807,8 +809,8 @@ TRAP(StandardPutFile) {
     ditl_add(&d, mkrect(12, 15, 30, 355), statText | itemDisable, pr);
     ditl_add(&d, mkrect(42, 18, 58, 352), editText, dn);
     ditl_add(&d, mkrect(70, 15, 88, 355), statText | itemDisable, "Location: Saved Games");
+    u32 save = qd_port(); /* the caller's port, restored at the end */
     u32 dlg = sf_dialog(370, 132, &d);
-    u32 save = qd_port();
     qd_set_port(dlg);
     u32 te = rd32(dlg + DLG_TEXTH);
     te_api_activate(te, true);
@@ -865,8 +867,8 @@ static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply) {
     ditl_add(&d, mkrect(222, 200, 242, 270), btnCtrl, "Cancel");
     ditl_add(&d, mkrect(12, 15, 30, 355), statText | itemDisable, "Saved Games:");
     ditl_add(&d, mkrect(36, 16, 210, 338), userItem | itemDisable, "");
+    u32 save = qd_port(); /* the caller's port, restored at the end */
     u32 dlg = sf_dialog(370, 254, &d);
-    u32 save = qd_port();
     qd_set_port(dlg);
     /* list */
     u32 rp = mm_new_ptr(8, false, ZONE_SYS), bp = mm_new_ptr(8, false, ZONE_SYS);
