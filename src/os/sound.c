@@ -63,7 +63,10 @@ typedef struct {
 #define MAX_CHAN 16
 static Chan g_ch[MAX_CHAN];
 static SDL_AudioDeviceID g_dev;
-static int g_master = 256;
+/* The default output volume (SetDefaultOutputVolume): the volume of the
+   sound output hardware, 0..0x100 per side. Like the Mac's, it scales
+   everything, QuickTime music included. */
+static int g_out_l = 256, g_out_r = 256;
 static bool g_audio_ok;
 
 static Chan *chan_of(u32 c) { for (int i = 0; i < MAX_CHAN; i++) if (g_ch[i].used && g_ch[i].chan == c) return &g_ch[i]; return NULL; }
@@ -85,6 +88,16 @@ static inline float sample_at(Chan *c, u32 frame, int ch) {
     return c->is_signed ? (s8)g_mem[a] / 128.0f : ((int)g_mem[a] - 128) / 128.0f;
 }
 
+/* Rate conversion interpolates linearly between source frames, like the
+   Sound Manager's rate converter (the last frame of a buffer is held). */
+static inline float sample_lerp(Chan *c, double pos, int ch) {
+    u32 f = (u32)pos;
+    float a = sample_at(c, f, ch);
+    float fr = (float)(pos - f);
+    if (fr == 0 || f + 1 >= c->frames) return a;
+    return a + (sample_at(c, f + 1, ch) - a) * fr;
+}
+
 static void audio_cb(void *ud, Uint8 *stream, int len) {
     (void)ud;
     float *out = (float *)stream;
@@ -93,7 +106,7 @@ static void audio_cb(void *ud, Uint8 *stream, int len) {
     for (int i = 0; i < MAX_CHAN; i++) {
         Chan *c = &g_ch[i];
         if (!c->used || c->paused) continue;
-        float vl = c->vol_l / 256.0f * g_master / 256.0f, vr = c->vol_r / 256.0f * g_master / 256.0f;
+        float vl = c->vol_l / 256.0f * g_out_l / 256.0f, vr = c->vol_r / 256.0f * g_out_r / 256.0f;
         if (c->tone_samples > 0) {
             for (int k = 0; k < n && c->tone_samples > 0; k++, c->tone_samples--) {
                 float s = c->tone_phase < 0.5 ? 0.25f : -0.25f;
@@ -121,22 +134,30 @@ static void audio_cb(void *ud, Uint8 *stream, int len) {
                     if (!(flags & 1)) { c->playing = false; break; } /* starved */
                     c->dbcur = nb;
                     c->data = buf + 16;
+                    c->pos -= (double)c->frames;
                     c->frames = rd32(buf);
-                    c->pos -= (double)f;
                     if (c->pos < 0) c->pos = 0;
                     c->db_last = (flags & 4) != 0;
                     f = (u32)c->pos;
                     if (c->frames == 0) continue;
                 } else { c->playing = false; c->done_flag = true; break; }
             }
-            float l = sample_at(c, f, 0), r = sample_at(c, f, 1);
+            float l = sample_lerp(c, c->pos, 0), r = c->channels == 1 ? l : sample_lerp(c, c->pos, 1);
             out[2 * k] += l * vl;
             out[2 * k + 1] += r * vr;
             c->pos += step;
         }
     }
+    /* QuickTime music goes through the same output hardware */
     extern void music_render(float *out, int n);
-    music_render(out, n);
+    static float mus[2 * 4096];
+    float ml = g_out_l / 256.0f, mr = g_out_r / 256.0f;
+    for (int k0 = 0; k0 < n; k0 += 4096) {
+        int m = n - k0 < 4096 ? n - k0 : 4096;
+        memset(mus, 0, sizeof(float) * 2 * (size_t)m);
+        music_render(mus, m);
+        for (int k = 0; k < m; k++) { out[2 * (k0 + k)] += mus[2 * k] * ml; out[2 * (k0 + k) + 1] += mus[2 * k + 1] * mr; }
+    }
     for (int k = 0; k < 2 * n; k++) { if (out[k] > 1) out[k] = 1; else if (out[k] < -1) out[k] = -1; }
 }
 
@@ -473,14 +494,47 @@ TRAP(SysBeep) {
 }
 
 TRAP(SndSoundManagerVersion) { wr32(ARG(0), 0x03208000); } /* NumVersion returned through a hidden pointer */
-TRAP(SndGetInfo) { RETERR(-2201); /* siUnknownInfoType */ }
-TRAP(SndChannelStatus) {
-    Chan *c = chan_of(ARG(0)); u32 st = ARG(2);
-    gmemset(st, 0, 24);
-    if (c) wr8(st + 16, c->playing);
+
+/* SndGetInfo(chan, selector, infoPtr): properties of the channel's output
+   device. SoundTool asks for the sample rate ('srat') to mix at the
+   hardware rate. */
+#define HW_RATE 0x56EE8BA3u /* rate22khz */
+TRAP(SndGetInfo) {
+    u32 sel = ARG(1), p = ARG(2);
+    if (!p) { RETERR(-50); return; }
+    switch (sel) {
+    case FOURCC('s','r','a','t'): wr32(p, HW_RATE); break;        /* siSampleRate */
+    case FOURCC('s','s','i','z'): wr16(p, 16); break;             /* siSampleSize */
+    case FOURCC('c','h','a','n'): wr16(p, 2); break;              /* siNumberChannels */
+    case FOURCC('h','v','o','l'): wr32(p, (u32)g_out_r << 16 | (u32)g_out_l); break; /* siHardwareVolume */
+    default: RETERR(-2201); return;                               /* siUnknownInfoType */
+    }
     RETERR(noErr);
 }
-TRAP(GetDefaultOutputVolume) { u32 p = ARG(0); if (p) wr32(p, (u32)g_master << 16 | (u32)g_master); RETERR(noErr); }
-TRAP(SetDefaultOutputVolume) { u32 v = ARG(0); g_master = (int)(v & 0xFFFF); if (g_master > 256) g_master = 256; RETERR(noErr); }
-TRAP(GetSoundVol) { wr16(ARG(0), (u16)(g_master * 7 / 256)); }
-TRAP(SetSoundVol) { g_master = ARGS16(0) * 256 / 7; }
+
+/* SCStatus: scStartTime scEndTime scCurrentTime (Fixed), scChannelBusy,
+   scChannelDisposed, scChannelPaused, scUnused, scChannelAttributes,
+   scCPULoad (long). */
+TRAP(SndChannelStatus) {
+    Chan *c = chan_of(ARG(0)); u32 st = ARG(2);
+    if (!c) { RETERR(-205); return; } /* badChannel */
+    if (ARGS16(1) < 24) { RETERR(-50); return; }
+    gmemset(st, 0, 24);
+    lock();
+    bool busy = c->playing || c->tone_samples > 0 || c->qh != c->qt || c->waiting;
+    unlock();
+    wr8(st + 12, busy);
+    wr8(st + 14, c->paused);
+    RETERR(noErr);
+}
+
+/* Volumes are packed as (right << 16) | left, 0x0100 being full volume. */
+static void set_out_volume(u32 v) {
+    int l = (int)(v & 0xFFFF), r = (int)(v >> 16);
+    lock(); g_out_l = l > 256 ? 256 : l; g_out_r = r > 256 ? 256 : r; unlock();
+}
+TRAP(GetDefaultOutputVolume) { u32 p = ARG(0); if (p) wr32(p, (u32)g_out_r << 16 | (u32)g_out_l); RETERR(noErr); }
+TRAP(SetDefaultOutputVolume) { set_out_volume(ARG(0)); RETERR(noErr); }
+/* The old 0..7 speaker volume */
+TRAP(GetSoundVol) { wr16(ARG(0), (u16)((g_out_l + g_out_r) / 2 * 7 / 256)); }
+TRAP(SetSoundVol) { int v = ARGS16(0); v = v < 0 ? 0 : v > 7 ? 7 : v; v = v * 256 / 7; set_out_volume((u32)v << 16 | (u32)v); }

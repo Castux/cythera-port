@@ -1,0 +1,50 @@
+wait 1800
+click 505 117
+wait 200
+expect System Volume
+mousedown 199 67
+wait 5
+move 230 67
+wait 5
+move 267 67
+wait 10
+mouseup 267 67
+wait 60
+mousedown 396 67
+wait 5
+move 450 67
+wait 5
+move 527 67
+wait 10
+mouseup 527 67
+wait 60
+shot work/shots/vol_1.png
+click 533 287
+wait 200
+click 505 117
+wait 200
+click 164 98
+wait 60
+click 342 98
+wait 60
+click 343 168
+wait 60
+shot work/shots/vol_2.png
+click 533 287
+wait 200
+click 505 117
+wait 200
+click 164 98
+wait 60
+click 342 98
+wait 60
+click 343 168
+wait 60
+click 82 98
+wait 60
+shot work/shots/vol_3.png
+click 82 98
+wait 60
+click 533 287
+wait 200
+quit
