@@ -21,13 +21,16 @@ Cythera is © 1999 Ambrosia Software and its authors. This repository
 includes the original game files, on these grounds: Ambrosia Software no
 longer exists, the hardware and operating system the game required are long
 gone, and the game can no longer be bought, nor its authors supported
-financially, in any way.
+financially.
+
+Additionally, the former president of Ambrosia SW released himself an app that 
+generates valid keys for all Ambrosia products, including Cythera, which we take
+as a clear sign of legal permission.
+See: [Decoder Ring](https://macintoshgarden.org/games/decoder-ring).
 
 No harm to anyone's intellectual property is intended. This is a fan and
 hobby project, with no commercial purpose, made to keep a beloved game
-playable. Rights holders are encouraged to contact me (Noé Falzon,
-[@Castux](https://github.com/Castux) on GitHub); I will gladly comply with
-their wishes.
+playable.
 
 ## Building
 
