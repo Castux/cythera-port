@@ -19,7 +19,17 @@ typedef struct {
     void (*fn)(CPU *);
     u32 calls;
     u64 ns;       /* inclusive host time (--profile) */
+    bool poll;    /* a status query that busy-wait loops call (see TickCount) */
 } TrapSlot;
+
+/* Calls that only query input or playback state. A loop that calls nothing
+   but these and TickCount, and gets the same tick, is waiting for time to
+   pass. */
+static const char *g_poll_traps[] = {
+    "Button", "StillDown", "WaitMouseUp", "GetMouse", "GetKeys", "EventAvail", "OSEventAvail",
+    "GetOSEvent", "GetNextEvent", "TuneGetStatus", "SndChannelStatus", NULL
+};
+u32 g_poll_epoch; /* incremented on every call to one of g_poll_traps */
 bool g_profile;
 #include <time.h>
 static u64 prof_now(void) { struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts); return (u64)ts.tv_sec * 1000000000ull + (u64)ts.tv_nsec; }
@@ -68,6 +78,7 @@ static u32 new_slot(const char *name, void (*fn)(CPU *)) {
     u32 k = g_nslots++;
     g_slots[k].name = strdup(name);
     g_slots[k].fn = fn;
+    for (int i = 0; g_poll_traps[i]; i++) if (!strcmp(name, g_poll_traps[i])) g_slots[k].poll = true;
     u32 tv = TVEC_BASE + 8 * k;
     wr32(tv, TRAP_BASE + 4 * k);
     wr32(tv + 4, 0);
@@ -120,12 +131,14 @@ void trap_dispatch(CPU *c, u32 index) {
     c->last_trap_icount = c->icount;
     TrapSlot *s = &g_slots[index];
     s->calls++;
+    if (s->poll) g_poll_epoch++;
     if (g_shot_trap && !strcmp(s->name, g_shot_trap) && s->calls == g_shot_n) { qd_present(); host_screenshot(g_shot_out); }
     if (g_trace_traps && trace_match(s->name)) {
         u32 off;
         const char *n = sym_lookup(c->lr, &off);
-        LOG_I("trap %s(%08x %08x %08x %08x) from %s+%#x", s->name, c->r[3], c->r[4], c->r[5], c->r[6],
-              n ? n : "?", n ? off : 0);
+        extern u64 host_now_us(void);
+        LOG_I("%9.3f trap %s(%08x %08x %08x %08x) from %s+%#x", host_now_us() / 1e6, s->name, c->r[3], c->r[4],
+              c->r[5], c->r[6], n ? n : "?", n ? off : 0);
     }
     if (s->fn) {
         if (g_profile && g_prof_sp < 64) {

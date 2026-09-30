@@ -54,15 +54,7 @@ static void cpu_poll(CPU *c) {
     irq_service();
     static u32 n;
     if ((++n & 15) == 0) host_pump(false);
-    static u32 last;
-    extern u32 tick_count(void);
-    u32 t = tick_count();
-    if (t != last) { last = t; qd_present(); }
-    if (g_cfg.timeout_s && host_now_us() > (u64)g_cfg.timeout_s * 1000000u) {
-        LOG_I("timeout reached");
-        host_shutdown();
-        exit(3);
-    }
+    ev_present_tick();
 }
 
 void os_init(void) {

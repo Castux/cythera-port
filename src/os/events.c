@@ -16,13 +16,24 @@ static u16 g_sysmask = 0xFFEF;
 static Point g_mouse;
 static bool g_button;
 static u16 g_mods;
-static u32 g_last_present;
 static bool g_quit_sent;
+
+/* Auto-key: like the Mac Event Manager, generate autoKey events for the last
+   key pressed while it stays down, after KeyThresh ticks and then every
+   KeyRepThresh ticks (host key repeats are ignored, so the rate doesn't
+   depend on the host's keyboard settings). */
+#define LM_KeyThresh    0x018E
+#define LM_KeyRepThresh 0x0190
+static bool g_rep_on;
+static u8 g_rep_key;
+static u32 g_rep_msg, g_rep_next;
 
 u16 ev_modifiers(void) { return g_mods; }
 Point ev_mouse_global(void) { return g_mouse; }
 
+static u32 g_posted;
 void ev_post(u16 what, u32 message, u16 mods) {
+    g_posted++;
     if (g_qn == EVQ) { memmove(g_q, g_q + 1, sizeof(Ev) * (EVQ - 1)); g_qn--; }
     g_q[g_qn++] = (Ev){ what, message, tick_count(), g_mouse, mods };
 }
@@ -31,6 +42,7 @@ static void post_host_events(void) {
     HostEvent he;
     while (host_next_event(&he)) {
         g_mods = he.mods;
+        u32 posted = g_posted;
         switch (he.type) {
         case HEV_MOUSE_DOWN:
             g_mouse = (Point){ (s16)he.y, (s16)he.x };
@@ -43,9 +55,13 @@ static void post_host_events(void) {
             ev_post(mouseUp, 0, he.mods);
             break;
         case HEV_KEY_DOWN:
-            ev_post(he.repeat ? autoKey : keyDown, (u32)he.mac_key << 8 | he.ch, he.mods);
+            if (he.repeat) break;
+            ev_post(keyDown, (u32)he.mac_key << 8 | he.ch, he.mods);
+            g_rep_on = true; g_rep_key = he.mac_key; g_rep_msg = (u32)he.mac_key << 8 | he.ch;
+            g_rep_next = he.when + rd16(LM_KeyThresh);
             break;
         case HEV_KEY_UP:
+            if (g_rep_on && he.mac_key == g_rep_key) g_rep_on = false;
             ev_post(keyUp, (u32)he.mac_key << 8 | he.ch, he.mods);
             break;
         case HEV_QUIT:
@@ -54,9 +70,10 @@ static void post_host_events(void) {
             else { host_shutdown(); exit(0); }
             break;
         case HEV_FOCUS_IN: ev_post(osEvt, 0x01000001u, 0); break;
-        case HEV_FOCUS_OUT: ev_post(osEvt, 0x01000000u, 0); break;
+        case HEV_FOCUS_OUT: g_rep_on = false; ev_post(osEvt, 0x01000000u, 0); break;
         default: break;
         }
+        if (g_posted != posted) g_q[g_qn - 1].when = he.when; /* when it happened */
     }
     int x, y; bool d;
     host_mouse(&x, &y, &d);
@@ -71,10 +88,17 @@ void ev_pump_host(void) {
 
 bool ev_mouse_button(void) { ev_pump_host(); return g_button; }
 
-/* Present the screen at most ~60 times per second, and yield the host. */
-void ev_idle_frame(void) {
+/* Present the screen once per tick (the emulated display refreshes at
+   60.15 Hz, whatever the host's refresh rate). */
+void ev_present_tick(void) {
+    static u32 last = ~0u;
     u32 now = tick_count();
-    if (now != g_last_present) { qd_present(); g_last_present = now; }
+    if (now != last) { last = now; qd_present(); }
+}
+
+/* Present the screen if due, and yield the host. */
+void ev_idle_frame(void) {
+    ev_present_tick();
     host_pump(true);
     post_host_events();
     irq_service();
@@ -95,6 +119,17 @@ static bool get_event(u16 mask, Ev *out, bool remove, bool os_only) {
         *out = g_q[i];
         if (remove) { memmove(&g_q[i], &g_q[i + 1], sizeof(Ev) * (size_t)(g_qn - i - 1)); g_qn--; }
         return true;
+    }
+    if (g_rep_on && mask_ok(mask, autoKey) && mask_ok(g_sysmask, autoKey)) {
+        u8 km[16];
+        host_keymap(km);
+        u32 now = tick_count();
+        if (!(km[g_rep_key >> 3] & (1 << (g_rep_key & 7)))) g_rep_on = false;
+        else if ((s32)(now - g_rep_next) >= 0) {
+            *out = (Ev){ autoKey, g_rep_msg, now, g_mouse, g_mods };
+            if (remove) g_rep_next = now + (rd16(LM_KeyRepThresh) ? rd16(LM_KeyRepThresh) : 1);
+            return true;
+        }
     }
     if (os_only) return false;
     if (mask_ok(mask, updateEvt)) {
@@ -152,7 +187,9 @@ TRAP(WaitNextEvent) {
             RET(1);
             return;
         }
-        if ((s32)(tick_count() - start) >= (s32)(sleep ? 1 : 0)) break;
+        /* no event: sleep up to `sleep` ticks, as the Mac did (the game's
+           main loop runs at the rate it asked for, 20 Hz in play) */
+        if (tick_count() - start >= sleep) break;
     }
     Ev n = { nullEvent, 0, tick_count(), g_mouse, 0 };
     write_event(ep, &n);
@@ -251,12 +288,14 @@ TRAP(GetKeys) {
     gmemcpy_to(ARG(0), km, 16);
 }
 TRAP(KeyTranslate) { RET((u32)(ARGU16(1) & 0xFF)); }
-TRAP(GetCaretTime) { RET(32); }
-TRAP(GetDblTime) { RET(30); }
+TRAP(GetCaretTime) { RET(rd32(0x02F4)); }
+TRAP(GetDblTime) { RET(rd32(0x02F0)); }
 
 void ev_init(void) {
-    wr16(0x018E, 16); /* KeyThresh */
-    wr16(0x0190, 4);  /* KeyRepThresh */
+    /* factory settings of parameter RAM (SPKbd = $63): first repeat after
+       24 ticks, then every 6 ticks */
+    wr16(LM_KeyThresh, 24);
+    wr16(LM_KeyRepThresh, 6);
 }
 
 /* ---------------------------------------------------------------------- */

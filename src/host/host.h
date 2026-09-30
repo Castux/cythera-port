@@ -15,6 +15,7 @@ typedef struct {
     u8 ch;             /* Mac Roman character */
     u16 mods;          /* Mac modifier bits (cmdKey etc.) */
     bool repeat;
+    u32 when;          /* tick count when the host reported it */
 } HostEvent;
 
 void host_init(int w, int h, bool headless, int scale);
