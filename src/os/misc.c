@@ -252,19 +252,121 @@ TRAP(Debugger) { LOG_W("Debugger()"); }
 
 TRAP(SystemTask) { host_pump(false); irq_service(); }
 
+/* ---- StdCLib: Pascal string functions (PLStringFuncs.h) ----
+   Mac OS always has StdCLib; the MSL runtime binds these at run time with
+   GetSharedLibrary/FindSymbol and quietly does nothing if they are missing
+   (the game uses them for dialog labels, default file names, combat AI
+   names and FSSpec comparison). */
+static int pl_cmp(u32 a, u32 b, int num) {
+    int la = rd8(a), lb = rd8(b);
+    if (num >= 0) { if (la > num) la = num; if (lb > num) lb = num; }
+    int n = la < lb ? la : lb;
+    for (int i = 1; i <= n; i++) {
+        int d = (int)rd8(a + (u32)i) - (int)rd8(b + (u32)i);
+        if (d) return d < 0 ? -1 : 1;
+    }
+    return la == lb ? 0 : la < lb ? -1 : 1;
+}
+static void pl_cat(u32 d, u32 s, int num) {
+    int ld = rd8(d), ls = rd8(s);
+    if (num >= 0 && ls > num) ls = num;
+    if (ld + ls > 255) ls = 255 - ld;
+    if (ls > 0) gmemmove(d + 1 + (u32)ld, s + 1, (u32)ls);
+    wr8(d, (u8)(ld + (ls > 0 ? ls : 0)));
+}
+static bool pl_has(u32 set, u8 c) {
+    for (u32 i = 1, n = rd8(set); i <= n; i++) if (rd8(set + i) == c) return true;
+    return false;
+}
+static int pl_find(u32 hay, u32 needle) { /* 1-based position, 0 if absent */
+    int lh = rd8(hay), ln = rd8(needle);
+    for (int i = 1; i + ln - 1 <= lh; i++) {
+        int k = 0;
+        while (k < ln && rd8(hay + (u32)(i + k)) == rd8(needle + (u32)(1 + k))) k++;
+        if (k == ln) return i;
+    }
+    return 0;
+}
+static void pl_strcmp(CPU *cpu) { RETERR(pl_cmp(ARG(0), ARG(1), -1)); }
+static void pl_strncmp(CPU *cpu) { RETERR(pl_cmp(ARG(0), ARG(1), ARGS16(2) < 0 ? 0 : ARGS16(2))); }
+static void pl_strcpy(CPU *cpu) { u32 d = ARG(0), s = ARG(1); gmemmove(d, s, 1u + rd8(s)); RET(d); }
+static void pl_strncpy(CPU *cpu) {
+    u32 d = ARG(0), s = ARG(1); int n = rd8(s), num = ARGS16(2);
+    if (num < 0) num = 0;
+    if (n > num) n = num;
+    gmemmove(d + 1, s + 1, (u32)n);
+    wr8(d, (u8)n);
+    RET(d);
+}
+static void pl_strcat(CPU *cpu) { pl_cat(ARG(0), ARG(1), -1); RET(ARG(0)); }
+static void pl_strncat(CPU *cpu) { pl_cat(ARG(0), ARG(1), ARGS16(2) < 0 ? 0 : ARGS16(2)); RET(ARG(0)); }
+static void pl_strchr(CPU *cpu) {
+    u32 s = ARG(0); u8 c = (u8)ARG(1);
+    for (u32 i = 1, n = rd8(s); i <= n; i++) if (rd8(s + i) == c) { RET(s + i); return; }
+    RET(0);
+}
+static void pl_strrchr(CPU *cpu) {
+    u32 s = ARG(0); u8 c = (u8)ARG(1);
+    for (u32 i = rd8(s); i >= 1; i--) if (rd8(s + i) == c) { RET(s + i); return; }
+    RET(0);
+}
+static void pl_strpbrk(CPU *cpu) {
+    u32 s = ARG(0), set = ARG(1);
+    for (u32 i = 1, n = rd8(s); i <= n; i++) if (pl_has(set, rd8(s + i))) { RET(s + i); return; }
+    RET(0);
+}
+static void pl_strspn(CPU *cpu) {
+    u32 s = ARG(0), set = ARG(1); u32 i = 1, n = rd8(s);
+    while (i <= n && pl_has(set, rd8(s + i))) i++;
+    RET(i - 1);
+}
+static void pl_strstr(CPU *cpu) { u32 s = ARG(0); int p = pl_find(s, ARG(1)); RET(p ? s + (u32)p : 0); }
+static void pl_strlen(CPU *cpu) { RET(rd8(ARG(0))); }
+static void pl_pos(CPU *cpu) { RET(pl_find(ARG(0), ARG(1))); }
+
+static const struct { const char *name; void (*fn)(CPU *); } k_stdclib[] = {
+    { "PLstrcmp", pl_strcmp }, { "PLstrncmp", pl_strncmp }, { "PLstrcpy", pl_strcpy }, { "PLstrncpy", pl_strncpy },
+    { "PLstrcat", pl_strcat }, { "PLstrncat", pl_strncat }, { "PLstrchr", pl_strchr }, { "PLstrrchr", pl_strrchr },
+    { "PLstrpbrk", pl_strpbrk }, { "PLstrspn", pl_strspn }, { "PLstrstr", pl_strstr }, { "PLstrlen", pl_strlen },
+    { "PLpos", pl_pos },
+};
+#define STDCLIB_CONN 0x53744343u /* CFragConnectionID handed out for StdCLib */
+
 /* ---- CFM ---- */
 TRAP(GetSharedLibrary) {
+    /* GetSharedLibrary(libName, archType, options, *connID, *mainAddr, errMessage) */
     char name[64];
     pstr_to_c(ARG(0), name, sizeof name);
+    u32 connp = ARG(3), mainp = ARG(4), errp = ARG(5);
+    if (!strcmp(name, "StdCLib")) {
+        if (connp) wr32(connp, STDCLIB_CONN);
+        if (mainp) wr32(mainp, 0);
+        if (errp) wr8(errp, 0);
+        RETERR(noErr);
+        return;
+    }
     LOG_I("GetSharedLibrary(%s) -> not found", name);
-    u32 errp = ARG(6);
-    if (errp) c_to_pstr("not available", errp, 255);
+    if (errp) c_to_pstr(name, errp, 255);
     RETERR(-2804); /* cfragNoLibraryErr */
 }
 TRAP(FindSymbol) {
+    /* FindSymbol(connID, symName, *symAddr, *symClass) */
     char name[256];
     pstr_to_c(ARG(1), name, sizeof name);
+    u32 addrp = ARG(2), classp = ARG(3);
+    if (ARG(0) == STDCLIB_CONN) {
+        static u32 tv[sizeof k_stdclib / sizeof k_stdclib[0]];
+        for (size_t i = 0; i < sizeof k_stdclib / sizeof k_stdclib[0]; i++) {
+            if (strcmp(name, k_stdclib[i].name)) continue;
+            if (!tv[i]) tv[i] = trap_native_tvector(k_stdclib[i].name, k_stdclib[i].fn);
+            if (addrp) wr32(addrp, tv[i]);
+            if (classp) wr8(classp, 2); /* kTVectorCFragSymbol */
+            RETERR(noErr);
+            return;
+        }
+    }
     LOG_D("FindSymbol(%s) -> not found", name);
+    if (addrp) wr32(addrp, 0);
     RETERR(-2802); /* cfragNoSymbolErr */
 }
 
