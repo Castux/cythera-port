@@ -143,6 +143,43 @@ static int open_res_file(const char *hostpath, int perm, s16 *out) {
     return noErr;
 }
 
+/* The QuickTime preview of a file, as AddFilePreview leaves it: a 'pnot'
+   resource naming the preview resource (normally a thumbnail PICT). Read
+   straight from the file on disk; returns a malloc'd copy of the preview
+   data (and its type) or NULL. */
+u8 *res_file_preview(const char *hostpath, u32 *type, u32 *len) {
+    char rp[1100];
+    rsrc_path(hostpath, rp, sizeof rp);
+    FILE *fp = fopen(rp, "rb");
+    if (!fp) return NULL;
+    fseek(fp, 0, SEEK_END);
+    long n = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    u8 *buf = n > 0 ? malloc((size_t)n) : NULL;
+    if (!buf || fread(buf, 1, (size_t)n, fp) != (size_t)n) { fclose(fp); free(buf); return NULL; }
+    fclose(fp);
+    ResFile f = {0};
+    u8 *out = NULL;
+    if (parse_fork(&f, buf, (u32)n)) {
+        for (int i = 0; i < f.nres && !out; i++) {
+            Res *pn = &f.res[i];
+            if (pn->type != FOURCC('p','n','o','t') || pn->len < 12) continue;
+            u32 ptype = be32(pn->data + 6); s16 pid = (s16)be16(pn->data + 10);
+            for (int j = 0; j < f.nres; j++)
+                if (f.res[j].type == ptype && f.res[j].id == pid && f.res[j].len) {
+                    out = malloc(f.res[j].len);
+                    memcpy(out, f.res[j].data, f.res[j].len);
+                    *len = f.res[j].len; *type = ptype;
+                    break;
+                }
+        }
+    }
+    for (int i = 0; i < f.nres; i++) { free(f.res[i].data); free(f.res[i].name); }
+    free(f.res);
+    free(buf);
+    return out;
+}
+
 /* ---- writing ---- */
 static void wbe16(u8 *p, u32 v) { p[0] = (u8)(v >> 8); p[1] = (u8)v; }
 static void wbe32(u8 *p, u32 v) { p[0] = (u8)(v >> 24); p[1] = (u8)(v >> 16); p[2] = (u8)(v >> 8); p[3] = (u8)v; }
