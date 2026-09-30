@@ -3,6 +3,7 @@ click 505 117
 wait 200
 expect Ambient Sounds
 expect Walk around obstacles
+expect Game Control
 shot work/shots/pref_1.png
 click 428 287
 wait 60

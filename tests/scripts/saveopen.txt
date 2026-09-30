@@ -1,0 +1,24 @@
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+key b cmd
+wait 200
+expect Hero backup
+type Backup
+key return
+wait 600
+expect Game Backed Up
+key o cmd
+wait 200
+expect Save Game before Closing
+key return
+wait 1500
+expect Backup
+shot work/shots/so_1.png
+key return
+wait 1500
+expect Game Opened
+shot work/shots/so_2.png
+quit
