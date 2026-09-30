@@ -2,23 +2,17 @@
  *
  * Fonts are resolved like the Mac Font Manager: family ID -> FOND in the
  * resource chain -> font association table -> NFNT/FONT bitmap strike or
- * 'sfnt' TrueType outlines (rasterised with stb_truetype). Missing system
- * fonts fall back to a built-in proportional bitmap font. QuickDraw style
- * variations (bold, italic, underline, outline, shadow, condense, extend)
- * are synthesised. TrueType is hinted with FreeType when it is built in, which
- * gives crisp monochrome text like the Mac's scaler; otherwise stb_truetype
- * outlines are thresholded.
+ * 'sfnt' TrueType outlines, rasterised hinted and monochrome with FreeType
+ * (third_party/freetype) like the Mac's scaler. Missing system fonts are
+ * substituted by host TrueType fonts, or else a built-in proportional bitmap
+ * font. QuickDraw style variations (bold, italic, underline, outline, shadow,
+ * condense, extend) are synthesised.
  */
 #include "qd.h"
 #include "resources.h"
 #include "../../third_party/font8x8_basic.h"
-#define STB_TRUETYPE_IMPLEMENTATION
-
-#include "../../third_party/stb_truetype.h"
-#ifdef HAVE_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#endif
 
 #define LM_ApFontID 0x0984
 #define LM_SysFontFam 0x0BA6
@@ -158,9 +152,8 @@ static bool load_nfnt(Font *f, const u8 *d, u32 len, int target_size, int native
 }
 
 /* ---- TrueType ---- */
-#ifdef HAVE_FREETYPE
 /* Hinted monochrome glyphs, as QuickDraw drew TrueType without smoothing. */
-static bool load_sfnt_ft(Font *f, const u8 *d, u32 len, int size) {
+static bool load_sfnt(Font *f, const u8 *d, u32 len, int size) {
     static FT_Library lib;
     if (!lib && FT_Init_FreeType(&lib)) { lib = NULL; return false; }
     FT_Face face;
@@ -205,56 +198,6 @@ static bool load_sfnt_ft(Font *f, const u8 *d, u32 len, int size) {
         }
     }
     FT_Done_Face(face);
-    return true;
-}
-#endif
-
-static bool load_sfnt(Font *f, const u8 *d, u32 len, int size) {
-#ifdef HAVE_FREETYPE
-    if (load_sfnt_ft(f, d, len, size)) return true;
-#endif
-    stbtt_fontinfo fi;
-    if (!stbtt_InitFont(&fi, d, stbtt_GetFontOffsetForIndex(d, 0))) return false;
-    (void)len;
-    float sc = stbtt_ScaleForMappingEmToPixels(&fi, (float)size);
-    int asc, desc, gap;
-    stbtt_GetFontVMetrics(&fi, &asc, &desc, &gap);
-    f->ascent = (int)(asc * sc + 0.99f);
-    f->descent = (int)(-desc * sc + 0.99f);
-    f->leading = (int)(gap * sc + 0.5f);
-    f->height = f->ascent + f->descent;
-    f->widmax = 0;
-    for (int c = 0; c < 256; c++) {
-        Glyph *g = &f->g[c];
-        if (c < 32) { g->adv = 0; g->w = 0; g->img = NULL; continue; }
-        int cp = c < 128 ? c : mr_hi[c - 128];
-        int gi = stbtt_FindGlyphIndex(&fi, cp);
-        if (!gi && c >= 128) gi = stbtt_FindGlyphIndex(&fi, c);
-        int adv, lsb;
-        stbtt_GetGlyphHMetrics(&fi, gi, &adv, &lsb);
-        g->adv = (s16)(adv * sc + 0.5f);
-        int x0, y0, x1, y1;
-        stbtt_GetGlyphBitmapBox(&fi, gi, sc, sc, &x0, &y0, &x1, &y1);
-        int w = x1 - x0, h = y1 - y0;
-        if (w <= 0 || h <= 0) { g->w = 0; g->img = NULL; continue; }
-        u8 *tmp = calloc((size_t)w * (size_t)h, 1);
-        stbtt_MakeGlyphBitmap(&fi, tmp, w, h, w, sc, sc, gi);
-        g->w = (s16)w; g->xoff = (s16)x0;
-        g->img = calloc((size_t)w * (size_t)f->height, 1);
-        for (int y = 0; y < h; y++) {
-            int yy = f->ascent + y0 + y;
-            if (yy < 0 || yy >= f->height) continue;
-            const u8 *src = tmp + (size_t)y * (size_t)w;
-            u8 *dst = g->img + (size_t)yy * (size_t)w;
-            int on = 0, best = 0;
-            for (int x = 0; x < w; x++) { dst[x] = src[x] >= 128; on |= dst[x]; if (src[x] > src[best]) best = x; }
-            /* a thin stem straddling two pixel columns has <50% coverage in
-               each: keep its strongest pixel so i, l, | don't vanish */
-            if (!on && src[best] >= 48) dst[best] = 1;
-        }
-        free(tmp);
-        if (g->adv > f->widmax) f->widmax = g->adv;
-    }
     return true;
 }
 

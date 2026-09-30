@@ -12,15 +12,11 @@ ifeq ($(GUI),1)
 override LDFLAGS += -mwindows  # no console window (packaged builds)
 endif
 endif
-# Optional FreeType for hinted (crisp) TrueType text: tools/build_freetype.sh, else the system's
-FT_DIR  := third_party/freetype
-ifneq ($(wildcard $(FT_DIR)/lib/libfreetype.a),)
-FT_CFLAGS := -DHAVE_FREETYPE -I$(FT_DIR)/include
-FT_LIBS   := $(FT_DIR)/lib/libfreetype.a
-else ifneq ($(shell pkg-config --exists freetype2 2>/dev/null && echo y),)
-FT_CFLAGS := -DHAVE_FREETYPE $(shell pkg-config --cflags freetype2)
-FT_LIBS   := $(shell pkg-config --libs freetype2)
-endif
+# FreeType (vendored subset, see third_party/freetype/README): hinted monochrome TrueType text
+FT        := third_party/freetype
+FT_CFLAGS := -I$(FT)/config -I$(FT)/include '-DFT_CONFIG_OPTIONS_H=<ftoption.h>' '-DFT_CONFIG_MODULES_H=<ftmodule.h>'
+FT_SRCS   := $(addprefix $(FT)/src/,base/ftsystem.c base/ftinit.c base/ftdebug.c base/ftbase.c \
+             base/ftbitmap.c base/ftmm.c truetype/truetype.c sfnt/sfnt.c raster/raster.c)
 # LICENSE_BYPASS=0 runs the original code unaltered (no shareware registration bypass)
 LICENSE_BYPASS ?= 1
 ifneq ($(LICENSE_BYPASS),0)
@@ -28,13 +24,13 @@ OPT_CFLAGS := -DLICENSE_BYPASS
 endif
 CFLAGS  ?= -O2 -g
 override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS) $(FT_CFLAGS) $(OPT_CFLAGS)
-override LDLIBS += $(FT_LIBS) $(SDL_LIBS) -lm -lpthread
+override LDLIBS += $(SDL_LIBS) -lm -lpthread
 
 BUILD   := build
 SRCS    := $(wildcard src/*.c src/cpu/*.c src/loader/*.c src/os/*.c src/host/*.c)
 OS_SRCS := $(wildcard src/os/*.c)
 GEN     := $(BUILD)/gen/trap_table.c
-OBJS    := $(SRCS:%.c=$(BUILD)/%.o) $(BUILD)/gen/trap_table.o
+OBJS    := $(SRCS:%.c=$(BUILD)/%.o) $(BUILD)/gen/trap_table.o $(FT_SRCS:%.c=$(BUILD)/%.o)
 DEPS    := $(OBJS:.o=.d)
 
 all: $(BUILD)/cythera$(EXE)
@@ -48,6 +44,11 @@ $(GEN): $(OS_SRCS) tools/gen_traps.py
 $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
+
+# FreeType's own sources: its build flags, without our warnings
+$(BUILD)/$(FT)/%.o: $(FT)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) -O2 -DFT2_BUILD_LIBRARY $(FT_CFLAGS) -MMD -MP -c -o $@ $<
 
 $(BUILD)/gen/trap_table.o: $(GEN)
 	$(CC) $(CFLAGS) -c -o $@ $<

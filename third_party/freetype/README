@@ -1,0 +1,12 @@
+FreeType 2.14.3 (https://freetype.org), a subset: the TrueType driver, the
+sfnt module and the monochrome rasterizer, which is all the runtime needs to
+draw hinted TrueType text like the Mac's scaler (src/os/qd_text.c).
+
+From freetype-2.14.3.tar.xz (GPG signature by Werner Lemberg checked):
+include/ and src/{truetype,sfnt,raster} as released; src/base/ only the files
+the build compiles; build rules (*.mk) removed. Added: config/ftmodule.h (the
+three modules) and config/ftoption.h, the release's ftoption.h with zlib and
+PostScript glyph names turned off. The Makefile compiles it with
+-DFT_CONFIG_OPTIONS_H=<ftoption.h> -DFT_CONFIG_MODULES_H=<ftmodule.h>.
+
+License: the FreeType License (FTL.TXT), see LICENSE.TXT.

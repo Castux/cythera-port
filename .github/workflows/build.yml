@@ -27,8 +27,6 @@ defaults:
     shell: bash  # (unlike the implicit default) runs with -o pipefail, for "| tee build.log"
 
 env:
-  FREETYPE_VERSION: 2.14.3
-  FREETYPE_SHA256: 36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f
   SDL2_VERSION: 2.32.10
   SDL2_SHA256: 5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165
   MACOSX_DEPLOYMENT_TARGET: '11.0'
@@ -72,11 +70,6 @@ jobs:
         with:
           name: gamedata
       - run: tar -xzf gamedata.tar.gz
-      - name: FreeType
-        run: |
-          curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
-          echo "$FREETYPE_SHA256  ft.tar.xz" | sha256sum -c
-          CC=gcc sh tools/build_freetype.sh ft.tar.xz 2>&1 | tee -a build.log
       - name: Build
         run: make -j"$(nproc)" CC=gcc 2>&1 | tee -a build.log
       - name: CPU tests
@@ -136,12 +129,6 @@ jobs:
         with:
           name: gamedata
       - run: tar -xzf gamedata.tar.gz
-      - name: FreeType
-        run: |
-          curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
-          echo "$FREETYPE_SHA256  ft.tar.xz" | sha256sum -c
-          set -o pipefail
-          CC=gcc sh tools/build_freetype.sh ft.tar.xz 2>&1 | tee -a build.log
       - name: Build (static, no console window)
         run: |
           set -o pipefail
@@ -205,15 +192,10 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$PWD/sdl"
           cmake --build sdl-build -j"$(sysctl -n hw.ncpu)"
           cmake --install sdl-build
-      - name: FreeType
-        run: |
-          curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
-          echo "$FREETYPE_SHA256  ft.tar.xz" | shasum -a 256 -c
       - name: Build (arm64 + x86_64)
         run: |
           set -o pipefail
           for arch in arm64 x86_64; do
-            CC="clang -arch $arch" sh tools/build_freetype.sh ft.tar.xz 2>&1 | tee -a build.log
             make -j"$(sysctl -n hw.ncpu)" CC="clang -arch $arch" BUILD="build-$arch" \
               SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" SDL_LIBS="$(sdl/bin/sdl2-config --static-libs)" 2>&1 | tee -a build.log
           done
