@@ -309,7 +309,7 @@ void finfo_set(const char *hostpath, u32 type, u32 creator, u16 flags) {
     }
     fprintf(out, "%s\t%08x %08x %04x\n", leaf, type, creator, flags);
     fclose(out);
-    rename(tmp, db);
+    plat_rename_replace(tmp, db);
 }
 
 /* ---------------------------------------------------------------------- */

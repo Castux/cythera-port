@@ -2,6 +2,7 @@
    (MinGW-w64). Paths use '/', which Windows accepts. */
 #ifndef PLAT_H
 #define PLAT_H
+#include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <sys/stat.h>
@@ -21,6 +22,12 @@ static inline const char *plat_home(void) {
     return h ? h : getenv("USERPROFILE");
 }
 static inline int plat_ftruncate(int fd, long long len) { return _chsize_s(fd, len); }
+/* rename() that replaces an existing target, as on POSIX */
+static inline int plat_rename_replace(const char *from, const char *to) {
+    if (rename(from, to) == 0) return 0;
+    _unlink(to);
+    return rename(from, to);
+}
 /* local time's offset from UTC, in seconds, at time t */
 static inline long plat_gmtoff(time_t t) {
     struct tm lt;
@@ -33,6 +40,7 @@ static inline long plat_gmtoff(time_t t) {
 static inline char *plat_realpath(const char *p, char *out) { return realpath(p, out); }
 static inline const char *plat_home(void) { return getenv("HOME"); }
 static inline int plat_ftruncate(int fd, long long len) { return ftruncate(fd, (off_t)len); }
+#define plat_rename_replace(from, to) rename((from), (to))
 static inline long plat_gmtoff(time_t t) {
     struct tm lt;
     localtime_r(&t, &lt);
