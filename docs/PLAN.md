@@ -75,20 +75,30 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Slideshows, cutscenes, end-game, credits (intro slideshow, death cutscene and game over,
   scrolling credits in About; the winning ending uses the same calls, see the 2026-09-30 log)
 - [x] Window scaling, fullscreen, HiDPI, configurable screen size
-- [ ] Performance (predecoded instruction cache or block JIT if needed)
-- [ ] Portability: Linux/Windows builds (CI-free manual check), no host-endianness assumptions
-  (early Linux findings and a required fix: [LINUX_NOTES.md](LINUX_NOTES.md)).
-  Linux builds and runs; Windows shims are in `src/plat.h` (mkdir, realpath, home
-  directory, SDL main) but the MinGW build is untested.
+- [x] Performance: not needed (the switch interpreter runs ~80 M guest instructions/s; play
+  needs ~13-20 M/s, see the 2026-09-30 log)
+- [x] Portability: Linux, Windows (MinGW-w64/MSYS2) and macOS (universal) builds and packages
+  in GitHub Actions ([build.yml](../.github/workflows/build.yml)), which also runs the CPU and
+  scripted tests on Linux; no host-endianness assumptions (guest memory is accessed through
+  rd/wr helpers). Early Linux findings: [LINUX_NOTES.md](LINUX_NOTES.md).
 - [x] User documentation (README: setup, controls, config)
 - **Exit:** full-feature playable port.
 
 ## Working notes
-- Game data never goes into git. `gamedata/` and `work/` are ignored.
 - Commit and push after each significant chunk.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (release, CI, crash): GitHub Actions build, test and package the game for Linux
+  (tarball), Windows (static zip, no console) and macOS (universal app in a dmg, ad-hoc signed;
+  Developer ID signing and notarization when secrets are set); v* tags publish a release
+  (v0.1.1). Packaged builds find gamedata next to the program and never write into it. A
+  windowed-only startup crash (1 in 6 to 5 in 8 starts) is fixed: TuneGetStatus reported
+  tune = 0 with a stale tunePtr after a stop, GMSTune::Pause saves (tunePtr - tune) / 4 as its
+  resume point, so two pauses in a row (focus changes) made Resume queue a wild address and
+  the audio thread read past guest memory. The audio thread now never calls fatal().
+  Performance, measured: ~80 M guest instructions/s (deterministic runs); real-time play
+  averages ~13 M/s including loading (1.1 G in 87 s), so no instruction cache or JIT is needed.
 - 2026-09-30 (gameplay): new scripts play through what was left unverified: `travel` (Omen's Test ->
   LandKing Hall -> World -> Odemia's gate), `sleep` (the bed in the hero's quarters; "It is already
   morning" afterwards), `potion` (Far Sight potion: the overhead map), `combat` (the bandits at the
