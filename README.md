@@ -173,16 +173,95 @@ game finds it.
   names, containers), using [delvmod](https://github.com/BryceSchroeder/delvmod)
   cloned into `work/delvmod`. Handy for writing scripted play-throughs.
 
-## License / credits
+## License
 
 The port's own code is released as public domain. No copyright claims are 
 made on it or the tools used to create this port.
 
 The original game, included, is © 1999 Ambrosia Software and originaly 
-released as shareware.
+released as shareware with a 30 days trial period.
 
 Third-party single-header libraries in `third_party/`: stb_truetype and
 stb_image_write (public domain), font8x8 (public domain), TinySoundFont (MIT),
-minicoro (MIT/Unlicense). Cythera and Delver are trademarks of their respective
-owners. The Delver file-format knowledge comes from delvmod
+minicoro (MIT/Unlicense). The Delver file-format knowledge comes from delvmod
 (Bryce Schroeder) and the DelvTechWiki.
+
+## Cythera Credits
+
+```
+•Glenn Andreas
+Delver Engine
+Cythera Scenario
+Cythera Artwork
+
+•Andrew Welch
+SoundTool
+RegistrationTool
+MonitorTool
+Cythera Sounds
+
+•Marcus Conge
+Cythera Artwork
+
+•Randy Pringle
+Cythera Music
+
+•Alpha Testers
+Troy Baumgarten
+Nathan Fleming
+Dave (Mercutio) Fried
+Jesse "Hybrid" Liesch
+Etienne Pelaprat
+Collin "Mr. Splat" Petty
+Trevor Powell
+Jake Wallace
+Dan "Well Jigger My Biscuits" Wood
+
+•Additional Alpha Testers
+Chris "TheDew" DeWan
+Ryan "Zarathustra" Fritsch
+Brian P. McCarty
+Jon M-L Reisenweaver
+Ked "Amacus" Shayer
+Jason "Alpha Corpse Abuser" Whong
+Ted Woodward
+
+•Beta Testers
+Carlos Andrade
+Mary Cook
+Ryan Fritsch
+Marc Khadpe
+William MacKay
+Brian P. McCarty
+Will Oram
+Austin Parker
+Alex Piltch
+R. Dwight Porcher
+Jon Reisenweaver
+Dan Schimpf
+David Simon
+Ben Spees
+Stephen Smithwick
+Eric B. Venet
+Greg Weston
+Ted Woodward
+Trevor Zylstra
+
+•Logistics & Support
+David Dunham
+Jason Whong
+
+•Special Thanks
+Sam Wang - Argos Font
+The Source of Chaos
+Caribou Coffee (Blue Crayon)
+
+•Quotes
+"I want to catch rats!"
+What do you expect from such a "fun guy"?
+El Nino did it...
+WWBBD?
+
+•In Memorial
+Gene Leonard (1951-1997)
+```
