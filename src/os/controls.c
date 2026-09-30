@@ -553,8 +553,13 @@ TRAP(TrackControl) {
             u32 t = rd32(0x016A);
             if (t != last_action) {
                 last_action = t;
-                u32 a[2] = { c, (u32)part };
-                call_upp(action, 2, a);
+                if (action == 0xFFFFFFFFu) {
+                    /* contrlAction == -1: the CDEF tracks itself (autoTrack message) */
+                    call_cdef(c, autoTrack, (u32)part);
+                } else {
+                    u32 a[2] = { c, (u32)part };
+                    call_upp(action, 2, a);
+                }
             }
         }
         if (part == inThumb) {
