@@ -439,6 +439,50 @@ void script_tick(void) {
             extern bool text_seen(const char *sub);
             if (!text_seen(s->arg)) LOG_E("EXPECT FAILED: \"%s\" not on screen (script line %d)", s->arg, g_script_pc);
         }
+        else if (!strcmp(s->cmd, "dclickchar")) {
+            /* dclickchar N: double-click on Cythera character N (e.g. 0x28), found in
+               the game's character table (0x228558, 32 bytes each: map byte, then x
+               and y as 12-bit fields) relative to the hero (1), who is drawn centred
+               in the map view at (470,165) with 32-pixel tiles. For talking to
+               people who wander. */
+            extern u8 *g_mem;
+            unsigned n = (unsigned)strtoul(s->arg, NULL, 0);
+            const u8 *h = g_mem + 0x228558 + 32, *e = g_mem + 0x228558 + 32 * (n & 0xFF);
+            int hx = h[1] << 4 | h[2] >> 4, hy = (h[2] & 15) << 8 | h[3];
+            int ex = e[1] << 4 | e[2] >> 4, ey = (e[2] & 15) << 8 | e[3];
+            if (e[0] != h[0] || abs(ex - hx) > 3 || abs(ey - hy) > 3)
+                LOG_E("EXPECT FAILED: character %#x not in view (map %d (%d,%d); hero map %d (%d,%d)) (script line %d)",
+                      n, e[0], ex, ey, h[0], hx, hy, g_script_pc);
+            x = 470 + (ex - hx) * 32; y = 165 + (ey - hy) * 32;
+            LOG_I("script: character %#x at (%d,%d) -> dclick %d %d", n, ex, ey, x, y);
+            g_mx = x; g_my = y;
+            for (int k = 0; k < 2; k++) {
+                push_event((HostEvent){ .type = HEV_MOUSE_DOWN, .x = x, .y = y });
+                push_event((HostEvent){ .type = HEV_MOUSE_UP, .x = x, .y = y });
+            }
+            g_script_wait_until = now + 10;
+            return;
+        }
+        else if (!strcmp(s->cmd, "keyuntil")) {
+            /* keyuntil KEY TICKS MAX TEXT: press KEY every TICKS ticks until TEXT has
+               been drawn (at most MAX presses): pages through a conversation
+               whatever its pagination (fonts, layout) */
+            static int presses;
+            char key[32] = {0}; int every = 120, max = 40, off = 0;
+            if (sscanf(s->arg, "%31s %d %d %n", key, &every, &max, &off) < 3 || !off) { LOG_W("script: bad keyuntil"); continue; }
+            extern bool text_seen(const char *sub);
+            if (text_seen(s->arg + off)) { presses = 0; continue; }
+            if (presses >= max) {
+                LOG_E("EXPECT FAILED: \"%s\" not on screen after %d x %s (script line %d)", s->arg + off, max, key, g_script_pc);
+                presses = 0;
+                continue;
+            }
+            presses++;
+            g_script_pc--; /* run this line again */
+            script_key(key, 0);
+            g_script_wait_until = now + (u32)every;
+            return;
+        }
         else if (!strcmp(s->cmd, "trace")) { extern bool g_trace_traps; g_trace_traps = !strcmp(s->arg, "on"); }
         else if (!strcmp(s->cmd, "click") && sscanf(s->arg, "%d %d", &x, &y) == 2) {
             /* like a human click: the button stays down for a few ticks */

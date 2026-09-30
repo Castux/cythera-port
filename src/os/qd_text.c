@@ -363,7 +363,21 @@ static void remember_text(const u8 *str, int n) {
 }
 bool text_seen(const char *sub) {
     for (int i = 0; i < SEEN_N; i++) if (g_seen[i][0] && strstr(g_seen[i], sub)) return true;
-    return false;
+    /* Also match across consecutive strings (oldest first, joined by one space),
+       so that an expected phrase doesn't depend on where the text wrapped. */
+    static char all[SEEN_N * 129 + 1];
+    size_t n = 0;
+    for (int k = 0; k < SEEN_N; k++) {
+        const char *s = g_seen[(g_seen_pos + k) % SEEN_N];
+        if (!s[0]) continue;
+        while (*s == ' ') s++;
+        size_t l = strlen(s);
+        while (l && s[l - 1] == ' ') l--;
+        memcpy(all + n, s, l); n += l;
+        all[n++] = ' ';
+    }
+    all[n] = 0;
+    return strstr(all, sub) != NULL;
 }
 
 void text_draw(u32 port, const u8 *str, int n) {

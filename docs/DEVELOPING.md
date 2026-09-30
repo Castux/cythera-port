@@ -104,7 +104,11 @@ it is.
 Scripts (`--script FILE`) are one command per line: `wait N` (frames),
 `click X Y`, `dclick`, `mousedown`/`mouseup`, `move`, `hold`, `key NAME`,
 `type TEXT`, `shot FILE.png`, `expect TEXT` (fails unless that text was drawn
-recently), `peek ADDR [N]` (hex dump of guest memory), `bt`, `dumpwin`,
+recently; it may span consecutive drawn strings, so line breaks don't matter),
+`keyuntil KEY TICKS MAX TEXT` (press KEY every TICKS frames until TEXT is
+drawn, at most MAX times: pages through a conversation), `dclickchar N`
+(double-click on Cythera character N, e.g. 0x28 for Parium, wherever they
+wandered: found in the character table relative to the hero), `peek ADDR [N]` (hex dump of guest memory), `bt`, `dumpwin`,
 `trace on|off`, `quit`. A first line `# app: NAME` makes `run.sh` start another
 application. `peek 228578 4` gives the hero's position: map number, then x and
 y as 12-bit fields (the character table is at 0x228558, 32 bytes each).
