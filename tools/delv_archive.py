@@ -30,6 +30,7 @@ import math, os, struct, sys, zlib
 from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_DATA = os.path.join(ROOT, 'gamedata', 'Cythera Data')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # ---------------------------------------------------------------- knowledge
@@ -51,7 +52,15 @@ PAGES = {
     0x84: 'Landscape graphics', 0x88: 'Character portraits',
     0x8A: 'Skill icons', 0x8E: 'Tile sheets', 0x8F: 'General graphics',
     0x90: 'Music', 0x91: 'Sounds', 0xE0: 'Journal entries (saves)',
-    0xF0: 'General data',
+    0xF0: 'General data', 0xF3: 'Level slots, VM heap (saves)',
+}
+# A saved game overrides some scenario resources and adds its own; page 04
+# holds the game state there, not compiled AI (docs/ANALYSIS.md 3.1).
+SAVE_PAGES = {0x04: 'Saved game state'}
+SAVE_NAMES = {
+    0x0400: 'Game state stream', 0x0401: 'To-do list', 0x0404: 'F-key macros',
+    0x8800: 'Hero portrait', 0xF00E: 'Room fields', 0xF306: 'Character slots',
+    0xF307: 'VM heap', 0xF308: 'Prop frames',
 }
 # Encryption is not recorded in the archive: the engine decrypts when the
 # caller asks for it (TCachedSegFiles::GetEncryptedSegment, used by the VM).
@@ -136,9 +145,47 @@ class Archive:
                 if o:
                     self.entries[p << 8 | n] = (o, l)
         self._enc = {}
+        # A saved game: its page 04 is the game state ('Char' chunk first).
+        self.is_save = 0x0400 in self.entries and self.raw(0x0400)[:4] == b'Char'
 
     def ids(self):
         return sorted(self.entries)
+
+    def kind(self, rid):
+        return (self.is_save and SAVE_PAGES.get(rid >> 8)) or PAGES.get(rid >> 8, '?')
+
+    def name(self, rid):
+        return (self.is_save and SAVE_NAMES.get(rid)) or NAMES.get(rid, '')
+
+    def rebuilt(self, changes):
+        """The archive bytes with resources replaced ({rid: bytes}, stored
+        as given: callers encrypt if needed) or removed ({rid: None}).
+        Unchanged resources keep their bytes and offsets; data that no longer
+        fits in place (and new page tables) is appended at the end, as the
+        engine's TSegFile does, so no changes give the file back unchanged."""
+        buf = bytearray(self.buf)
+        def u32(o, v):
+            buf[o:o + 4] = struct.pack('>I', v)
+        pages = dict(self.pages)
+        for rid, data in sorted(changes.items()):
+            p = rid >> 8
+            if p not in pages:               # a new page table
+                pages[p] = (len(buf), 0x800)
+                u32(0x80 + 8 * p, len(buf)); u32(0x84 + 8 * p, 0x800)
+                buf.extend(bytes(0x800))
+            ent = pages[p][0] + 8 * (rid & 0xFF)
+            old = self.entries.get(rid)
+            if data is None:
+                buf[ent:ent + 8] = bytes(8)
+                continue
+            if old and old[1] == len(data):
+                o = old[0]
+            else:
+                o = len(buf)
+                buf.extend(bytes(len(data)))
+            buf[o:o + len(data)] = data
+            u32(ent, o); u32(ent + 4, len(data))
+        return bytes(buf)
 
     def raw(self, rid):
         o, l = self.entries[rid]
@@ -346,8 +393,11 @@ def plural(name, pl=False):
     return stem + end if pl else stem
 
 class Names:
-    """Tile and prop names from F004/F000."""
+    """Tile and prop names from F004/F000 (a saved game has none: then from
+    the scenario)."""
     def __init__(self, arc):
+        if 0xF004 not in arc.entries and arc.path != DEFAULT_DATA:
+            arc = Archive(DEFAULT_DATA)
         self.tiles = name_list(arc.data(0xF004)) if 0xF004 in arc.entries else []
         f0 = arc.data(0xF000) if 0xF000 in arc.entries else b''
         self.prop_tile = struct.unpack(f'>{len(f0) // 2}H', f0)
@@ -566,6 +616,18 @@ def vm_dump(arc, d, rid):
     except (IndexError, struct.error, ValueError) as e:
         return f'(structure dump failed: {e})\n' + hexdump(d)
 
+def stream_chunks(d):
+    """A saved game's 0400 (TStream chunks): [(tag, data)].  Each chunk is
+    a 4-char tag, a u32 length that counts itself, then the data."""
+    out, i = [], 0
+    while i + 8 <= len(d):
+        tag, ln = d[i:i + 4], struct.unpack('>I', d[i + 4:i + 8])[0]
+        if ln < 4 or i + 4 + ln > len(d):
+            raise ValueError(f'bad chunk at {i:#x}')
+        out.append((tag, d[i + 8:i + 4 + ln]))
+        i += 4 + ln
+    return out
+
 # ------------------------------------------------------------ description
 def describe(arc, rid, d):
     """Short content summary for `list`."""
@@ -587,6 +649,11 @@ def describe(arc, rid, d):
             return f'{(len(d) - 12) // 2} samples @ {rate / 65536:.0f} Hz'
         if p == 0x90 and d[4:8] == b'musi':
             return 'QT music tune'
+        if p == 0x04 and arc.is_save:
+            if rid == 0x0400:
+                return 'chunks ' + ' '.join(t.decode('mac_roman').strip()
+                                            for t, _ in stream_chunks(d))
+            return ''
         if p == 0x04 and d:
             return repr(d[1:1 + d[0]].decode('mac_roman'))
         if p < 0x80 and len(d) >= 2:
@@ -606,7 +673,7 @@ def list_rows(arc, ids):
         flags = ('E' if enc else '-') + ('?' if how == 'guess' else ' ') + \
                 ('C' if rid >> 8 in DCG else '-')
         rows.append((rid, arc.entries[rid][0], len(d), flags,
-                     PAGES.get(rid >> 8, '?'), NAMES.get(rid, ''), describe(arc, rid, d)))
+                     arc.kind(rid), arc.name(rid), describe(arc, rid, d)))
     return rows
 
 def fmt_row(r):
@@ -616,7 +683,7 @@ def fmt_row(r):
 # ------------------------------------------------------------------ export
 def export(arc, ids, out, tpx):
     os.makedirs(out, exist_ok=True)
-    pal = load_palette(arc.path)
+    pal = load_palette(DEFAULT_DATA if arc.is_save else arc.path)   # saves have no clut
     names, tiles = Names(arc), Tiles(arc)
     rows = list_rows(arc, ids)
     with open(os.path.join(out, 'index.tsv'), 'w', encoding='utf-8') as f:
@@ -652,6 +719,8 @@ def export(arc, ids, out, tpx):
             elif p == 0xF0:
                 nl = name_list(d) if rid in (0xF004, 0xF014, 0xF015) else None
                 txt = ''.join(f'{v:#06x} {s}\n' for v, s in nl) if nl else hexdump(d) + '\n'
+            elif p == 0x04 and arc.is_save:
+                txt = hexdump(d) + '\n'
             elif p == 0x04:
                 txt = f'name: {d[1:1 + d[0]].decode("mac_roman")!r}\n' + \
                       hexdump(d[1 + d[0]:], 1 + d[0]) + '\n'
@@ -675,6 +744,10 @@ def dump(arc, rid):
             print(f'{k}: {v}')
     elif p == 0x81:
         print(props_text(arc, Names(arc), d), end='')
+    elif rid == 0x0400 and arc.is_save:
+        for tag, c in stream_chunks(d):
+            print(f"chunk {tag.decode('mac_roman')!r}, {len(c)} bytes")
+            print(hexdump(c, indent='  '))
     elif p < 0x80 and p != 0x04:
         print(vm_dump(arc, d, rid), end='')
     elif rid in (0xF004, 0xF014, 0xF015) and name_list(d):
@@ -688,7 +761,7 @@ def info(arc):
     print(f"file:    {arc.path} ({len(d)} bytes)")
     print(f"title:   {arc.title!r}")
     print(f"player:  {arc.player!r}")
-    print(f"0x40:    {d[0x40:0x50].hex(' ')}  (unknown; delvmod: 0x40=0x13, 0x42=2, 0x48=2)")
+    print(f"0x40:    {d[0x40:0x50].hex(' ')}  (u16 at 0x42: format version 2, checked on load)")
     print(f"TOC:     master page at {arc.pages[0][0]:#x}, {arc.pages[0][1]} bytes; "
           f"{len(arc.pages) - 1} sub-pages, {len(arc.entries)} resources, "
           f"{sum(l for _, l in arc.entries.values())} bytes of data")
@@ -700,16 +773,18 @@ def info(arc):
         encs = {arc.encryption(r) for r in ids}
         e = ''.join(sorted({('E' if x else '-') + ('?' if h == 'guess' else '') for x, h in encs}))
         print(f"{p:02X}xx {len(ids):6} {sum(arc.entries[r][1] for r in ids):9}  {e:4} "
-              f"{PAGES.get(p, '?')}{' (DCG compressed)' if p in DCG else ''}")
+              f"{arc.kind(p << 8)}{' (DCG compressed)' if p in DCG else ''}")
 
 def main(argv):
+    # names and dumps are Mac Roman; never fail on a console that lacks a glyph
+    sys.stdout.reconfigure(errors="backslashreplace")
     args = list(argv)
     def opt(name, default=None):
         if name in args:
             i = args.index(name); args.pop(i)
             return args.pop(i)
         return default
-    data = opt('--data', os.path.join(ROOT, 'gamedata', 'Cythera Data'))
+    data = opt('--data', DEFAULT_DATA)
     tpx = int(opt('--map-tile', '8'))
     if tpx not in (1, 2, 4, 8, 16, 32):
         sys.exit('--map-tile must be 1, 2, 4, 8, 16 or 32')

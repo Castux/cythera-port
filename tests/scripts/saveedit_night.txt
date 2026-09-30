@@ -1,0 +1,13 @@
+# Saved-game editor: the fixture's hero, edited to stand outside LandKing Hall on the World map
+# at night (day 5, 23:30): the map is dark.  The game saves it again (Cmd-S).
+# save-edit: pos=World,166,20 day=5 time=23:30
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+expect Cythera
+shot work/shots/saveedit_night.png
+key s cmd
+wait 300
+quit

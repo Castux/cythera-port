@@ -38,6 +38,11 @@ check tests/fixture.txt $? work/shots/fixture.log || exit 1
 for s in ${@:-tests/scripts/*.txt}; do
   log="work/shots/$(basename "$s" .txt).log"
   rm -rf "$tmp/run" && cp -R "$tmp/fixture" "$tmp/run"
+  # "# save-edit: KEY=VALUE..." edits the fixture's saved game first (tools/delv_save.py set)
+  edit=$(sed -n 's/^# save-edit: //p' "$s")
+  if [ -n "$edit" ] && ! ${PYTHON:-python3} tools/delv_save.py set "$tmp/run/Saved Games/Hero" $edit > "$log" 2>&1; then
+    echo "FAIL $s (save-edit)"; tail -3 "$log"; status=1; continue
+  fi
   run "$s" "$tmp/run" "$log"
   check "$s" $? "$log" || status=1
 done

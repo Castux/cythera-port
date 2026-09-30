@@ -110,7 +110,10 @@ drawn, at most MAX times: pages through a conversation), `dclickchar N`
 (double-click on Cythera character N, e.g. 0x28 for Parium, wherever they
 wandered: found in the character table relative to the hero), `peek ADDR [N]` (hex dump of guest memory), `bt`, `dumpwin`,
 `trace on|off`, `quit`. A first line `# app: NAME` makes `run.sh` start another
-application. `peek 228578 4` gives the hero's position: map number, then x and
+application. A line `# save-edit: KEY=VALUE...` makes it edit the fixture's
+"Hero" first with `tools/delv_save.py set` (values without spaces; `$PYTHON`,
+default `python3`, runs it), so a script can start at another stage of the
+game (`tests/scripts/saveedit*.txt`). `peek 228578 4` gives the hero's position: map number, then x and
 y as 12-bit fields (the character table is at 0x228558, 32 bytes each).
 
 `--deterministic` runs headless on a virtual clock driven by the executed
@@ -148,6 +151,16 @@ code offsets (hex, as `tools/ppcdis.py` prints them): a cheap breakpoint.
 - `tools/delv_archive.py info|list|dump ID|export DIR [SEL]`: the Delver
   archive (scenario or saved game): lists and decrypts resources, exports
   images and maps as PNG, sounds as WAV, props, strings and scripts as text.
+- `tools/delv_save.py show|flags|check|set SAVE ...`: saved games
+  ([ANALYSIS.md §3.1](ANALYSIS.md#31-saved-games)). `show` summarizes the
+  party (stats, skills, inventory, gold), place, date, to-do list and story
+  flags; `flags [--all] [--refs]` lists the story flags with the scripts that
+  use them; `check` re-encodes every decoded part (must be byte-identical);
+  `set SAVE [-o OUT] [--char N] KEY=VALUE...` edits position (`pos=X,Y` or
+  `pos=ZONE,X,Y`, moving the party's belongings between zones as the engine
+  does), `hp`/`mp`/`maxhp`/`maxmp`/`body`/`reflex`/`mind`/`level`/`exp`/
+  `training`/`nutrition`, `skill:NAME=N`, `gold=N`, `give=ITEM[:N]`,
+  `time=HH:MM`, `day=N`, `karma=N`. Writing without edits gives the same file.
 - `tools/delv_props.py maps|props MAP`: maps and the objects on each, using
   [delvmod](https://github.com/BryceSchroeder/delvmod) cloned into
   `work/delvmod`. Handy for planning scripted routes.
