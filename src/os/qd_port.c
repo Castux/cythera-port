@@ -1106,7 +1106,9 @@ TRAP(DisposePixPat) {
     if (rd32(p + PP_DATA)) mm_dispose_handle(rd32(p + PP_DATA));
     mm_dispose_handle(h);
 }
-TRAP(PixPatChanged) { }
+/* PixPatChanged: the pattern's expanded form must be rebuilt. Painting here
+   always reads the pattern's pixmap and data directly, so just flag it. */
+TRAP(PixPatChanged) { u32 h = ARG(0); if (h && hderef(h)) wr16(hderef(h) + PP_XVALID, (u16)-1); }
 TRAP(GetPixPat) {
     s16 id = ARGS16(0);
     u32 len;

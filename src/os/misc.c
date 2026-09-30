@@ -524,8 +524,11 @@ TRAP(BitAnd) { RET(ARG(0) & ARG(1)); }
 /* ---- absent subsystems ---- */
 TRAP(NMRemove) { RETERR(noErr); }
 TRAP(NMInstall) { RETERR(noErr); }
-TRAP(HMShowBalloon) { RETERR(-850); /* hmBalloonAborted */ }
-TRAP(HMRemoveBalloon) { RETERR(noErr); }
+/* Balloon Help is off (the Help menu that would turn it on isn't there),
+   so balloons are never shown: the game's status-window hints call these
+   on every mouse move and ignore the result. */
+TRAP(HMShowBalloon) { RETERR(-850); /* hmHelpDisabled */ }
+TRAP(HMRemoveBalloon) { RETERR(-862); /* hmNoBalloonUp */ }
 TRAP(CrsrDevNextDevice) { u32 p = ARG(0); if (p) wr32(p, 0); RETERR(-1); }
 TRAP(CrsrDevNewDevice) { RETERR(-1); }
 TRAP(CrsrDevDisposeDevice) { RETERR(-1); }
