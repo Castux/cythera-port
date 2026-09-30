@@ -137,9 +137,10 @@ bool cpu_watch_hit(CPU *c, u32 pc, u32 *w) {
     for (int i = 0; i < g_nwatch; i++) {
         if (g_watch[i].addr != pc) continue;
         u32 *r = c->r;
-        LOG_I("watch %06x: r0=%08x r1=%08x r3=%08x r4=%08x r5=%08x r6=%08x r7=%08x r8=%08x "
+        extern u64 host_now_us(void);
+        LOG_I("%9.3f watch %06x: r0=%08x r1=%08x r3=%08x r4=%08x r5=%08x r6=%08x r7=%08x r8=%08x "
               "r29=%08x r30=%08x r31=%08x lr=%08x",
-              pc - CODE_ADDR, r[0], r[1], r[3], r[4], r[5], r[6], r[7], r[8], r[29], r[30], r[31], c->lr);
+              host_now_us() / 1e6, pc - CODE_ADDR, r[0], r[1], r[3], r[4], r[5], r[6], r[7], r[8], r[29], r[30], r[31], c->lr);
         *w = g_watch[i].word;
         return true;
     }
