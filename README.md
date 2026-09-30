@@ -29,8 +29,11 @@ make
 
 Windows: build in an [MSYS2](https://www.msys2.org/) MinGW64 shell
 (`pacman -S make mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 python`), then `make`.
-The data setup script needs a Unix shell with `unar` (WSL works). The Windows
-build hasn't been tested yet; macOS and Linux have.
+With a standalone MinGW-w64 instead (native `mingw32-make`, run from Git Bash),
+put its `bin` first in `PATH` and pass the SDL flags as Windows paths, e.g.
+`mingw32-make CC=gcc PYTHON=python SDL_CFLAGS=-IC:/mingw64/include/SDL2
+SDL_LIBS="-LC:/mingw64/lib -lmingw32 -lSDL2"`.
+The data setup script needs a Unix shell with `unar` (WSL works).
 
 ## Installing the game data
 

@@ -15,7 +15,7 @@ mkdir -p "$tmp/fixture/System Folder"
 run() { # run SCRIPT HOME LOG
   # optional first line "# app: NAME" selects another application
   app=$(sed -n '1s/^# app: //p' "$1")
-  ./build/cythera --deterministic --timeout 900 --sysdir "$2/System Folder" \
+  "${CYTHERA:-./build/cythera}" --deterministic --timeout 900 --sysdir "$2/System Folder" \
     ${app:+--app "$app"} --script "$1" > "$3" 2>&1
 }
 check() { # check NAME RC LOG

@@ -310,10 +310,7 @@ void finfo_set(const char *hostpath, u32 type, u32 creator, u16 flags) {
 /* Time                                                                    */
 
 u32 mac_time_from_unix(s64 t) {
-    struct tm lt;
-    time_t tt = (time_t)t;
-    localtime_r(&tt, &lt);
-    return (u32)(t + lt.tm_gmtoff + 2082844800LL);
+    return (u32)(t + plat_gmtoff((time_t)t) + 2082844800LL);
 }
 u32 mac_time_now(void) { return mac_time_from_unix((s64)time(NULL)); }
 
@@ -439,7 +436,7 @@ static int fcb_setpos(FCB *b, int mode, s32 off) {
 static int fcb_seteof(FCB *b, u32 len) {
     if (b->perm == 1) return wrPermErr;
     fflush(b->f);
-    if (ftruncate(fileno(b->f), (off_t)len)) return ioErr;
+    if (plat_ftruncate(fileno(b->f), len)) return ioErr;
     if (b->mark > len) b->mark = len;
     return noErr;
 }

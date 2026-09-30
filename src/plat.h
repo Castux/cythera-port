@@ -5,9 +5,11 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #ifdef _WIN32
 #include <direct.h>
+#include <io.h>
 #ifndef PATH_MAX
 #define PATH_MAX 260
 #endif
@@ -18,11 +20,24 @@ static inline const char *plat_home(void) {
     const char *h = getenv("APPDATA");
     return h ? h : getenv("USERPROFILE");
 }
+static inline int plat_ftruncate(int fd, long long len) { return _chsize_s(fd, len); }
+/* local time's offset from UTC, in seconds, at time t */
+static inline long plat_gmtoff(time_t t) {
+    struct tm lt;
+    if (localtime_s(&lt, &t)) return 0;
+    return (long)(_mkgmtime(&lt) - t);
+}
 #else
 #include <unistd.h>
 #define plat_mkdir(p) mkdir((p), 0755)
 static inline char *plat_realpath(const char *p, char *out) { return realpath(p, out); }
 static inline const char *plat_home(void) { return getenv("HOME"); }
+static inline int plat_ftruncate(int fd, long long len) { return ftruncate(fd, (off_t)len); }
+static inline long plat_gmtoff(time_t t) {
+    struct tm lt;
+    localtime_r(&t, &lt);
+    return lt.tm_gmtoff;
+}
 #endif
 
 #endif

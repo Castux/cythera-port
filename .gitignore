@@ -2,6 +2,7 @@
 work/
 gamedata/
 build/
+build-*/
 *.o
 .venv/
 __pycache__/

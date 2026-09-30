@@ -1,5 +1,6 @@
 # Delver runtime for Cythera
 CC      ?= cc
+PYTHON  ?= python3
 SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null || pkg-config --cflags sdl2)
 SDL_LIBS   := $(shell sdl2-config --libs 2>/dev/null || pkg-config --libs sdl2)
 ifeq ($(OS),Windows_NT)
@@ -24,7 +25,7 @@ $(BUILD)/cythera$(EXE): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 $(GEN): $(OS_SRCS) tools/gen_traps.py
-	python3 tools/gen_traps.py $@ $(OS_SRCS)
+	$(PYTHON) tools/gen_traps.py $@ $(OS_SRCS)
 
 $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
