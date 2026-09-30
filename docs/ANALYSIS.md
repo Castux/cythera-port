@@ -127,26 +127,88 @@ title, slideshows, backgrounds), `FILT` (lighting/colour filters), `PORT`,
 
 ## 3. Scenario archive format (Delver Archive)
 
-Known from delvmod (`delv/archive.py`), confirmed against our copy:
+From delvmod (`delv/archive.py`), checked against our copy and the engine
+(`TSegFile::*`, `TCachedSegFiles::*`). `tools/delv_archive.py` implements all
+of this (`info`, `list`, `dump`, `export`).
 
-- Header: `Str31` scenario title at 0, `Str31` player name at 0x20, small
-  fields at 0x40/0x42/0x48, master index (offset,len) at 0x80.
-- Master index: 256 entries of (offset,length) pointing to sub-indices. A
-  sub-index is 256 × (offset,length). Resource ID = `((sub+1)<<8)|n`.
-- Some sub-indices are **encrypted** with a 16-bit LCG keyed by the resource
-  ID (`key = id ^ (id>>8); m = ((id&0x3F)<<2)+1; b = id>>6; key = key*m+b`).
-- Sub-index meanings: 1 strings, 2 static data, 3 AI, 7–26 scripts
-  (dialogue, potions, mechanics, objects, zones, characters, monsters, skills,
-  areas), 47 default methods, 127 maps, 128 prop lists, 131 landscapes, 135
-  portraits, 137 skill icons, 141 tile sheets, 142 general graphics, 143 music,
-  144 sounds, 239 general data (`F0xx`: tile names/attributes/compositions,
-  prop tiles, schedules, zoneports, monster stats, characters).
-- Saved games ("Player" files) use the same segmented format.
+- Header (0x80 bytes): Pascal title at 0 ("Cythera: Fate of Alaric"),
+  Pascal player name at 0x20 (empty in the scenario), unknown bytes at 0x40
+  (`13 00 02 00 00 00 00 00 02`).
+- TOC: page 0 is the master page, 256 × (offset u32, length u32) at 0x80.
+  Its entry 0 is itself `(0x80, 0x800)`. `TSegFile::IsSegFile` checks exactly
+  that word. Entry *p* ≠ 0 points to page *p*, another 256 × (offset,length).
+  **Resource ID = `p<<8 | n`**: the high byte is the page number. (delvmod's
+  "subindex" is `p-1`.) An offset of 0 means absent. The scenario has 34
+  pages and 1,558 resources.
+- **Encryption** is not stored anywhere in the archive. The engine decrypts
+  when the caller asks (`GetEncryptedSegment`, used by the VM's
+  `VAddrToPtr`/`DoExpr` for IDs < 0x8000). It XORs each byte with the low
+  byte of an LCG: `key = id ^ id>>8; m = (id&0x3F)*4+1; b = (id>>6)&0xFF`,
+  then per byte `key = key*m+b`. The engine masks `b` to 8 bits, delvmod
+  doesn't, which matters only for IDs ≥ 0x4000 (none are encrypted). The
+  engine's `Encrypt` has a skip count to start mid-segment. The encrypted
+  pages are 02, 03, 05, 08–1E and 30, except `0210`. Pages 01 and 04 and
+  everything ≥ 0x80 are clear. This matches delvmod's lists, and an entropy
+  test agrees on every resource.
+- Pages: 01 global symbol table, 02 string arrays (character names, signs,
+  books, quests...), 03/05 AI and script data, 04 compiled combat AI
+  (Pascal name + 8-byte records), 08–1E scripts (dialogue, potions,
+  mechanics, objects, zones 14xx, characters 18xx, monsters, skills, areas),
+  30 default methods, 80 maps, 81 prop lists, 84 landscapes 288×32,
+  88 portraits 64×64, 8A skill icons (raw 32×16), 8E tile sheets 32×512,
+  8F sized graphics, 90 music, 91 sounds, F0 general data (tile
+  names/attributes/compositions, prop→tile, prop offsets, schedules,
+  zoneports, monster stats, characters, symbol lists).
+  Saved games use the same format (delvmod: pages 82 explored-area bitmaps
+  and E0 journal).
+- **Maps (80xx):** 32-byte header (u16 width, height, 0, two roof-layer
+  sizes; u8 ×2 edge propagation; u16 ×4 exit zoneports N/E/S/W; zero
+  padding). Then `0x40·(roof1+roof2)` bytes of roof data and `w·h` u16 tile
+  ids. **Prop lists (81xx):** 16-byte records: flags, x:12 y:12 (or the
+  container index + 0x100 if flags&0x18), u16 aspect<<10|type, u16
+  persistence d1:d2, u16, u32, u16.
+- **Sounds (91xx, `asnd`):** magic, u32 N (there are 512 + 1024·N samples),
+  a **Fixed** sample rate (0x56220000 = 22050, 0x56EE8B9F = 22254.55,
+  0x2B7745D0 = 11127.27; delvmod reads it as u16 rate + u16 flags). Then
+  signed 8-bit samples stored as big-endian int16, always within -128..127.
+  **Music (90xx):** QuickTime Music tunes (a `musi` tune-header atom first).
 
-**Graphics:** Delver Compressed Graphics is an LZ77/RLE mix (short/long copy
-with literals, pixel runs, raw data), 8-bit indexed with the Cythera CLUT.
-Tiles are 32×32, sheets 32×512; composite tiles are built from 8×8
-sub-tiles.
+**Graphics:** Delver Compressed Graphics is an LZ77/RLE mix, 8-bit indexed.
+Byte opcodes:
+- `00–7F`: short copy (2 bytes).
+- `80–BF`: long copy (3 bytes). Copies may be preceded by 0–3 literal bytes.
+  A copy repeats its pattern if it overlaps.
+- `Cx`: 4·(x+1) literals.
+- `Dx`: x literals.
+- `Ex`: run of x+3 of the next byte.
+- `F0 n c`: run of n+3.
+- `FF`: end.
+
+The palette is `clut` 256 in the scenario's resource fork. delvmod's hard-coded
+table differs in entries 16, 247, 252 and 253. 8Fxx images, and `8EFF`
+(194×127, stored among the tile sheets), start with u16 width and u16
+height. Their rows are padded to a multiple of 4. Tile *t* < 0x1000 is
+image `t&15` of sheet `8E00|t>>4`. Tiles 0x1000–0x1FFF are composed from
+F013: 16 u16 per tile, each `seg<<12 | sheet<<4 | tile`, which picks the 8×8
+piece *seg* of that tile. Pieces are numbered down, then across. They are
+placed across, then down. Colour index 0 is transparent for sprites.
+
+**Checked against delvmod** (`work/verify_archive.py`, not committed): same
+1,558 IDs, byte-identical decrypted data for all of them, all 441 images
+decompress identically, all 8,192 tiles compose identically, and map
+tiles/sizes, prop records and tile names match.
+
+**VM objects** (script pages): a resource is either a class, or a bare object
+at offset 0. A class has a u16 at offset 0 giving the offset of its field
+table. A field table is `Ax`-style: count, then (u32 value, u16 key).
+Object types:
+- `81 argc nlocals code…`: function.
+- `9n`: array; the count is the u16 & 0xFFF, followed by u32 values.
+- `An`: table.
+- anything else: a C string.
+
+References inside the resource are `0x8000_0000 | id<<16 | offset`. Oddity:
+`0201` (character names) refers to its own strings as `0x9165oooo`.
 
 **Scripts:** a stack-ish bytecode (delvmod's rdasm/ddasm). Opcodes <0x80 are
 expression ops (push local/arg/byte/short/word/string/data, arithmetic, field

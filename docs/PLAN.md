@@ -14,7 +14,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Symbolizing PPC disassembler with traceback names (`tools/ppcdis.py`)
 - [x] Technical analysis, strategy decision
 - [x] `tools/setup_gamedata.sh`: reproducible extraction into `gamedata/`
-- [ ] Archive dumper for `Cythera Data` (decrypt, list, export) for debugging
+- [x] Archive dumper for `Cythera Data` (decrypt, list, export) for debugging (`tools/delv_archive.py`)
 
 ## M1 — Runtime skeleton
 - [x] Build system (Makefile + pkg-config SDL2), `src/` layout
@@ -84,6 +84,12 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (archive dumper): `tools/delv_archive.py` lists, decrypts and exports the
+  Delver archive with no dependencies (PNG, WAV, map renders, prop tables, VM-object dumps).
+  It matches delvmod on all 1,558 resources. New findings (ANALYSIS §3): the resource
+  ID's high byte is the TOC page, encryption is chosen by the caller (the VM always decrypts),
+  `asnd` rates are Fixed, `8EFF` is a sized image, and the scenario `clut` differs
+  from delvmod's palette in 4 entries.
 - 2026-09-29 (CPU use): gamma fades spun millions of times per second because the video
   driver's cscSetGamma returned at once; it now waits for the next vertical blank like the
   hardware (fades run at 60 steps/s). TickCount busy-waits sleep until the next tick. A

@@ -172,6 +172,9 @@ game finds it.
 - `tools/delv_props.py` lists the game's maps and the objects on each (positions,
   names, containers), using [delvmod](https://github.com/BryceSchroeder/delvmod)
   cloned into `work/delvmod`. Handy for writing scripted play-throughs.
+- `tools/delv_archive.py info|list|dump ID|export DIR [SEL]` reads the scenario's Delver
+  archive (standard library only): it lists resources and decrypts them, and exports
+  images/maps as PNG, sounds as WAV, prop lists, strings and script structure as text.
 
 ## License
 
