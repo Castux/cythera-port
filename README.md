@@ -156,8 +156,13 @@ game finds it.
   replays the scripted scenarios (hermetic: it never touches `~/.cythera-port`).
 - `--headless --script FILE` runs without a window and replays scripted input
   (`wait`, `click`, `move`, `key`, `hold`, `type`, `shot file.png`, `bt`,
-  `dumpwin`, `trace on|off`, `expect TEXT`, `quit`). See `tests/scripts/`. A first line
-  `# app: NAME` makes `tests/run.sh` run another application.
+  `dumpwin`, `trace on|off`, `expect TEXT`, `peek ADDR [N]`, `quit`). See `tests/scripts/`.
+  A first line `# app: NAME` makes `tests/run.sh` run another application.
+  `peek 228578 4` logs the hero's position: map number, then x and y as 12-bit
+  fields (the game's character table is at 0x228558, 32 bytes per character).
+- `--deterministic` drives the clock (and the date) from the executed
+  instructions, so a script replays identically; timing-sensitive scripts
+  (non-player characters wandering, combat) still depend on the exact build.
 - `--turbo N` runs the emulated clock N× faster (for tests); `--timeout N` sets
   a time limit.
 - `--trace-traps` logs every Toolbox call with symbolized callers, and

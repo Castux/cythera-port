@@ -55,10 +55,13 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M5 — Gameplay
 - [~] Main map view, roster, text log, character/inventory windows work
-- [~] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do (movement, contextual menu, conversations verified)
+- [x] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do (movement, contextual menu, conversations verified)
+- [x] Travel between maps, combat and death, sleeping, shops (buying, haggling), potions (verified by scripts)
+- [ ] Magic spells: need training at the Magisterium in Pnyx (not reached by a script yet)
 - [x] Save / load games (verified); [x] preferences dialog
 - [x] Timing correctness (ticks, animation, heartbeat)
-- **Exit:** play through the opening of the game (Odemia) with save/load.
+- **Exit:** play through the opening of the game (Odemia) with save/load. (Odemia's gate is
+  reached; the town stays closed until Ariadne is rescued from the bandits at the Abandoned Farmhouse.)
 
 ## M6 — Audio
 - [x] Sound Manager (snd resources, SndDoCommand/Immediate, SndPlay, double buffer, callbacks)
@@ -69,7 +72,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M7 — Completeness & polish
 - [x] Sweep every imported call for correctness; replace all stubs used at runtime
   (inventory and findings: [TOOLBOX.md](TOOLBOX.md))
-- [ ] Slideshows, cutscenes, end-game, credits
+- [x] Slideshows, cutscenes, end-game, credits (intro slideshow, death cutscene and game over,
+  scrolling credits in About; the winning ending uses the same calls, see the 2026-09-30 log)
 - [x] Window scaling, fullscreen, HiDPI, configurable screen size
 - [ ] Performance (predecoded instruction cache or block JIT if needed)
 - [ ] Portability: Linux/Windows builds (CI-free manual check), no host-endianness assumptions
@@ -85,6 +89,30 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (gameplay): new scripts play through what was left unverified: `travel` (Omen's Test ->
+  LandKing Hall -> World -> Odemia's gate), `sleep` (the bed in the hero's quarters; "It is already
+  morning" afterwards), `potion` (Far Sight potion: the overhead map), `combat` (the bandits at the
+  Abandoned Farmhouse kill the hero: death cutscene, then GameOver), `shop` (40 oboloi from the
+  quarters, walk to Catamarca, buy bread from Parium with a round of haggling). Bugs found and fixed:
+  - (also found here, fixed by the Toolbox sweep: StdCLib's PL string functions, which left the
+    player's name empty everywhere, e.g. "A ruffian missed .", and the CDEF 63 pop-up.)
+  - SeedFill overflowed its stack buffer (heap corruption, a crash in LandKing Hall's pool room).
+  - CopyBits clipped to the current port even when drawing elsewhere: cutscene work areas below
+    row 480 of their 544x544 GWorld were lost (a white box under the death cutscene picture).
+  - TrackControl jumped to address -1 for controls whose action is -1 (autoTrack: the CDEF
+    tracks itself), a crash on the shop dialog's quantity arrows.
+  Monsters act as turns pass, so the combat script steps back and forth until the hero dies; a
+  key (not a click) ends the death slideshow, because GameOver ends as soon as the button is down.
+  Monster eggs (props with flags 0x42 holding a monster) hatch with probability d2 % when the
+  hero comes near (TActiveMonster::HatchEgg; d1 bits restrict to day or night): the Omen's Test
+  maze eggs have d2 = 0, hence no monsters there.
+  Not reached: spells (Mana/Casting need training at the Magisterium in Pnyx; scrolls are learned
+  with a grimoire only after that), selling (no merchant who buys is reachable before Odemia opens),
+  the winning ending. The endings are VM script: Alaric's Talk (0x1802) after he is cured runs
+  SpecialView, BeginSlideshow, Slideshow(512, 0x0243[i]), EndSlideshow and GameOver("You have saved
+  the land..."), the same calls as the death sequence (0x1801 OnDeath, texts 0x0241), which the
+  combat script exercises; the bad ending (0x180d, Pelagon) is the same again. Reaching them
+  needs the whole plot, and faking the state would not test anything the death path doesn't.
 - 2026-09-30 (archive dumper): `tools/delv_archive.py` lists, decrypts and exports the
   Delver archive with no dependencies (PNG, WAV, map renders, prop tables, VM-object dumps).
   It matches delvmod on all 1,558 resources. New findings (ANALYSIS §3): the resource
