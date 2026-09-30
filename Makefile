@@ -41,14 +41,15 @@ $(BUILD)/cythera$(EXE): $(OBJS)
 $(GEN): $(OS_SRCS) tools/gen_traps.py
 	$(PYTHON) tools/gen_traps.py $@ $(OS_SRCS)
 
-$(BUILD)/%.o: %.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
-
-# FreeType's own sources: its build flags, without our warnings
+# FreeType's own sources: its build flags, without our warnings. (Before the
+# generic rule: GNU make 3.81, macOS's, takes the first matching pattern.)
 $(BUILD)/$(FT)/%.o: $(FT)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) -O2 -DFT2_BUILD_LIBRARY $(FT_CFLAGS) -MMD -MP -c -o $@ $<
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
 
 $(BUILD)/gen/trap_table.o: $(GEN)
 	$(CC) $(CFLAGS) -c -o $@ $<
