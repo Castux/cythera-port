@@ -17,8 +17,13 @@ else ifneq ($(shell pkg-config --exists freetype2 2>/dev/null && echo y),)
 FT_CFLAGS := -DHAVE_FREETYPE $(shell pkg-config --cflags freetype2)
 FT_LIBS   := $(shell pkg-config --libs freetype2)
 endif
+# LICENSE_BYPASS=0 runs the original code unaltered (no shareware registration bypass)
+LICENSE_BYPASS ?= 1
+ifneq ($(LICENSE_BYPASS),0)
+OPT_CFLAGS := -DLICENSE_BYPASS
+endif
 CFLAGS  ?= -O2 -g
-override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS) $(FT_CFLAGS)
+override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS) $(FT_CFLAGS) $(OPT_CFLAGS)
 override LDLIBS += $(FT_LIBS) $(SDL_LIBS) -lm -lpthread
 
 BUILD   := build

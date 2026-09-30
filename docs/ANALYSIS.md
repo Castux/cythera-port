@@ -259,6 +259,7 @@ Key mechanisms:
   shipped). The game's own fonts are available.
 - QuickTime Music: needs a General MIDI synthesizer. Plan: a bundled
   lightweight synth, or TinySoundFont with a user-supplied SoundFont.
-- Registration: the original shareware registration flow is kept as-is.
+- Registration: the licence check is replaced by default (src/os/license.c;
+  `make LICENSE_BYPASS=0` keeps the original shareware flow).
 - Timing: the game paces itself with `TickCount`, threads and Time Manager.
   Emulate ticks from the host clock (60.15 Hz).

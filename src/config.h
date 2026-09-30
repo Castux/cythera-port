@@ -9,6 +9,7 @@ typedef struct {
     const char *soundfont;
     const char *render_pict, *render_out;
     const char *app;
+    const char *registered_to; /* --registered: licensee shown by the registration bypass */
     bool fullscreen;  /* application file name in data_dir */
     bool headless;
     int screen_w, screen_h;

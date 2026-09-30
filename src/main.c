@@ -34,6 +34,9 @@ static void usage(void) {
         "  --app NAME        run another application from the game folder (e.g. \"Register Cythera\")\n"
         "  --script FILE     run an input script (see README.md, tests/scripts/)\n"
         "  --sysdir DIR      emulated System Folder (default ~/.cythera-port/System Folder)\n"
+#ifdef LICENSE_BYPASS
+        "  --registered NAME name the game is registered to (default: Cythera Port)\n"
+#endif
         "  --turbo N         run the emulated clock N times faster (tests)\n"
         "  --profile         print Toolbox/guest profile at exit\n"
         "  --deterministic   headless, virtual clock driven by instructions (reproducible tests)\n"
@@ -64,6 +67,9 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--app") && i + 1 < argc) g_cfg.app = argv[++i];
         else if (!strcmp(a, "--script") && i + 1 < argc) g_cfg.script = argv[++i];
         else if (!strcmp(a, "--sysdir") && i + 1 < argc) g_cfg.sysdir = argv[++i];
+#ifdef LICENSE_BYPASS
+        else if (!strcmp(a, "--registered") && i + 1 < argc) g_cfg.registered_to = argv[++i];
+#endif
         else if (!strcmp(a, "--soundfont") && i + 1 < argc) g_cfg.soundfont = argv[++i];
         else if (!strcmp(a, "--wav") && i + 1 < argc) { extern void sound_wav_open(const char *); sound_wav_open(argv[++i]); }
         else if (!strcmp(a, "--render-pict") && i + 2 < argc) { g_cfg.render_pict = argv[++i]; g_cfg.render_out = argv[++i]; g_cfg.headless = true; }
@@ -105,6 +111,8 @@ int main(int argc, char **argv) {
         fatal("%s is not a PowerPC PEF container", path);
     free(pefbuf);
     sym_scan_tracebacks(img.code_addr, img.code_size);
+    extern void license_bypass(u32 code_addr, u32 code_size);
+    license_bypass(img.code_addr, img.code_size);
     /* CYTHERA_WATCH=off,off,... (hex code offsets, as in tools/ppcdis.py) */
     for (const char *w = getenv("CYTHERA_WATCH"); w && *w; ) {
         char *end;

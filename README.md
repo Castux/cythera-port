@@ -108,8 +108,15 @@ Option is Alt.
 
 ## Registration
 
-Cythera was shareware. Ambrosia's registration application, included with the
-game, runs under the port as well:
+Cythera was shareware, and registration codes can no longer be bought, so by
+default the port plays the registered game: it stands in for the game's
+licence check (nothing is written to disk). The title screen shows
+"Registered To: Cythera Port"; choose the name with `--registered "Your Name"`.
+
+To run the original code entirely unaltered, build with `make LICENSE_BYPASS=0`
+(after `make clean`, or in another `BUILD=` directory). The game is then
+unregistered unless you enter a code with Ambrosia's registration
+application, included with the game, which runs under the port as well:
 
 ```sh
 ./build/cythera --app "Register Cythera"
