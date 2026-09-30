@@ -11,6 +11,9 @@ cd "$(dirname "$0")/.."
 # The same fonts on every platform (DejaVu stands in for Geneva and Chicago):
 # text layout decides line breaks and conversation pages the scripts rely on.
 export CYTHERA_FONT_DIR="${CYTHERA_FONT_DIR:-tests/fonts}"
+# a Python 3 that runs (on Windows, python3 may be the Microsoft Store stub)
+PY="${PYTHON:-}"
+[ -n "$PY" ] || { python3 -c '' 2>/dev/null && PY=python3 || PY=python; }
 mkdir -p work/shots
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/cythera-tests.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
@@ -40,7 +43,7 @@ for s in ${@:-tests/scripts/*.txt}; do
   rm -rf "$tmp/run" && cp -R "$tmp/fixture" "$tmp/run"
   # "# save-edit: KEY=VALUE..." edits the fixture's saved game first (tools/delv_save.py set)
   edit=$(sed -n 's/^# save-edit: //p' "$s")
-  if [ -n "$edit" ] && ! ${PYTHON:-python3} tools/delv_save.py set "$tmp/run/Saved Games/Hero" $edit > "$log" 2>&1; then
+  if [ -n "$edit" ] && ! $PY tools/delv_save.py set "$tmp/run/Saved Games/Hero" $edit > "$log" 2>&1; then
     echo "FAIL $s (save-edit)"; tail -3 "$log"; status=1; continue
   fi
   run "$s" "$tmp/run" "$log"
