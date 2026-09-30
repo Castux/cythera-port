@@ -8,3 +8,4 @@ third_party/freetype/
 .venv/
 __pycache__/
 .DS_Store
+.claude/worktrees/
