@@ -18,6 +18,7 @@ typedef struct {
     const char *name;
     void (*fn)(CPU *);
     u32 calls;
+    u32 caller;   /* return address of the first call (--trap-stats) */
     u64 ns;       /* inclusive host time (--profile) */
 } TrapSlot;
 bool g_profile;
@@ -49,6 +50,23 @@ void trap_profile_report(void) {
     guest_profile_report();
     for (int i = 0; i < n && i < 30; i++)
         fprintf(stderr, "  %-28s %8u calls %8.3f s %5.1f%%\n", v[i]->name, v[i]->calls, v[i]->ns / 1e9, 100.0 * (double)v[i]->ns / (double)total);
+}
+
+/* --trap-stats FILE: append "name calls implemented first-caller" for every
+   bound import at exit (runs accumulate; aggregate with sort/awk). */
+const char *g_trap_stats;
+void trap_stats_report(void) {
+    if (!g_trap_stats) return;
+    FILE *f = fopen(g_trap_stats, "a");
+    if (!f) return;
+    for (u32 i = 0; i < g_nslots; i++) {
+        u32 off, lr = g_slots[i].caller;
+        const char *n = lr ? sym_lookup(lr, &off) : NULL;
+        if (n) fprintf(f, "%s %u %d %s+%#x\n", g_slots[i].name, g_slots[i].calls, g_slots[i].fn != NULL, n, off);
+        else fprintf(f, "%s %u %d %s%x\n", g_slots[i].name, g_slots[i].calls, g_slots[i].fn != NULL,
+                     lr ? "code+" : "-", lr ? lr - CODE_ADDR : 0);
+    }
+    fclose(f);
 }
 
 /* Libraries we emulate.  Weak imports from any other library resolve to
@@ -119,7 +137,7 @@ void trap_dispatch(CPU *c, u32 index) {
     if (index >= g_nslots) fatal("jump to invalid trap slot %u", index);
     c->last_trap_icount = c->icount;
     TrapSlot *s = &g_slots[index];
-    s->calls++;
+    if (!s->calls++) s->caller = c->lr;
     if (g_shot_trap && !strcmp(s->name, g_shot_trap) && s->calls == g_shot_n) { qd_present(); host_screenshot(g_shot_out); }
     if (g_trace_traps && trace_match(s->name)) {
         u32 off;
