@@ -13,6 +13,7 @@
 /* ---- stubs for symbols normally provided by the rest of the runtime ---- */
 bool g_deterministic;
 u64 g_vclock_ns;
+u64 host_now_us(void) { return 0; }
 static jmp_buf g_crash;
 static bool g_in_run;
 void trap_dispatch(CPU *c, u32 index) {

@@ -57,7 +57,7 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [~] Main map view, roster, text log, character/inventory windows work
 - [~] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do (movement, contextual menu, conversations verified)
 - [x] Save / load games (verified); [x] preferences dialog
-- [ ] Timing correctness (ticks, animation, heartbeat)
+- [x] Timing correctness (ticks, animation, heartbeat)
 - **Exit:** play through the opening of the game (Odemia) with save/load.
 
 ## M6 — Audio
@@ -105,6 +105,21 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
   past the end of the channel arrays); rate conversion interpolates linearly;
   `SndGetInfo` answers sample rate/size/channels; `SndChannelStatus` fields are at the right
   offsets. The Prefs sliders, Mute and System Volume boxes persist (`tests/scripts/volume.txt`).
+- 2026-09-30 (timing): the game paces everything with TickCount (no Microseconds, VBL or
+  Time Manager tasks; model in ANALYSIS.md). Measured: map animation every 6 ticks and one
+  step per 6 ticks while walking (the game-speed preference), identical in real time and
+  --deterministic, so ticks were right. Fixed what surrounds them: WaitNextEvent now sleeps
+  the requested time (3 ticks in play) instead of 1, as on the Mac; autoKey events are made
+  from KeyThresh/KeyRepThresh (factory 24/6 ticks) instead of host key repeats; events are
+  stamped when the host saw them (double-clicks while the game is busy); DoubleTime is the
+  factory 32 ticks and TextEdit uses DoubleTime/CaretTime; Delay keeps presenting the screen;
+  GetDateTime follows the emulated clock (fixed 2000-01-01 start in deterministic runs).
+  Display: no more vsync (presents blocked the emulated CPU, 8-13% of the time at 144 Hz,
+  worse below 60 Hz) and one present per tick (cpu_poll and idle waits presented
+  separately, ~85/s). Busy-wait detection now covers loops that poll Button, GetOSEvent,
+  TuneGetStatus... between TickCount calls: the new-game intro (scrolling text) went from
+  44 s to 3.4 s of CPU in 94 s, in-game idle from 21% to 13% of a core. Trace and watch
+  lines now start with the emulated time in seconds.
 - 2026-09-29 (CPU use): gamma fades spun millions of times per second because the video
   driver's cscSetGamma returned at once; it now waits for the next vertical blank like the
   hardware (fades run at 60 steps/s). TickCount busy-waits sleep until the next tick. A

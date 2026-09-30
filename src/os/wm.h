@@ -51,6 +51,7 @@ bool ev_mouse_button(void);
 Point ev_mouse_global(void);
 void ev_pump_host(void);
 void ev_idle_frame(void);           /* present screen, pump host */
+void ev_present_tick(void);         /* present screen once per tick */
 u16 ev_modifiers(void);
 void ev_post_update_check(void);
 

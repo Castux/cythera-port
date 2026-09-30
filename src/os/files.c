@@ -318,7 +318,6 @@ void finfo_set(const char *hostpath, u32 type, u32 creator, u16 flags) {
 u32 mac_time_from_unix(s64 t) {
     return (u32)(t + plat_gmtoff((time_t)t) + 2082844800LL);
 }
-u32 mac_time_now(void) { return mac_time_from_unix((s64)time(NULL)); }
 
 TRAP(GetDateTime) { u32 p = ARG(0); if (p) wr32(p, mac_time_now()); }
 

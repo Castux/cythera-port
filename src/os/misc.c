@@ -55,6 +55,15 @@ void wait_vbl(void) {
 }
 u64 host_now_us(void) { return (now_ns() - g_start_ns) / 1000; }
 
+/* Wall-clock date for GetDateTime and the Time low-memory global. It follows
+   the emulated clock (so --turbo runs it faster too), from the host date at
+   startup; in deterministic mode it starts at a fixed date (1 January 2000,
+   00:00) so runs are reproducible. */
+static s64 g_date_base; /* Mac seconds at startup */
+u32 mac_time_now(void) {
+    return (u32)(g_date_base + (s64)(host_now_us() / 1000000u));
+}
+
 u32 tick_count(void) {
     /* 60.15 Hz */
     return (u32)((now_ns() - g_start_ns) * 6015ull / 100000000000ull);
@@ -142,26 +151,30 @@ TRAP(PrimeTime) {
 }
 
 /* ---- ticks, delays ---- */
-/* Busy-wait loops (while (TickCount() < t) ...) call TickCount back to back
-   with no other Toolbox call in between; after a few spins, sleep until the
-   next tick instead of burning host CPU. The values returned are the same. */
+/* Busy-wait loops (while (TickCount() < t) ...) call TickCount over and over
+   with little work and no Toolbox calls in between, other than status
+   queries (Button, GetOSEvent, TuneGetStatus...: the intro's scrolling text,
+   fades, credits). After a few spins within the same tick, sleep until the
+   next tick instead of burning host CPU. The values returned are the same;
+   loops that do real work between calls are left alone. */
 TRAP(TickCount) {
-    static u32 last_epoch, last_t; static int spins;
+    extern u32 g_poll_epoch;
+    static u32 last_epoch, last_poll, last_t; static u64 last_ic; static CPU *last_cpu; static int spins;
     u32 t = tick_count();
-    if (g_trap_epoch == last_epoch + 1 && t == last_t) {
+    bool polling = t == last_t && cpu == last_cpu && cpu->icount - last_ic < 4000 &&
+                   g_trap_epoch - last_epoch - 1 == g_poll_epoch - last_poll;
+    if (polling) {
         if (++spins >= 64) { wait_vbl(); t = tick_count(); spins = 0; }
     } else spins = 0;
-    last_epoch = g_trap_epoch; last_t = t;
+    last_epoch = g_trap_epoch; last_poll = g_poll_epoch; last_t = t; last_ic = cpu->icount; last_cpu = cpu;
     RET(t);
 }
 
 TRAP(Delay) {
     u32 n = ARG(0), finalp = ARG(1);
     u32 until = tick_count() + n;
-    while ((s32)(until - tick_count()) > 0) {
-        host_pump(true);
-        irq_service();
-    }
+    /* keep the screen presented (button flashes, zoom rects) */
+    while ((s32)(until - tick_count()) > 0) ev_idle_frame();
     if (finalp) wr32(finalp, tick_count());
 }
 
@@ -437,11 +450,13 @@ TRAP(GetDCtlEntry) { RET(0); }
 
 void misc_init(void) {
     g_start_ns = now_ns();
+    g_date_base = g_deterministic ? 3029529600LL /* 2000-01-01 */ : (s64)mac_time_from_unix((s64)time(NULL));
     /* 68k exception vectors at 0x08-0xFF point into ROM on a real Mac, so
        stray NULL-relative reads there see nonzero values (the app relies on
        this when walking off the end of the window list). */
     for (u32 a = 0x08; a < 0x100; a += 4) wr32(a, FAKEROM_START + 0x1000u + a * 0x10);
-    wr32(LM_DoubleTime, 30);
+    /* The factory settings of parameter RAM (SPClikCaret = $88): 32 ticks */
+    wr32(LM_DoubleTime, 32);
     wr32(LM_CaretTime, 32);
     wr16(LM_SysFontFam, 0);
     wr16(LM_SysFontSize, 12);
@@ -449,7 +464,13 @@ void misc_init(void) {
     c_to_pstr(g_cfg.app, LM_CurApName, 31);
 }
 
+/* Called from the interpreter's periodic poll and from every idle wait. */
 void misc_poll(void) {
     wr32(LM_Ticks, tick_count());
     wr32(LM_Time, mac_time_now());
+    if (g_cfg.timeout_s && host_now_us() > (u64)g_cfg.timeout_s * 1000000u) {
+        LOG_I("timeout reached");
+        host_shutdown();
+        exit(3);
+    }
 }

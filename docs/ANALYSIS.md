@@ -339,5 +339,14 @@ Key mechanisms:
   lightweight synth, or TinySoundFont with a user-supplied SoundFont.
 - Registration: the licence check is replaced by default (src/os/license.c;
   `make LICENSE_BYPASS=0` keeps the original shareware flow).
-- Timing: the game paces itself with `TickCount`, threads and Time Manager.
-  Emulate ticks from the host clock (60.15 Hz).
+- Timing: the game paces itself with `TickCount` only (60.15 Hz ticks from the
+  host clock; it doesn't use Microseconds, VBL or Time Manager tasks). Its main
+  loop (`TApp::MEL`) yields to its threads, then calls `WaitNextEvent` with a
+  3-tick sleep. A custom thread scheduler (`TTaskMaster::MyScheduler`) runs the
+  map animation thread (`TMapWindow::AnimThread`: redraw, colour cycling, tile
+  frames) when `next` is due, then sets `next = now + speed`, where speed is a
+  preference (bits 2-5 of the first preferences byte, 6 ticks by default): 10
+  animation frames and at most 10 steps per second (holding an arrow walks one
+  tile per 6 ticks; `TGameSys::HeartBeat` runs once per turn). Screen effects
+  wait in `while (TickCount() < t)` loops. `GetDateTime` only dates saved games
+  and measures time spent suspended.

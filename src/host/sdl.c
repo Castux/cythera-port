@@ -48,6 +48,7 @@ void host_clipboard_set(const char *utf8) {
 static void push_event(HostEvent e) {
     int n = (g_evt + 1) % EVQ;
     if (n == g_evh) return;
+    e.when = tick_count(); /* like the Mac, stamp input when it happens */
     g_evq[g_evt] = e;
     g_evt = n;
 }
@@ -76,7 +77,11 @@ void host_init(int w, int h, bool headless, int scale) {
     g_win = SDL_CreateWindow("Cythera", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w * scale, h * scale,
                              SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!g_win) fatal("SDL_CreateWindow: %s", SDL_GetError());
-    g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    /* No vsync: the emulator presents once per 60.15 Hz tick, and waiting
+       for the host's vertical blank would block the emulated CPU (badly on
+       displays under 60 Hz) and tie the game's speed to the display. The
+       SDL_RENDER_VSYNC=1 environment variable turns it back on. */
+    g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_ACCELERATED);
     if (!g_ren) g_ren = SDL_CreateRenderer(g_win, -1, 0);
     SDL_RenderSetLogicalSize(g_ren, w, h);
     SDL_RenderSetIntegerScale(g_ren, SDL_TRUE);

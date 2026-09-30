@@ -566,7 +566,7 @@ TRAP(TEIdle) {
     TEInfo *ti = teinfo(te);
     if (!ti) return;
     u32 t = tick_count();
-    if (t - ti->caret_tick >= 32) {
+    if (t - ti->caret_tick >= rd32(0x02F4) /* CaretTime */) {
         ti->caret_tick = t;
         te_caret(te, !ti->caret_on);
     }
@@ -620,7 +620,7 @@ TRAP(TEClick) {
     qd_set_port(port);
     int anchor = extend ? rds16(p + TE_SELSTART) : pos_from_point(te, ti, port, pt);
     u32 now = tick_count();
-    bool dbl = (now - rd32(p + TE_CLICKTIME)) < 30 && abs(rds16(p + TE_CLICKLOC) - anchor) <= 1;
+    bool dbl = (now - rd32(p + TE_CLICKTIME)) < rd32(0x02F0) /* DoubleTime */ && abs(rds16(p + TE_CLICKLOC) - anchor) <= 1;
     wr32(p + TE_CLICKTIME, now);
     wr16(p + TE_CLICKLOC, (u16)anchor);
     te_caret(te, false);
