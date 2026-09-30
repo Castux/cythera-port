@@ -67,7 +67,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - **Exit:** music and sound effects play correctly.
 
 ## M7 — Completeness & polish
-- [ ] Sweep every imported call for correctness; replace all stubs used at runtime
+- [x] Sweep every imported call for correctness; replace all stubs used at runtime
+  (inventory and findings: [TOOLBOX.md](TOOLBOX.md))
 - [ ] Slideshows, cutscenes, end-game, credits
 - [x] Window scaling, fullscreen, HiDPI, configurable screen size
 - [ ] Performance (predecoded instruction cache or block JIT if needed)
@@ -84,6 +85,16 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (Toolbox sweep): [TOOLBOX.md](TOOLBOX.md) classifies all 563 imports (423 full,
+  32 partial, 49 stubs, 20 audio, 39 in absent weak libraries). `--trap-stats` counted what the
+  scripted scenarios, a free-form session and random "monkey" sessions reach. Fixed: StdCLib's
+  PL string functions were missing, which silently emptied dialog labels, default file names,
+  strategy names and the title-screen player name. Opening a game from within a game crashed
+  because Standard File left its disposed dialog as the current port. The strategy pop-up
+  (CDEF 63) didn't exist. InitZone was a no-op (the segment cache zone). Saved games now carry
+  a preview thumbnail that the Open dialog shows. Menus use the low-memory system font, and tall
+  pop-ups scroll. On Windows, Finder info updates were lost. Also ObscureCursor and TextEdit
+  arrow keys. `tools/ppcdis.py xref` now works and disassembles the runtime library code.
 - 2026-09-29 (CPU use): gamma fades spun millions of times per second because the video
   driver's cscSetGamma returned at once; it now waits for the next vertical blank like the
   hardware (fades run at 60 steps/s). TickCount busy-waits sleep until the next tick. A

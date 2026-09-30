@@ -161,13 +161,17 @@ game finds it.
 - `--turbo N` runs the emulated clock N× faster (for tests); `--timeout N` sets
   a time limit.
 - `--trace-traps` logs every Toolbox call with symbolized callers, and
-  `--profile` prints Toolbox and guest-function hot spots.
+  `--profile` prints Toolbox and guest-function hot spots. `--trap-stats FILE`
+  appends per-call counts at exit (`CYTHERA_ARGS="--trap-stats FILE" tests/run.sh`
+  collects them over all scenarios); [docs/TOOLBOX.md](docs/TOOLBOX.md) lists
+  every imported call and how complete it is.
 - `CYTHERA_WATCH=off,...` logs the registers each time execution reaches the given
   code offsets (hex, as printed by `tools/ppcdis.py`): a cheap breakpoint.
 - `--wav FILE` records the audio output; `--render-pict FILE OUT.png` renders a
   PICT file.
 - `tools/ppcdis.py` is a symbolizing PowerPC disassembler for the game binary
-  (function names come from the CodeWarrior traceback tables);
+  (function names come from the CodeWarrior traceback tables; `xref NAME` lists
+  the callers of a function or Toolbox call);
   `tools/rsrc.py` and `tools/pef.py` parse resource forks and PEF containers.
 - `tools/delv_props.py` lists the game's maps and the objects on each (positions,
   names, containers), using [delvmod](https://github.com/BryceSchroeder/delvmod)
