@@ -4,16 +4,17 @@ This is a port of **Cythera** (Ambrosia Software, 1999), the classic Mac RPG bui
 on Glenn Andreas's Delver engine, to current operating systems (macOS, Linux,
 Windows) using C and SDL2.
 
-The approach: the original PowerPC game code runs **unmodified** on a built-in
-PowerPC interpreter. The classic Mac OS Toolbox it calls (QuickDraw, Window, Menu,
-Dialog, Control, List and TextEdit Managers, Sound Manager, QuickTime Music,
-File/Resource/Memory Managers, threads, and more) is reimplemented natively. The
-game data and scripts are used as they are. No Apple ROM or System software is
-needed. Details: [docs/ANALYSIS.md](docs/ANALYSIS.md) and [docs/PLAN.md](docs/PLAN.md).
+The original PowerPC game code runs **unmodified** on a built-in PowerPC
+interpreter, and the classic Mac OS Toolbox it calls (QuickDraw, the Window,
+Menu, Dialog, Control, List and TextEdit Managers, the Sound Manager, QuickTime
+Music, files, resources, memory, threads...) is reimplemented natively. The
+game's data and scripts are used as they are. No Apple ROM or System software
+is needed. The original game installer is included in [`orig/`](orig/).
 
-The original game installer is included in [`orig/`](orig/): `Cythera.bin`
-(MacBinary) and `Cythera_Installer.sit` (StuffIt), which contain the same
-installer.
+Documentation for developers: [docs/DEVELOPING.md](docs/DEVELOPING.md) (building,
+testing, tools), [docs/ANALYSIS.md](docs/ANALYSIS.md) (how the original works),
+[docs/TOOLBOX.md](docs/TOOLBOX.md) (the reimplemented calls) and
+[docs/PLAN.md](docs/PLAN.md) (goals, status, history).
 
 ### About the original game
 
@@ -32,81 +33,39 @@ No harm to anyone's intellectual property is intended. This is a fan and
 hobby project, with no commercial purpose, made to keep a beloved game
 playable.
 
-## Building
+## Download and play
 
-Requirements: a C11 compiler, `make`, SDL2 development files, Python 3.
-
-```sh
-# macOS
-brew install sdl2 unar
-# Debian/Ubuntu
-sudo apt install build-essential libsdl2-dev unar python3-venv
-
-make
-```
-
-Windows: build in an [MSYS2](https://www.msys2.org/) MinGW64 shell
-(`pacman -S make mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 python`), then `make`.
-With a standalone MinGW-w64 instead (native `mingw32-make`, run from Git Bash),
-put its `bin` first in `PATH` and pass the SDL flags as Windows paths, e.g.
-`mingw32-make CC=gcc PYTHON=python SDL_CFLAGS=-IC:/mingw64/include/SDL2
-SDL_LIBS="-LC:/mingw64/lib -lmingw32 -lSDL2"`.
-The data setup script needs a Unix shell with `unar` (WSL works).
-
-## Installing the game data
-
-```sh
-tools/setup_gamedata.sh                     # orig/Cythera.bin -> gamedata/
-tools/setup_gamedata.sh orig/Cythera_Installer.sit gamedata
-```
-
-This unpacks the installer from the MacBinary file (no extra tools needed) or
-from the StuffIt archive (needs `unar`), then extracts the Installer VISE
-package (using [installer-vise](https://github.com/mrmidi/installer-vise)).
-Set `PYTHON` if Python 3 isn't `python3` (on Windows, `PYTHON=python`).
-It also downloads the free GeneralUser GS SoundFont, which is used to play the
-game's QuickTime music.
-
-## Prebuilt packages
-
-The GitHub Actions workflow ([.github/workflows/build.yml](.github/workflows/build.yml))
-builds ready-to-play packages, game included, on every push (as artifacts of the
-workflow run); pushing a `v*` tag publishes them as a release.
+Ready-to-play packages, game included, are on the
+[releases page](https://github.com/Castux/cythera-port/releases):
 
 - **Windows** (`.zip`): extract anywhere and run `Cythera.exe`. It isn't signed, so
   SmartScreen may warn: *More info* › *Run anyway*.
 - **macOS** (`.dmg`, Apple Silicon and Intel, macOS 11 or later): drag Cythera to
-  Applications. It isn't notarized, so the first time macOS refuses to open it;
-  then go to System Settings › Privacy & Security and click *Open Anyway* (or run
-  `xattr -dr com.apple.quarantine /Applications/Cythera.app`). With an Apple
-  Developer ID, the workflow signs and notarizes it instead (see the secrets
-  listed at the top of the workflow).
+  Applications. It isn't notarized, so the first time macOS refuses to open it:
+  go to System Settings › Privacy & Security and click *Open Anyway* (or run
+  `xattr -dr com.apple.quarantine /Applications/Cythera.app`).
 - **Linux** (`.tar.gz`): needs SDL2 (`libsdl2-2.0-0`); run `./cythera`.
 
-In a package the game folder sits next to the program and is never written to;
-preferences and saved games go to `~/.cythera-port/` as usual. To build the same
-way locally on Windows, add `GUI=1 LDFLAGS=-static` and static SDL libraries.
+Preferences and saved games are kept in `~/.cythera-port/` (on Windows,
+`%APPDATA%\.cythera-port\`): `System Folder/Preferences` and `Saved Games`.
 
-## Running
+To build it yourself instead: install SDL2 and Python 3, run `make` and
+`tools/setup_gamedata.sh`, then `./build/cythera`. Details, including Windows,
+are in [docs/DEVELOPING.md](docs/DEVELOPING.md).
 
-```sh
-./build/cythera
-```
+### Options
 
-Useful options (`./build/cythera --help` lists them all):
+`cythera --help` lists them all. The useful ones:
 
 | Option | Meaning |
 |---|---|
-| `--data DIR` | game directory (default `gamedata`) |
 | `--scale N` | window scale factor (default: as large as fits) |
 | `--fullscreen` | start fullscreen |
 | `--screen WxH` | emulated screen size (default 640x480, as the game was designed for) |
+| `--registered NAME` | the name the game is registered to (see below) |
+| `--data DIR` | game directory (default: `gamedata`, here or next to the program) |
 | `--soundfont FILE` | General MIDI SoundFont for the music |
 | `--app NAME` | run another application from the game folder |
-| `-v` / `-q` | more / less logging |
-
-Preferences and saved games are kept in `~/.cythera-port/`
-(`System Folder/Preferences`, `Saved Games`).
 
 ### Controls
 
@@ -122,61 +81,18 @@ Option is Alt.
 - **Alt+Enter** (or **Ctrl+⌘+F** on macOS) toggles fullscreen. The window can be
   resized freely; the picture is scaled by whole multiples to keep pixels sharp.
 
-## Registration
+### Registration
 
-Cythera was shareware, and registration codes can no longer be bought, so by
-default the port plays the registered game: it stands in for the game's
-licence check (nothing is written to disk). The title screen shows
-"Registered To: Cythera Port"; choose the name with `--registered "Your Name"`.
+Cythera was shareware, and registration codes can no longer be bought, so the
+port plays the registered game: it stands in for the game's licence check
+(nothing is written to disk). The title screen shows "Registered To: Cythera
+Port"; choose the name with `--registered "Your Name"`.
 
-To run the original code entirely unaltered, build with `make LICENSE_BYPASS=0`
-(after `make clean`, or in another `BUILD=` directory). The game is then
-unregistered unless you enter a code with Ambrosia's registration
-application, included with the game, which runs under the port as well:
-
-```sh
-./build/cythera --app "Register Cythera"
-```
-
-Choose *Enter License Code* and enter your name, number of copies and code
-exactly as you received them. Pasting from the host clipboard works (⌘V). The
-license is saved in `~/.cythera-port/System Folder/Preferences`, where the
-game finds it.
-
-## Developer tools
-
-- `make test` runs the PowerPC interpreter's unit tests; `tests/run.sh [SCRIPT...]`
-  replays the scripted scenarios (hermetic: it never touches `~/.cythera-port`).
-- `--headless --script FILE` runs without a window and replays scripted input
-  (`wait`, `click`, `move`, `key`, `hold`, `type`, `shot file.png`, `bt`,
-  `dumpwin`, `trace on|off`, `expect TEXT`, `peek ADDR [N]`, `quit`). See `tests/scripts/`.
-  A first line `# app: NAME` makes `tests/run.sh` run another application.
-  `peek 228578 4` logs the hero's position: map number, then x and y as 12-bit
-  fields (the game's character table is at 0x228558, 32 bytes per character).
-- `--deterministic` drives the clock (and the date) from the executed
-  instructions, so a script replays identically; timing-sensitive scripts
-  (non-player characters wandering, combat) still depend on the exact build.
-- `--turbo N` runs the emulated clock N× faster (for tests); `--timeout N` sets
-  a time limit.
-- `--trace-traps` logs every Toolbox call with symbolized callers, and
-  `--profile` prints Toolbox and guest-function hot spots. `--trap-stats FILE`
-  appends per-call counts at exit (`CYTHERA_ARGS="--trap-stats FILE" tests/run.sh`
-  collects them over all scenarios); [docs/TOOLBOX.md](docs/TOOLBOX.md) lists
-  every imported call and how complete it is.
-- `CYTHERA_WATCH=off,...` logs the registers each time execution reaches the given
-  code offsets (hex, as printed by `tools/ppcdis.py`): a cheap breakpoint.
-- `--wav FILE` records the audio output; `--render-pict FILE OUT.png` renders a
-  PICT file.
-- `tools/ppcdis.py` is a symbolizing PowerPC disassembler for the game binary
-  (function names come from the CodeWarrior traceback tables; `xref NAME` lists
-  the callers of a function or Toolbox call);
-  `tools/rsrc.py` and `tools/pef.py` parse resource forks and PEF containers.
-- `tools/delv_props.py` lists the game's maps and the objects on each (positions,
-  names, containers), using [delvmod](https://github.com/BryceSchroeder/delvmod)
-  cloned into `work/delvmod`. Handy for writing scripted play-throughs.
-- `tools/delv_archive.py info|list|dump ID|export DIR [SEL]` reads the scenario's Delver
-  archive (standard library only): it lists resources and decrypts them, and exports
-  images/maps as PNG, sounds as WAV, prop lists, strings and script structure as text.
+To run the original code entirely unaltered, build with `make LICENSE_BYPASS=0`.
+The game is then unregistered unless you enter a code in Ambrosia's
+registration application, which runs under the port as well
+(`cythera --app "Register Cythera"`, *Enter License Code*; pasting with ⌘V
+works). The licence is saved in the port's `System Folder/Preferences`.
 
 ## License
 
@@ -186,9 +102,9 @@ made on it or the tools used to create this port.
 The original game, included, is © 1999 Ambrosia Software and originaly 
 released as shareware with a 30 days trial period.
 
-Third-party single-header libraries in `third_party/`: stb_truetype and
-stb_image_write (public domain), font8x8 (public domain), TinySoundFont (MIT),
-minicoro (MIT/Unlicense). The Delver file-format knowledge comes from delvmod
+Third-party code in `third_party/`: FreeType (a subset, FreeType License),
+TinySoundFont (MIT), minicoro (MIT/Unlicense), stb_image_write and font8x8
+(public domain). The Delver file-format knowledge comes from delvmod
 (Bryce Schroeder) and the DelvTechWiki.
 
 ## Cythera Credits

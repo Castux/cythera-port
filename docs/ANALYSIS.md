@@ -1,13 +1,16 @@
 # Cythera — Technical Analysis
 
-Living document: the technical findings behind the port. The plan and progress
-tracking are in [PLAN.md](PLAN.md).
+What the original program and its data are, and how the port runs them: the
+reverse-engineering reference. Building and tools are in
+[DEVELOPING.md](DEVELOPING.md), the reimplemented calls in [TOOLBOX.md](TOOLBOX.md),
+status and history in [PLAN.md](PLAN.md).
 
 ## 1. The distribution archive
 
-`Cythera_Installer.sit` is a **StuffIt 5** archive (Arsenic compression). It
-holds one file, `Cythera Installer`, a classic Mac application with both a
-resource fork and a data fork. `unar` (The Unarchiver) extracts it.
+The game came as `Cythera Installer`, a classic Mac application (both forks),
+distributed as a **StuffIt 5** archive (Arsenic compression,
+`orig/Cythera_Installer.sit`) and as **MacBinary** (`orig/Cythera.bin`): the
+installers inside are byte-identical (installer dated 1999-11-02).
 
 The installer's data fork (6.8 MB, magic `SVCT`, creator `VIS3`) is an
 **Installer VISE 3.x** archive (MindVision). Its payload is "byte-substituted,
@@ -27,8 +30,7 @@ Relevant payload:
 | `Register Cythera` | APPL/Areg | – | – | Registration app (not needed) |
 | `InputSprocket*`, `USBHID…` | shlb | | | Joystick drivers (not needed) |
 
-The setup step (`tools/setup_gamedata.sh`) rebuilds this layout from the
-user's `.sit` into `gamedata/`. Nothing copyrighted is committed.
+`tools/setup_gamedata.sh` rebuilds this layout in `gamedata/`.
 
 ## 2. Architecture of the original program
 
@@ -100,23 +102,7 @@ unusually easy to reverse engineer.
 - **Data/IO:** `TSegFile`/`TCachedSegFiles` (Delver archive with TOC and
   per-resource encryption), `TPixCache*`, `TJournalSegment`, `TStream`.
 - **Audio:** `TAudio` (sounds, ambient, spot sounds), `GMSTune` (QuickTime
-  Music Architecture tunes), CD-audio control (`PBControlSync`).
-  Sound effects go through Ambrosia's SoundTool, statically linked without
-  traceback names (around 0xb7600): a software mixer of 8 voices into one
-  stereo 8-bit double-buffered channel (`SndPlayDoubleBuffer`, at the rate
-  `SndGetInfo('srat')` reports, else 22254.54 Hz). Panning, distance
-  attenuation (`CalcStereo`: per ear, a linear pan times 256/distance in
-  tiles, capped at 128, over a 31x31 tile neighbourhood), random
-  pitch (±12%), looping ambient sounds (`TAudio::CalcAmbient`, `LoopCB`) and
-  spot sounds that follow moving objects (`TSoundTracker`) are all computed
-  in that mixer; the game never uses `SndDoCommand`. Ambient sources are
-  props whose type has the `SoundEffects` property (0x3B) and sound props
-  added by `TViewer::SetStage`, plus the `PlayAmbientSound` script call.
-  The sound-effects volume (0-8, or -1 for "System Volume") is applied with
-  `SetDefaultOutputVolume(v * 32)`, i.e. the Mac's output volume, which also
-  scales the music; the system volume is read with `GetDefaultOutputVolume`
-  at start and restored at quit. Volume 0 shuts SoundTool (and the music)
-  down. The music volume (0-8) is `TuneSetVolume(v << 13)`.
+  Music Architecture tunes), CD-audio control (`PBControlSync`); see §2.4.
 
 ### 2.3 Resource forks
 
@@ -140,6 +126,49 @@ The scenario rsrc fork adds fonts (`FOND 128 "Seldane"`, `FOND 1046
 "ArgosANouveau"`, two `NFNT`s, one TrueType `sfnt`), 19 `PICT`s (1.1 MB:
 title, slideshows, backgrounds), `FILT` (lighting/colour filters), `PORT`,
 `eBRS`/`eSTM`, `MSta`, `clut`.
+
+### 2.4 Audio
+
+Sound effects go through Ambrosia's SoundTool, statically linked without
+traceback names (around 0xb7600): a software mixer of 8 voices into one
+stereo 8-bit double-buffered channel (`SndPlayDoubleBuffer`, at the rate
+`SndGetInfo('srat')` reports, else 22254.54 Hz). Panning, distance
+attenuation (`CalcStereo`: per ear, a linear pan times 256/distance in
+tiles, capped at 128, over a 31x31 tile neighbourhood), random pitch (±12%),
+looping ambient sounds (`TAudio::CalcAmbient`, `LoopCB`) and spot sounds that
+follow moving objects (`TSoundTracker`) are all computed in that mixer; the
+game never uses `SndDoCommand`. Ambient sources are props whose type has the
+`SoundEffects` property (0x3B) and sound props added by `TViewer::SetStage`,
+plus the `PlayAmbientSound` script call.
+
+The sound-effects volume (0-8, or -1 for "System Volume") is applied with
+`SetDefaultOutputVolume(v * 32)`, i.e. the Mac's output volume, which also
+scales the music; the system volume is read with `GetDefaultOutputVolume` at
+start and restored at quit. Volume 0 shuts SoundTool (and the music) down.
+The music volume (0-8) is `TuneSetVolume(v << 13)`.
+
+Music: `GMSTune::Play` sets the tune header and queues the sequence with
+`kTuneStartNow`; `GMSTune::Idle` requeues it when `TuneGetStatus` reports an
+empty queue (that's how tunes loop). Tunes are split into sections by
+end-subtype markers with value 1, which QTMA ignores; only value 0 ends the
+sequence. `GMSTune::Pause` (on suspend/deactivate) saves
+`(tunePtr - tune) / 4` from the status as its resume point, and `Resume`
+requeues at that offset.
+
+### 2.5 Timing
+
+The game paces itself with `TickCount` only (60.15 Hz; it doesn't use
+Microseconds, VBL or Time Manager tasks, though InsTime/PrimeTime are
+imported). Its main loop (`TApp::MEL`) yields to its threads, then calls
+`WaitNextEvent` with a 3-tick sleep. A custom thread scheduler
+(`TTaskMaster::MyScheduler`) runs the map animation thread
+(`TMapWindow::AnimThread`: redraw, colour cycling, tile frames) when `next` is
+due, then sets `next = now + speed`, where speed is a preference (bits 2-5 of
+the first preferences byte, 6 ticks by default): 10 animation frames and at
+most 10 steps per second (holding an arrow walks one tile per 6 ticks, polled
+with `GetKeys`; `TGameSys::HeartBeat` runs once per turn). Monsters act as
+turns pass. Screen effects wait in `while (TickCount() < t)` loops.
+`GetDateTime` only dates saved games and measures time spent suspended.
 
 ## 3. Scenario archive format (Delver Archive)
 
@@ -239,114 +268,78 @@ and near/far data refs (`0x8…`).
 Since the port reuses the original engine code, the VM does not have to be
 reimplemented. This knowledge helps with debugging and verification.
 
-## 4. Porting strategy: evaluation
+## 4. Porting strategy
 
-### Option A: keep the engine, reimplement the OS (HLE)
-Run the original PPC code on a PPC CPU interpreter and replace every imported
-Toolbox function with a native C implementation built on SDL2.
+Two options were weighed:
 
-- **Pros:** Exact 1:1 behaviour. All engine logic (lighting, AI, pathfinding,
-  combat formulas, VM, save format, UI layout) is the original code. No
-  specification is needed. The work is bounded by the ~560 imported calls,
-  which are well documented in *Inside Macintosh*. **No Apple ROM or System
-  software is needed**, unlike SheepShaver or Basilisk.
-- **Cons:** QuickDraw, Window, Dialog, Control, List, Menu and TextEdit must
-  be emulated faithfully, including their in-memory structures, because apps
-  poke `GrafPort`, `PixMap`, `WindowRecord`, `ListRec` and `TERec` fields.
-  PPC has to be interpreted (performance is fine: the original ran on a
-  ~100 MHz 603e and a C interpreter reaches hundreds of MIPS).
-- The CPU is small: 32-bit user-mode PPC, integer + FPU. No supervisor mode,
-  no MMU, no AltiVec.
+- **Keep the engine, reimplement the OS (chosen).** Run the original PPC code
+  on an interpreter and replace every imported Toolbox call with a native
+  implementation. Behaviour is 1:1 by construction (lighting, AI,
+  pathfinding, combat formulas, the VM, the save format and the UI layout are
+  the original code), no specification is needed, and the work is bounded by
+  the ~560 imported calls documented in *Inside Macintosh*. The catch: the
+  Toolbox must be emulated down to its in-memory structures, because the
+  game reads and writes `GrafPort`, `PixMap`, `WindowRecord`, `ListRec` and
+  `TERec` fields directly. The CPU side is small (32-bit user-mode PPC,
+  integer and FPU; no supervisor mode, MMU or AltiVec), and the original ran
+  on a ~100 MHz 603e.
+- **Rewrite the engine natively.** 840 KB of optimised PPC code to re-derive
+  by hand, with 1:1 behaviour very hard to reach and fragile save and
+  script-heap compatibility.
 
-### Option B: rewrite the engine from scratch
-Re-derive the whole engine (VM, heap/GC, renderer, AI, UI, save format) from
-the disassembly and write it natively.
+The first is the goal's "keep parts intact and replace only the system
+calls", and it is testable step by step: run, hit an unimplemented call,
+implement it, repeat. The named disassembly makes debugging tractable.
 
-- **Pros:** "Clean" native code, no emulation layer.
-- **Cons:** 840 KB of optimised PPC code to re-derive by hand. Getting 1:1
-  behaviour is very hard (rendering, AI and timing are full of details).
-  Save-file and script-heap compatibility are fragile. Very high risk.
+## 5. Runtime design
 
-### Decision
-**Option A.** It is the option the goal describes as "keep parts intact and
-replace only the system calls". It is the only realistic path to a true 1:1
-feature match, and it is testable step by step: run, hit an unimplemented
-call, implement it, repeat. The named disassembly makes debugging tractable.
-Later, hot or awkward parts can be replaced by native code, and a static
-PPC→C recompiler is a possible optimisation. Neither is needed for
-correctness.
+C11 and SDL2; the source layout is in [DEVELOPING.md](DEVELOPING.md#source-layout).
 
-## 5. Runtime design (the "Delver runtime")
-
-C11 + SDL2. No dependencies beyond SDL2 and bundled single-header libraries.
-
-```
-src/
-  main.c             CLI, config, startup
-  cpu/ppc.[ch]       PowerPC interpreter (UISA user mode + FPU)
-  mem/               guest memory (flat, big-endian), Memory Manager (zones, handles)
-  loader/pef.c       PEF loader: sections, pidata, relocations, import binding
-  os/                HLE Toolbox, one file per manager:
-    trap.c             import table -> native handler dispatch, guest callbacks (UPPs)
-    resources.c        Resource Manager (read/write resource forks)
-    files.c            File Manager over a host directory ("virtual volume")
-    qd_*.c             QuickDraw: ports, GWorlds, pixmaps, regions, CopyBits,
-                       shapes, patterns, text (NFNT + TrueType), PICT, cursors
-    windows.c events.c menus.c dialogs.c controls.c lists.c textedit.c
-    sound.c music.c    Sound Manager, QuickTime Music (tunes, note allocator)
-    threads.c          Thread Manager (host threads, baton passing)
-    misc.c             Gestalt, Time Manager, Process Manager, AppleEvents, stubs
-  host/              SDL video (8-bit screen → texture), audio, input, clipboard
-tools/               Python analysis tools (rsrc, pef, ppcdis) and setup scripts
-```
-
-Key mechanisms:
-
-- **Guest address space:** one flat host buffer, big-endian accessors.
-  - 0–0x3FFF: low-memory globals. Reads of NULL return 0, as on real Macs.
-  - Import stubs (TVectors whose code address lies in a trap range).
-  - Code and data sections, stacks, then the application heap zone.
+- **Guest address space:** one flat host buffer (256 MB) with big-endian
+  accessors. 0–0x3FFF holds the low-memory globals (reads of NULL return 0,
+  as on real Macs), then the import trap entries, the code and data sections,
+  stacks, and the heap zones.
 - **Imports:** import *i* resolves to a TVector `{TRAP_BASE+4i, i}`. When the
   interpreter's PC enters the trap range, it calls the native handler, sets
-  r3/f1, and returns to LR. Weak libraries we do not provide resolve to NULL,
-  and the app takes its fallback paths (no Appearance, no Nav Services, no
-  InputSprocket).
+  r3/f1 and returns to LR. Weak libraries we don't provide resolve to NULL,
+  and the game takes its fallback paths (no Appearance, Navigation Services,
+  InputSprocket). StdCLib, which the MSL runtime looks up at run time, is
+  provided natively.
 - **Callbacks:** `guest_call(tvector, args)` runs a nested interpreter loop
-  until it returns to a sentinel address. It is used for UPPs (routine
-  descriptors built by our `NewRoutineDescriptor`), WDEF/CDEF/LDEF, dialog
-  filters, thread entry points and completion routines.
-- **Threads:** each guest thread runs on its own host thread, and only the
-  baton holder executes. This is cooperative, as the Mac Thread Manager was,
-  and it works even when a yield happens deep inside a nested callback.
-- **Display:** an emulated main GDevice (default 800×600, 8-bit indexed,
-  palette from `SetEntries`/palettes) with an SDL window, scaled. The menu
-  bar is drawn by our Menu Manager.
+  until it returns to a sentinel address: UPPs (routine descriptors built by
+  our `NewRoutineDescriptor`), WDEF/CDEF/LDEF, dialog filters, thread entry
+  points, completion routines.
+- **Threads:** Thread Manager threads are coroutines (minicoro), switched
+  cooperatively as the Mac did, even from deep inside nested callbacks. (Host
+  threads with baton passing were far too slow.)
+- **Display:** an emulated 8-bit indexed main GDevice (640×480 by default),
+  presented once per tick in an SDL window scaled by whole multiples; the
+  menu bar is drawn by our Menu Manager. A video driver (refnum -50) with
+  gamma-table calls makes fades work.
+- **Text:** the game's own fonts (NFNT bitmaps, and the ArgosANouveau
+  TrueType font) are used as they are; TrueType is rasterised hinted and
+  monochrome with FreeType, like the Mac's scaler. The system fonts it asks
+  for (Chicago, Geneva) aren't shipped, so host TrueType fonts stand in
+  (Verdana/Tahoma on Windows, DejaVu on Linux, Geneva on macOS).
 - **Files:** a host directory is the Mac volume. Resource forks are
-  `<name>.rsrc` sidecars. Finder info goes in a metadata sidecar.
-  `FindFolder(kPreferencesFolderType)` maps to a per-user directory.
-- **Determinism and testing:** a headless mode with scripted input (wait,
-  click, key, screenshot to PNG) plus API/function tracing using the
-  recovered symbols. This allows autonomous regression testing.
+  `<name>.rsrc` sidecars, Finder info goes in `.finderinfo` files, and
+  `FindFolder` maps the System Folder, Preferences and Saved Games to a
+  per-user directory. A game folder found next to the program is read-only.
+- **Audio:** the SDL audio thread mixes Sound Manager channels and renders the
+  QuickTime tunes (TinySoundFont with a General MIDI SoundFont, or a small
+  built-in synth), scaled by the output volume. It reads guest memory, so it
+  must never fail hard.
+- **Registration:** by default, the licence check routines are redirected to
+  native ones that report a registration (`src/os/license.c`, applied only if
+  the code matches).
+- **Testing:** a headless, deterministic mode with scripted input and
+  screenshots, plus call tracing with the recovered symbols, for autonomous
+  regression testing.
 
-## 6. Open questions / risks
+## 6. Known gaps
 
-- Exact semantics of QuickDraw transfer modes, CopyBits colour mapping and
-  text styles. Verify visually against screenshots of the original (the
-  installer includes a few).
-- Font substitution for system fonts (Chicago/Geneva/Charcoal are not
-  shipped). The game's own fonts are available.
-- QuickTime Music: needs a General MIDI synthesizer. Plan: a bundled
-  lightweight synth, or TinySoundFont with a user-supplied SoundFont.
-- Registration: the licence check is replaced by default (src/os/license.c;
-  `make LICENSE_BYPASS=0` keeps the original shareware flow).
-- Timing: the game paces itself with `TickCount` only (60.15 Hz ticks from the
-  host clock; it doesn't use Microseconds, VBL or Time Manager tasks). Its main
-  loop (`TApp::MEL`) yields to its threads, then calls `WaitNextEvent` with a
-  3-tick sleep. A custom thread scheduler (`TTaskMaster::MyScheduler`) runs the
-  map animation thread (`TMapWindow::AnimThread`: redraw, colour cycling, tile
-  frames) when `next` is due, then sets `next = now + speed`, where speed is a
-  preference (bits 2-5 of the first preferences byte, 6 ticks by default): 10
-  animation frames and at most 10 steps per second (holding an arrow walks one
-  tile per 6 ticks; `TGameSys::HeartBeat` runs once per turn). Screen effects
-  wait in `while (TickCount() < t)` loops. `GetDateTime` only dates saved games
-  and measures time spent suspended.
+- System font substitutes differ per platform, so text layout (line breaks,
+  menu widths) differs slightly from the original and between platforms.
+- Some Toolbox calls are partial or stubs, each documented as harmless for
+  this game in [TOOLBOX.md](TOOLBOX.md); calls reached only in late-game
+  content are less exercised.

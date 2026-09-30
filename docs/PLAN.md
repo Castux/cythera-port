@@ -1,6 +1,19 @@
 # Porting Plan
 
-Strategy (see [ANALYSIS.md §4](ANALYSIS.md#4-porting-strategy-evaluation)): run the original
+## Goal
+
+Make Cythera (Ambrosia Software, 1999) playable again on modern systems, with a
+1:1 feature match with the original, from nothing but the compiled binary and
+its data (no source, no specification) plus earlier reverse-engineering work
+on the data formats ([delvmod](https://github.com/BryceSchroeder/delvmod)):
+
+- reverse engineer the game's data and code;
+- keep as much of it intact as possible and replace only the system calls,
+  rather than recoding everything;
+- use a portable language and library (C and SDL2); an offline data
+  conversion step is allowed if needed.
+
+Strategy ([ANALYSIS.md §4](ANALYSIS.md#4-porting-strategy)): run the original
 PowerPC engine code on a PPC interpreter and replace the Mac OS Toolbox with a
 native C/SDL2 implementation (high-level emulation). Game scripts and data stay
 untouched.
@@ -9,7 +22,7 @@ Milestones are ordered so that each ends with something runnable and testable.
 Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ## M0 — Analysis & tooling
-- [x] Extract `.sit` → Installer VISE → game files (unar + installer-vise)
+- [x] Extract the installer (`orig/`: MacBinary or StuffIt) → Installer VISE → game files
 - [x] Resource fork parser (`tools/rsrc.py`), PEF parser (`tools/pef.py`)
 - [x] Symbolizing PPC disassembler with traceback names (`tools/ppcdis.py`)
 - [x] Technical analysis, strategy decision
@@ -80,8 +93,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Portability: Linux, Windows (MinGW-w64/MSYS2) and macOS (universal) builds and packages
   in GitHub Actions ([build.yml](../.github/workflows/build.yml)), which also runs the CPU and
   scripted tests on Linux; no host-endianness assumptions (guest memory is accessed through
-  rd/wr helpers). Early Linux findings: [LINUX_NOTES.md](LINUX_NOTES.md).
-- [x] User documentation (README: setup, controls, config)
+  rd/wr helpers). Rules learnt on the way: [DEVELOPING.md](DEVELOPING.md#portability-rules).
+- [x] Documentation: README (players), DEVELOPING, ANALYSIS, TOOLBOX, this plan
 - **Exit:** full-feature playable port.
 
 ## Working notes
@@ -129,46 +142,24 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
   ID's high byte is the TOC page, encryption is chosen by the caller (the VM always decrypts),
   `asnd` rates are Fixed, `8EFF` is a sized image, and the scenario `clut` differs
   from delvmod's palette in 4 entries.
-- 2026-09-30 (audio): ambient, spot and positional sounds are the game's own work: its
-  SoundTool library mixes up to 8 voices (panning, distance attenuation, pitch jitter, loops)
-  into one 22 kHz stereo double buffer, so the Toolbox side is `SndPlayDoubleBuffer` and the
-  output volume (see [ANALYSIS.md §2.2](ANALYSIS.md#22-engine-class-inventory-from-symbols)). Checked with WAV captures: the same
-  interface sound peaks at 6154 / 9969 / 2399 at effects volume 5 / 8 / 2 (0xA0 / 0x100 /
-  0x40), an explosion plays about twice as loud on one side, and with test-only torch sound
-  sources in Omen's Test the ambient loop keeps playing and moves from left to right as
-  the player walks. Fixes: `SetDefaultOutputVolume` takes separate left and right levels
-  and also scales the music, as the Mac's output volume did (so music is quieter at lower
-  effects volumes, as in the original); `TuneSetVolume` sets only that tune's parts (it was
-  applied to everything, which silenced note-allocator notes when music was off); tune
-  players' synth channels no longer overlap each other or the note channels (they also went
-  past the end of the channel arrays); rate conversion interpolates linearly;
-  `SndGetInfo` answers sample rate/size/channels; `SndChannelStatus` fields are at the right
-  offsets. The Prefs sliders, Mute and System Volume boxes persist (`tests/scripts/volume.txt`).
-- 2026-09-30 (timing): the game paces everything with TickCount (no Microseconds, VBL or
-  Time Manager tasks; model in ANALYSIS.md). Measured: map animation every 6 ticks and one
-  step per 6 ticks while walking (the game-speed preference), identical in real time and
-  --deterministic, so ticks were right. Fixed what surrounds them: WaitNextEvent now sleeps
-  the requested time (3 ticks in play) instead of 1, as on the Mac; autoKey events are made
-  from KeyThresh/KeyRepThresh (factory 24/6 ticks) instead of host key repeats; events are
-  stamped when the host saw them (double-clicks while the game is busy); DoubleTime is the
-  factory 32 ticks and TextEdit uses DoubleTime/CaretTime; Delay keeps presenting the screen;
-  GetDateTime follows the emulated clock (fixed 2000-01-01 start in deterministic runs).
-  Display: no more vsync (presents blocked the emulated CPU, 8-13% of the time at 144 Hz,
-  worse below 60 Hz) and one present per tick (cpu_poll and idle waits presented
-  separately, ~85/s). Busy-wait detection now covers loops that poll Button, GetOSEvent,
-  TuneGetStatus... between TickCount calls: the new-game intro (scrolling text) went from
-  44 s to 3.4 s of CPU in 94 s, in-game idle from 21% to 13% of a core. Trace and watch
-  lines now start with the emulated time in seconds.
-- 2026-09-30 (Toolbox sweep): [TOOLBOX.md](TOOLBOX.md) classifies all 563 imports (423 full,
-  32 partial, 49 stubs, 20 audio, 39 in absent weak libraries). `--trap-stats` counted what the
-  scripted scenarios, a free-form session and random "monkey" sessions reach. Fixed: StdCLib's
-  PL string functions were missing, which silently emptied dialog labels, default file names,
-  strategy names and the title-screen player name. Opening a game from within a game crashed
-  because Standard File left its disposed dialog as the current port. The strategy pop-up
-  (CDEF 63) didn't exist. InitZone was a no-op (the segment cache zone). Saved games now carry
-  a preview thumbnail that the Open dialog shows. Menus use the low-memory system font, and tall
-  pop-ups scroll. On Windows, Finder info updates were lost. Also ObscureCursor and TextEdit
-  arrow keys. `tools/ppcdis.py xref` now works and disassembles the runtime library code.
+- 2026-09-30 (audio): ambient, spot and positional sounds are the game's own SoundTool mixer;
+  the Toolbox side is one double-buffered channel and the output volume (how it works:
+  [ANALYSIS.md §2.4](ANALYSIS.md#24-audio)). Checked with WAV captures (volumes, panning,
+  a moving ambient loop). Fixes: the output volume has left/right levels and scales the music
+  as on the Mac (so music is quieter at lower effects volumes); `TuneSetVolume` sets only that
+  tune; tune players' synth channels no longer overlap or overrun their arrays; linear
+  resampling; `SndGetInfo`/`SndChannelStatus` answers. `tests/scripts/volume.txt`.
+- 2026-09-30 (timing): ticks were right (the model: [ANALYSIS.md §2.5](ANALYSIS.md#25-timing)); what
+  surrounds them was fixed: `WaitNextEvent` sleeps the requested time, autoKey comes from
+  KeyThresh/KeyRepThresh rather than host repeats, input is stamped when it happens,
+  DoubleTime/CaretTime are the factory values, `GetDateTime` follows the emulated clock. No
+  more vsync (it blocked the emulated CPU) and one present per tick. Busy-wait detection covers
+  status-polling loops: the intro went from 44 s to 3.4 s of CPU, in-game idle from 21% to 13%
+  of a core, and the scripted suite from ~10 to ~3 minutes.
+- 2026-09-30 (Toolbox sweep): [TOOLBOX.md](TOOLBOX.md) classifies all 563 imports and lists the
+  findings. The main ones: StdCLib's string functions were missing (empty dialog labels, file
+  names, player name), a crash opening a game from within a game, the missing pop-up control
+  (CDEF 63), InitZone, save previews. New: `--trap-stats`, `ppcdis.py xref`.
 - 2026-09-29 (CPU use): gamma fades spun millions of times per second because the video
   driver's cscSetGamma returned at once; it now waits for the next vertical blank like the
   hardware (fades run at 60 steps/s). TickCount busy-waits sleep until the next tick. A

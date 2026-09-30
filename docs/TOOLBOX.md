@@ -136,7 +136,7 @@ the end game.
 | CTabChanged | InterfaceLib | full | yes |  |
 | CurResFile | InterfaceLib | full | yes |  |
 | DebugStr | InterfaceLib | stub |  | logged |
-| Delay | InterfaceLib | full | yes | timing: see the timing work in PLAN.md |
+| Delay | InterfaceLib | full | yes | timing: see ANALYSIS.md §2.5 |
 | DeleteMenu | InterfaceLib | full | yes |  |
 | DeleteMenuItem | InterfaceLib | full | yes |  |
 | Dequeue | InterfaceLib | full |  |  |
@@ -317,7 +317,7 @@ the end game.
 | InlineGetHandleSize | InterfaceLib | full |  |  |
 | InsertMenu | InterfaceLib | full | yes |  |
 | InsetRect | InterfaceLib | full | yes |  |
-| InsTime | InterfaceLib | full |  | timing: see the timing work in PLAN.md |
+| InsTime | InterfaceLib | full |  | timing: see ANALYSIS.md §2.5 |
 | InvalRect | InterfaceLib | full | yes |  |
 | InvertRect | InterfaceLib | full | yes |  |
 | KillPicture | InterfaceLib | full | yes |  |
@@ -451,7 +451,7 @@ the end game.
 | PlotCIconHandle | InterfaceLib | full | yes |  |
 | PopUpMenuSelect | InterfaceLib | full | yes | menus taller than the screen scroll (fixed M7) |
 | PortChanged | InterfaceLib | stub | yes | no-op: port fields are always read from guest memory |
-| PrimeTime | InterfaceLib | full |  | timing: see the timing work in PLAN.md |
+| PrimeTime | InterfaceLib | full |  | timing: see ANALYSIS.md §2.5 |
 | PtInRect | InterfaceLib | full | yes |  |
 | PtInRgn | InterfaceLib | full | yes |  |
 | PtrAndHand | InterfaceLib | full |  |  |
@@ -466,7 +466,7 @@ the end game.
 | RGB2HSL | InterfaceLib | full | yes |  |
 | RGBBackColor | InterfaceLib | full | yes |  |
 | RGBForeColor | InterfaceLib | full | yes |  |
-| RmvTime | InterfaceLib | full |  | timing: see the timing work in PLAN.md |
+| RmvTime | InterfaceLib | full |  | timing: see ANALYSIS.md §2.5 |
 | ScalePt | InterfaceLib | full |  |  |
 | SectRect | InterfaceLib | full | yes |  |
 | SectRgn | InterfaceLib | full | yes |  |
@@ -554,7 +554,7 @@ the end game.
 | TextMode | InterfaceLib | full | yes |  |
 | TextSize | InterfaceLib | full | yes |  |
 | TextWidth | InterfaceLib | full | yes |  |
-| TickCount | InterfaceLib | full | yes | timing: see the timing work in PLAN.md |
+| TickCount | InterfaceLib | full | yes | timing: see ANALYSIS.md §2.5 |
 | TrackBox | InterfaceLib | full |  |  |
 | TrackControl | InterfaceLib | partial | yes | generic tracking loop (app CDEFs are not asked to autoTrack); pop-up menus pop up |
 | TrackGoAway | InterfaceLib | full | yes |  |

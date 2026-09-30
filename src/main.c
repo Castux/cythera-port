@@ -34,7 +34,7 @@ static void usage(void) {
         "  --data DIR        game directory (default: gamedata, here or next to the program)\n"
         "  --headless        no window; render offscreen\n"
         "  --app NAME        run another application from the game folder (e.g. \"Register Cythera\")\n"
-        "  --script FILE     run an input script (see README.md, tests/scripts/)\n"
+        "  --script FILE     run an input script (see docs/DEVELOPING.md, tests/scripts/)\n"
         "  --sysdir DIR      emulated System Folder (default ~/.cythera-port/System Folder)\n"
 #ifdef LICENSE_BYPASS
         "  --registered NAME name the game is registered to (default: Cythera Port)\n"
