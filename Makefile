@@ -7,6 +7,9 @@ ifeq ($(OS),Windows_NT)
 # plain main() with a console for the log (see SDL_SetMainReady in host/sdl.c)
 SDL_LIBS   := $(filter-out -lSDL2main -mwindows,$(SDL_LIBS))
 EXE        := .exe
+ifeq ($(GUI),1)
+override LDFLAGS += -mwindows  # no console window (packaged builds)
+endif
 endif
 # Optional FreeType for hinted (crisp) TrueType text: tools/build_freetype.sh, else the system's
 FT_DIR  := third_party/freetype

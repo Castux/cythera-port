@@ -37,7 +37,7 @@ esac
 
 "$PY" -m venv "$TMP/venv"
 BIN="$TMP/venv/bin"; [ -d "$BIN" ] || BIN="$TMP/venv/Scripts"  # Windows Python
-"$BIN/pip" -q install "git+https://github.com/mrmidi/installer-vise"
+"$BIN/pip" -q install "git+https://github.com/mrmidi/installer-vise@8b1525ab98f9cca88ff6428b64af6c91bf6033db"
 "$BIN/installer-vise" extract "$TMP/in/Cythera Installer" -o "$TMP/vise" >/dev/null
 
 mkdir -p "$OUT"

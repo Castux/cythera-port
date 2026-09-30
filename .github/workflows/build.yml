@@ -1,0 +1,286 @@
+# Build, test and package Cythera for Linux, Windows and macOS.
+# Packages are uploaded as workflow artifacts; pushing a v* tag also makes a
+# GitHub release with them.
+#
+# macOS: the app is ad-hoc signed unless these secrets are set, in which case
+# it is signed with a Developer ID and notarized:
+#   MACOS_CERT_P12         base64 of the Developer ID Application certificate (.p12)
+#   MACOS_CERT_PASSWORD    its password
+#   MACOS_SIGN_IDENTITY    e.g. "Developer ID Application: Name (TEAMID)"
+#   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD   (app-specific password) for notarytool
+# In public repositories, packages also get GitHub artifact attestations
+# (verify with: gh attestation verify FILE -R OWNER/REPO).
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FREETYPE_VERSION: 2.14.3
+  FREETYPE_SHA256: 36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f
+  SDL2_VERSION: 2.32.10
+  SDL2_SHA256: 5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165
+  MACOSX_DEPLOYMENT_TARGET: '11.0'
+
+jobs:
+  gamedata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: cache
+        uses: actions/cache@v6
+        with:
+          path: gamedata.tar.gz
+          key: gamedata-${{ hashFiles('orig/*', 'tools/setup_gamedata.sh') }}
+      - name: Extract the game from the installer
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          tools/setup_gamedata.sh orig/Cythera.bin gamedata
+          test -s gamedata/Cythera && test -s gamedata/soundfont.sf2
+          tar -czf gamedata.tar.gz gamedata
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gamedata
+          path: gamedata.tar.gz
+          retention-days: 1
+
+  linux:
+    needs: gamedata
+    runs-on: ubuntu-22.04  # older glibc, so the binary runs on more distributions
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - uses: actions/download-artifact@v8
+        with:
+          name: gamedata
+      - run: tar -xzf gamedata.tar.gz
+      - name: FreeType
+        run: |
+          curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
+          echo "$FREETYPE_SHA256  ft.tar.xz" | sha256sum -c
+          CC=gcc tools/build_freetype.sh ft.tar.xz
+      - name: Build
+        run: make -j"$(nproc)" CC=gcc
+      - name: CPU tests
+        run: make test CC=gcc
+      - name: Scripted game tests
+        run: tests/run.sh
+      - name: Package
+        run: |
+          V="$(git describe --tags --always)"
+          D="cythera-$V-linux-x86_64"
+          mkdir -p "pkg/$D"
+          cp build/cythera "pkg/$D/" && strip "pkg/$D/cythera"
+          cp -R gamedata README.md "pkg/$D/"
+          tar -czf "$D.tar.gz" -C pkg "$D"
+          echo "PKG=$D.tar.gz" >> "$GITHUB_ENV"
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ env.PKG }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cythera-linux
+          path: ${{ env.PKG }}
+          compression-level: 0
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs
+          path: work/shots
+
+  windows:
+    needs: gamedata
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            make git tar xz curl
+            mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-python
+      - uses: actions/download-artifact@v8
+        with:
+          name: gamedata
+      - run: tar -xzf gamedata.tar.gz
+      - name: FreeType
+        run: |
+          curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
+          echo "$FREETYPE_SHA256  ft.tar.xz" | sha256sum -c
+          CC=gcc tools/build_freetype.sh ft.tar.xz
+      - name: Build (static, no console window)
+        run: |
+          make -j"$(nproc)" CC=gcc PYTHON=python GUI=1 LDFLAGS=-static \
+            SDL_LIBS="$(sdl2-config --static-libs | sed -e 's/-lSDL2main//' -e 's/-mwindows//')"
+          objdump -p build/cythera.exe | grep 'DLL Name'
+      - name: CPU tests
+        run: make test CC=gcc PYTHON=python
+      - name: Stage package
+        run: |
+          V="$(git describe --tags --always)"
+          D="cythera-$V-windows-x64"
+          mkdir -p "pkg/$D"
+          cp build/cythera.exe "pkg/$D/Cythera.exe" && strip "pkg/$D/Cythera.exe"
+          cp -R gamedata README.md "pkg/$D/"
+          echo "PKGDIR=$D" >> "$GITHUB_ENV"
+      - name: Zip
+        shell: pwsh
+        run: |
+          # 7-Zip marks non-ASCII names as UTF-8 (the game has "Ambrosia’s Web Site")
+          7z a -tzip "$env:PKGDIR.zip" "./pkg/$env:PKGDIR"
+          "PKG=$env:PKGDIR.zip" >> $env:GITHUB_ENV
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ env.PKG }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cythera-windows
+          path: ${{ env.PKG }}
+          compression-level: 0
+
+  macos:
+    needs: gamedata
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          name: gamedata
+      - run: tar -xzf gamedata.tar.gz
+      - name: SDL2 (static, universal)
+        run: |
+          curl -fsSLo sdl.tar.gz "https://github.com/libsdl-org/SDL/releases/download/release-$SDL2_VERSION/SDL2-$SDL2_VERSION.tar.gz"
+          echo "$SDL2_SHA256  sdl.tar.gz" | shasum -a 256 -c
+          tar -xzf sdl.tar.gz
+          cmake -S "SDL2-$SDL2_VERSION" -B sdl-build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DSDL_SHARED=OFF -DSDL_STATIC=ON -DSDL_TEST=OFF \
+            -DCMAKE_INSTALL_PREFIX="$PWD/sdl"
+          cmake --build sdl-build -j"$(sysctl -n hw.ncpu)"
+          cmake --install sdl-build
+      - name: FreeType
+        run: |
+          curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
+          echo "$FREETYPE_SHA256  ft.tar.xz" | shasum -a 256 -c
+      - name: Build (arm64 + x86_64)
+        run: |
+          for arch in arm64 x86_64; do
+            CC="clang -arch $arch" tools/build_freetype.sh ft.tar.xz
+            make -j"$(sysctl -n hw.ncpu)" CC="clang -arch $arch" BUILD="build-$arch" \
+              SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" SDL_LIBS="$(sdl/bin/sdl2-config --static-libs)"
+          done
+          lipo -create -output cythera build-arm64/cythera build-x86_64/cythera
+          lipo -info cythera
+          otool -L cythera
+      - name: CPU tests
+        run: make test CC="clang -arch arm64" BUILD=build-arm64 SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)"
+      - name: App bundle
+        run: |
+          V="$(git describe --tags --always)"
+          SV="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null | sed 's/^v//')"
+          APP=dist/Cythera.app
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp cythera "$APP/Contents/MacOS/" && strip "$APP/Contents/MacOS/cythera"
+          cp -R gamedata "$APP/Contents/Resources/"
+          sed -e "s/@VERSION@/${SV:-0.0.0}/g" -e "s/@MIN_MACOS@/$MACOSX_DEPLOYMENT_TARGET/g" \
+            packaging/macos/Info.plist > "$APP/Contents/Info.plist"
+          cp README.md dist/
+          echo "PKG=cythera-$V-macos.dmg" >> "$GITHUB_ENV"
+      - name: Sign
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+        run: |
+          if [ -n "$MACOS_CERT_P12" ]; then
+            KC="$RUNNER_TEMP/sign.keychain-db"; KP="$(uuidgen)"
+            echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+            security create-keychain -p "$KP" "$KC"
+            security set-keychain-settings -lut 21600 "$KC"
+            security unlock-keychain -p "$KP" "$KC"
+            security import "$RUNNER_TEMP/cert.p12" -P "$MACOS_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+            security set-key-partition-list -S apple-tool:,apple: -k "$KP" "$KC"
+            security list-keychains -d user -s "$KC"
+            codesign --force --options runtime --timestamp --sign "$MACOS_SIGN_IDENTITY" dist/Cythera.app
+            echo "SIGNED=1" >> "$GITHUB_ENV"
+          else
+            codesign --force --sign - dist/Cythera.app  # ad-hoc: Gatekeeper will ask the user to allow it
+          fi
+          codesign --verify --strict --verbose=2 dist/Cythera.app
+      - name: Disk image
+        run: |
+          ln -s /Applications dist/Applications
+          for i in 1 2 3; do  # hdiutil is occasionally "busy" on CI
+            hdiutil create -volname Cythera -srcfolder dist -ov -format UDZO "$PKG" && break
+            sleep 5
+          done
+          test -f "$PKG"
+          if [ -n "$SIGNED" ]; then codesign --force --timestamp --sign "${{ secrets.MACOS_SIGN_IDENTITY }}" "$PKG"; fi
+      - name: Notarize
+        if: env.SIGNED == '1'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          xcrun notarytool submit "$PKG" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple "$PKG"
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ env.PKG }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cythera-macos
+          path: ${{ env.PKG }}
+          compression-level: 0
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cythera-*
+          merge-multiple: true
+          path: dist
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

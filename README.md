@@ -74,6 +74,26 @@ Set `PYTHON` if Python 3 isn't `python3` (on Windows, `PYTHON=python`).
 It also downloads the free GeneralUser GS SoundFont, which is used to play the
 game's QuickTime music.
 
+## Prebuilt packages
+
+The GitHub Actions workflow ([.github/workflows/build.yml](.github/workflows/build.yml))
+builds ready-to-play packages, game included, on every push (as artifacts of the
+workflow run); pushing a `v*` tag publishes them as a release.
+
+- **Windows** (`.zip`): extract anywhere and run `Cythera.exe`. It isn't signed, so
+  SmartScreen may warn: *More info* › *Run anyway*.
+- **macOS** (`.dmg`, Apple Silicon and Intel, macOS 11 or later): drag Cythera to
+  Applications. It isn't notarized, so the first time macOS refuses to open it;
+  then go to System Settings › Privacy & Security and click *Open Anyway* (or run
+  `xattr -dr com.apple.quarantine /Applications/Cythera.app`). With an Apple
+  Developer ID, the workflow signs and notarizes it instead (see the secrets
+  listed at the top of the workflow).
+- **Linux** (`.tar.gz`): needs SDL2 (`libsdl2-2.0-0`); run `./cythera`.
+
+In a package the game folder sits next to the program and is never written to;
+preferences and saved games go to `~/.cythera-port/` as usual. To build the same
+way locally on Windows, add `GUI=1 LDFLAGS=-static` and static SDL libraries.
+
 ## Running
 
 ```sh
@@ -155,7 +175,12 @@ game finds it.
 
 ## License / credits
 
-The port's own code is released for private use of legitimately owned copies.
+The port's own code is released as public domain. No copyright claims are 
+made on it or the tools used to create this port.
+
+The original game, included, is © 1999 Ambrosia Software and originaly 
+released as shareware.
+
 Third-party single-header libraries in `third_party/`: stb_truetype and
 stb_image_write (public domain), font8x8 (public domain), TinySoundFont (MIT),
 minicoro (MIT/Unlicense). Cythera and Delver are trademarks of their respective

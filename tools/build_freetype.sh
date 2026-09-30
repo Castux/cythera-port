@@ -3,7 +3,7 @@
 # into third_party/freetype/, where the Makefile picks it up for hinted text.
 # Only needed where no system FreeType is available (pkg-config freetype2).
 # Usage: tools/build_freetype.sh path/to/freetype-2.x.tar.xz (or unpacked source dir)
-# Environment: CC (default cc), AR (default ar).
+# Environment: CC (default cc; may include flags, e.g. "clang -arch x86_64"), AR (default ar).
 set -e
 SRC="$1"
 [ -n "$SRC" ] || { echo "usage: $0 freetype-2.x.tar.xz|freetype-2.x/"; exit 1; }
@@ -31,7 +31,7 @@ EOF
 for f in base/ftsystem base/ftinit base/ftdebug base/ftbase base/ftbitmap base/ftmm \
          truetype/truetype sfnt/sfnt psnames/psnames raster/raster gzip/ftgzip; do
   echo "  CC $f.c"
-  "$CC" -O2 -DFT2_BUILD_LIBRARY '-DFT_CONFIG_MODULES_H=<ftmodule.h>' \
+  $CC -O2 -DFT2_BUILD_LIBRARY '-DFT_CONFIG_MODULES_H=<ftmodule.h>' \
     -I"$TMP/cfg" -I"$SRC/include" -c "$SRC/src/$f.c" -o "$TMP/obj/$(basename $f).o"
 done
 
