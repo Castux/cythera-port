@@ -17,7 +17,12 @@ static int g_nbar;
 static u32 g_hier[MAX_MENUS];  /* hierarchical / popup menus */
 static int g_nhier;
 static s16 g_hilited;
-static const int ITEM_H = 16;
+/* Menus are drawn in the system font (low memory SysFontFam/SysFontSize),
+   which the game switches to the window's font around some pop-ups
+   (PopUpMenuSelectWithCurFont). Item height and baseline follow it. */
+static int ITEM_H = 16, ITEM_BASE = 12;
+#define LM_SysFontFam  0x0BA6
+#define LM_SysFontSize 0x0BA8
 #define BAR_H 20
 int menu_bar_height(void) { return BAR_H; }
 
@@ -216,7 +221,17 @@ static void mport_prepare(void) {
     g_mport = port;
     rgn_set_rect(rd32(port + PORT_VIS), mkrect(0, 0, qd_screen_h(), qd_screen_w()));
     rgn_set_rect(rd32(port + PORT_CLIP), mkrect(-32767, -32767, 32767, 32767));
-    wr16(port + PORT_TXFONT, 0); wr16(port + PORT_TXSIZE, 12); wr8(port + PORT_TXFACE, 0);
+    s16 fam = rds16(LM_SysFontFam), size = rds16(LM_SysFontSize);
+    if (size <= 0) size = 12;
+    wr16(port + PORT_TXFONT, (u16)fam); wr16(port + PORT_TXSIZE, (u16)size); wr8(port + PORT_TXFACE, 0);
+    if (fam == 0 && size == 12) { ITEM_H = 16; ITEM_BASE = 12; } /* Chicago 12 */
+    else {
+        int a, d, w, l;
+        text_font_info(port, &a, &d, &w, &l);
+        ITEM_H = a + d + l + 1;
+        if (ITEM_H < 10) ITEM_H = 10;
+        ITEM_BASE = a + (ITEM_H - (a + d + l)) / 2;
+    }
     wr16(port + PORT_TXMODE, srcOr);
     wr_rgb(port + PORT_RGBFG, (RGB){ 0, 0, 0 });
     wr_rgb(port + PORT_RGBBK, (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
@@ -324,19 +339,19 @@ static void draw_item(u32 m, const Item *it, int idx, Rect mr, bool hil) {
     if (sep) {
         static const u8 dots[1] = { 0xAA };
         (void)dots;
-        for (int x = r.left; x < r.right; x += 2) fill(mkrect(r.top + 8, x, r.top + 9, x + 1), (RGB){ 0x8888, 0x8888, 0x8888 });
+        for (int x = r.left; x < r.right; x += 2) fill(mkrect(r.top + ITEM_H / 2, x, r.top + ITEM_H / 2 + 1, x + 1), (RGB){ 0x8888, 0x8888, 0x8888 });
         return;
     }
     RGB c = !en ? (RGB){ 0x8888, 0x8888, 0x8888 } : hil ? (RGB){ 0xFFFF, 0xFFFF, 0xFFFF } : (RGB){ 0, 0, 0 };
-    if (it->mark == 0x12) draw_glyph(GLYPH_CHECK, 9, r.left + 3, r.top + 4, c);
-    else if (it->mark && it->key != 0x1B) { u8 mc = it->mark; draw_str(&mc, 1, r.left + 4, r.top + 12, c, 0); }
+    if (it->mark == 0x12) draw_glyph(GLYPH_CHECK, 9, r.left + 3, r.top + (ITEM_H - 8) / 2, c);
+    else if (it->mark && it->key != 0x1B) { u8 mc = it->mark; draw_str(&mc, 1, r.left + 4, r.top + ITEM_BASE, c, 0); }
     u8 l = rd8(it->name); u8 buf[256];
     gmemcpy_from(buf, it->name + 1, l);
-    draw_str(buf, l, r.left + 16, r.top + 12, c, it->style);
+    draw_str(buf, l, r.left + 16, r.top + ITEM_BASE, c, it->style);
     if (it->key > 32 && it->key != 0x1B) {
-        draw_glyph(GLYPH_CMD, 9, r.right - 26, r.top + 4, c);
+        draw_glyph(GLYPH_CMD, 9, r.right - 26, r.top + (ITEM_H - 8) / 2, c);
         u8 k = it->key;
-        draw_str(&k, 1, r.right - 15, r.top + 12, c, 0);
+        draw_str(&k, 1, r.right - 15, r.top + ITEM_BASE, c, 0);
     }
     if (it->key == 0x1B) {
         for (int k = 0; k < 5; k++) fill(mkrect(r.top + 4 + k, r.right - 12, r.top + 5 + k, r.right - 12 + k), c);
