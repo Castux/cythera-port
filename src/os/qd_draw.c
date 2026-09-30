@@ -687,7 +687,14 @@ void copybits(u32 srcbm, u32 dstbm, Rect sr, Rect dr, int mode, u32 maskrgn, u32
     hrgn_rect(&t, dst.bounds.top, dst.bounds.left, dst.bounds.bottom, dst.bounds.right);
     hrgn_op(&reg, &reg, &t, 1); hrgn_free(&t);
     u32 port = qd_port();
-    if (port) {
+    /* As in QuickDraw, the current port's clipRgn and visRgn apply only when
+       the destination is that port's own bits (its portBits, or for a color
+       port its PixMap). Copying between offscreen buffers while a window is
+       the current port must not be clipped to the window (e.g. the cutscene
+       work areas below row 480 of a 544x544 GWorld). */
+    bool dst_is_port = port && (dstbm == port + PORT_BITS ||
+        ((rd16(port + 6) & 0xC000) == 0xC000 && rd32(port + PORT_BITS) && dstbm == hderef(rd32(port + PORT_BITS))));
+    if (dst_is_port) {
         /* the current port's clip applies in the destination's coordinates */
         HRgn vis, clip; hrgn_from_guest(&vis, rd32(port + PORT_VIS)); hrgn_from_guest(&clip, rd32(port + PORT_CLIP));
         hrgn_op(&reg, &reg, &vis, 1); hrgn_op(&reg, &reg, &clip, 1);
@@ -922,21 +929,22 @@ TRAP(CopyDeepMask) {
 
 /* ---- SeedFill / CalcMask on 1-bit images ---- */
 static void flood(const u8 *src, int srow, u8 *filled, int w, int h, int sx, int sy) {
-    int *stack = malloc(sizeof(int) * (size_t)w * (size_t)h * 2 + 16);
-    int sp = 0;
-#define BLACK(x, y) ((src[(size_t)(y) * (size_t)srow + (size_t)((x) >> 3)] >> (7 - ((x) & 7))) & 1)
-    if (sx < 0 || sy < 0 || sx >= w || sy >= h) { free(stack); return; }
-    stack[sp++] = sx; stack[sp++] = sy;
+    /* Pixels are marked when pushed, so each is pushed at most once and the
+       stack never holds more than w*h entries. (Marking them when popped let
+       it outgrow its buffer on large open areas: heap corruption.) */
+#define BLACK(x, y) ((x) >= srow * 8 || ((src[(size_t)(y) * (size_t)srow + (size_t)((x) >> 3)] >> (7 - ((x) & 7))) & 1))
+#define PUSH(x, y) do { int px_ = (x), py_ = (y); \
+        if (px_ >= 0 && py_ >= 0 && px_ < w && py_ < h && !filled[(size_t)py_ * (size_t)w + (size_t)px_] && !BLACK(px_, py_)) { \
+            filled[(size_t)py_ * (size_t)w + (size_t)px_] = 1; stack[sp++] = py_ * w + px_; } } while (0)
+    if (w <= 0 || h <= 0) return;
+    int *stack = malloc(sizeof(int) * (size_t)w * (size_t)h);
+    size_t sp = 0;
+    PUSH(sx, sy);
     while (sp) {
-        int y = stack[--sp], x = stack[--sp];
-        if (x < 0 || y < 0 || x >= w || y >= h) continue;
-        if (filled[(size_t)y * (size_t)w + (size_t)x] || BLACK(x, y)) continue;
-        filled[(size_t)y * (size_t)w + (size_t)x] = 1;
-        stack[sp++] = x + 1; stack[sp++] = y;
-        stack[sp++] = x - 1; stack[sp++] = y;
-        stack[sp++] = x; stack[sp++] = y + 1;
-        stack[sp++] = x; stack[sp++] = y - 1;
+        int p = stack[--sp], x = p % w, y = p / w;
+        PUSH(x + 1, y); PUSH(x - 1, y); PUSH(x, y + 1); PUSH(x, y - 1);
     }
+#undef PUSH
 #undef BLACK
     free(stack);
 }
