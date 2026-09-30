@@ -60,31 +60,135 @@ bool host_next_event(HostEvent *ev) {
     return true;
 }
 
-void host_init(int w, int h, bool headless, int scale) {
-    g_w = w; g_h = h; g_headless = headless;
+static bool g_cur_set;
+static void make_cursor(void);
+static void toggle_fullscreen(void);
+
+/* ---- display modes ----
+   Classic: the emulated screen keeps its size (640x480 by default) and is
+   scaled by whole multiples to fit the window. Large: the emulated screen is
+   the window's size divided by a pixel scale, so a bigger window (or
+   fullscreen) gives the game a bigger screen; its map window can then be
+   enlarged. Ctrl+Alt+Enter (Cmd+Option+Enter on macOS) cycles Classic ->
+   Large 2x -> Large 1x. The choice, the window size and fullscreen are kept
+   in port.cfg. */
+enum { MODE_CLASSIC, MODE_LARGE };
+static int g_mode = MODE_CLASSIC, g_pix = 2;
+static int g_base_w = 640, g_base_h = 480;  /* Classic size */
+static int g_req_w, g_req_h;                /* pending screen-size change */
+static u32 g_resized_at;                    /* last window resize (SDL ticks), 0 = none pending */
+static char g_cfg_path[1100];               /* port.cfg, or "" (headless, tests) */
+static int g_cfg_win_w, g_cfg_win_h, g_cfg_fullscreen = -1;
+
+void host_display_settings(const char *path, bool fixed_screen) {
+    snprintf(g_cfg_path, sizeof g_cfg_path, "%s", path);
+    FILE *f = fopen(path, "r");
+    if (!f) return;
+    char line[256];
+    while (fgets(line, sizeof line, f)) {
+        char key[64], val[128];
+        if (sscanf(line, " %63[^= ] = %127s", key, val) != 2) continue;
+        if (!strcmp(key, "display")) g_mode = !strcmp(val, "large") ? MODE_LARGE : MODE_CLASSIC;
+        else if (!strcmp(key, "pixel_scale")) { g_pix = atoi(val); if (g_pix < 1 || g_pix > 4) g_pix = 2; }
+        else if (!strcmp(key, "window")) sscanf(val, "%dx%d", &g_cfg_win_w, &g_cfg_win_h);
+        else if (!strcmp(key, "fullscreen")) g_cfg_fullscreen = atoi(val) != 0;
+    }
+    fclose(f);
+    if (fixed_screen) g_mode = MODE_CLASSIC;
+}
+
+static void save_display_settings(void) {
+    if (!g_cfg_path[0] || !g_win) return;
+    bool fs = (SDL_GetWindowFlags(g_win) & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0;
+    if (!fs) SDL_GetWindowSize(g_win, &g_cfg_win_w, &g_cfg_win_h);
+    FILE *f = fopen(g_cfg_path, "w");
+    if (!f) return;
+    fprintf(f, "# Cythera port display settings (Ctrl+Alt+Enter cycles the display mode)\n");
+    fprintf(f, "display = %s\npixel_scale = %d\nwindow = %dx%d\nfullscreen = %d\n",
+            g_mode == MODE_LARGE ? "large" : "classic", g_pix, g_cfg_win_w, g_cfg_win_h, fs);
+    fclose(f);
+}
+
+/* Large mode: the emulated size for the current window. */
+static void large_size(int *w, int *h) {
+    int pw, ph;
+    if (SDL_GetRendererOutputSize(g_ren, &pw, &ph)) SDL_GetWindowSize(g_win, &pw, &ph);
+    *w = pw / g_pix; *h = ph / g_pix;
+    if (*w < g_base_w) *w = g_base_w;
+    if (*h < g_base_h) *h = g_base_h;
+    if (*w > 4096) *w = 4096;
+    if (*h > 4096) *h = 4096;
+}
+
+static void request_mode_size(void) {
+    int w = g_base_w, h = g_base_h;
+    if (g_mode == MODE_LARGE) large_size(&w, &h);
+    g_req_w = w; g_req_h = h;
+}
+
+static void cycle_display_mode(void) {
+    if (g_mode == MODE_CLASSIC) { g_mode = MODE_LARGE; g_pix = 2; }
+    else if (g_pix > 1) g_pix = 1;
+    else g_mode = MODE_CLASSIC;
+    request_mode_size();
+    save_display_settings();
+    LOG_I("display: %s", g_mode == MODE_LARGE ? (g_pix == 1 ? "large 1x" : "large 2x") : "classic");
+}
+
+bool host_take_screen_request(int *w, int *h) {
+    if (!g_req_w) return false;
+    *w = g_req_w; *h = g_req_h;
+    g_req_w = g_req_h = 0;
+    return !(*w == g_w && *h == g_h);
+}
+
+void host_resize_screen(int w, int h) {
+    g_w = w; g_h = h;
+    free(g_rgb);
+    g_rgb = calloc((size_t)w * (size_t)h, 4);
+    if (g_headless) return;
+    SDL_RenderSetLogicalSize(g_ren, w, h);
+    if (g_tex) SDL_DestroyTexture(g_tex);
+    g_tex = SDL_CreateTexture(g_ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+    if (g_cur_set) make_cursor();
+}
+
+void host_init(int *pw, int *ph, bool headless, int scale) {
+    int w = *pw, h = *ph;
+    g_base_w = w; g_base_h = h;
+    g_headless = headless;
+    if (!headless) {
+        SDL_SetMainReady(); /* our main() is not SDL_main */
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) < 0) fatal("SDL_Init: %s", SDL_GetError());
+        int ww = g_cfg_win_w, wh = g_cfg_win_h;
+        if (ww < 320 || wh < 240 || scale > 0) {
+            if (scale <= 0) {
+                SDL_DisplayMode dm;
+                scale = 1;
+                if (!SDL_GetDesktopDisplayMode(0, &dm))
+                    while ((scale + 1) * w <= dm.w * 9 / 10 && (scale + 1) * h <= dm.h * 9 / 10) scale++;
+            }
+            ww = w * scale; wh = h * scale;
+        }
+        g_win = SDL_CreateWindow("Cythera", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ww, wh,
+                                 SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI |
+                                 (g_cfg_fullscreen == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+        if (!g_win) fatal("SDL_CreateWindow: %s", SDL_GetError());
+        /* No vsync: the emulator presents once per 60.15 Hz tick, and waiting
+           for the host's vertical blank would block the emulated CPU (badly on
+           displays under 60 Hz) and tie the game's speed to the display. The
+           SDL_RENDER_VSYNC=1 environment variable turns it back on. */
+        g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_ACCELERATED);
+        if (!g_ren) g_ren = SDL_CreateRenderer(g_win, -1, 0);
+        SDL_RenderSetIntegerScale(g_ren, SDL_TRUE);
+        if (g_mode == MODE_LARGE) large_size(&w, &h);
+    }
+    g_w = w; g_h = h;
     g_rgb = calloc((size_t)w * (size_t)h, 4);
     g_mx = w / 2; g_my = h / 2;
+    *pw = w; *ph = h;
     if (headless) return;
-    SDL_SetMainReady(); /* our main() is not SDL_main */
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) < 0) fatal("SDL_Init: %s", SDL_GetError());
-    if (scale <= 0) {
-        SDL_DisplayMode dm;
-        scale = 1;
-        if (!SDL_GetDesktopDisplayMode(0, &dm)) {
-            while ((scale + 1) * w <= dm.w * 9 / 10 && (scale + 1) * h <= dm.h * 9 / 10) scale++;
-        }
-    }
-    g_win = SDL_CreateWindow("Cythera", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w * scale, h * scale,
-                             SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    if (!g_win) fatal("SDL_CreateWindow: %s", SDL_GetError());
-    /* No vsync: the emulator presents once per 60.15 Hz tick, and waiting
-       for the host's vertical blank would block the emulated CPU (badly on
-       displays under 60 Hz) and tie the game's speed to the display. The
-       SDL_RENDER_VSYNC=1 environment variable turns it back on. */
-    g_ren = SDL_CreateRenderer(g_win, -1, SDL_RENDERER_ACCELERATED);
-    if (!g_ren) g_ren = SDL_CreateRenderer(g_win, -1, 0);
     SDL_RenderSetLogicalSize(g_ren, w, h);
-    SDL_RenderSetIntegerScale(g_ren, SDL_TRUE);
     g_tex = SDL_CreateTexture(g_ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
     SDL_ShowCursor(SDL_ENABLE);
 }
@@ -92,14 +196,12 @@ void host_init(int w, int h, bool headless, int scale) {
 static void script_check_end(void);
 void host_shutdown(void) {
     script_check_end();
+    save_display_settings();
     if (g_ren) SDL_DestroyRenderer(g_ren);
     if (g_win) SDL_DestroyWindow(g_win);
     if (!g_headless) SDL_Quit();
 }
 
-static bool g_cur_set;
-static void make_cursor(void);
-static void toggle_fullscreen(void);
 
 /* ---- key translation ---- */
 static int mac_keycode(SDL_Keycode k, SDL_Scancode sc) {
@@ -252,8 +354,14 @@ void host_pump(bool wait) {
             g_mods = mods_from_sdl((SDL_Keymod)e.key.keysym.mod);
             set_key(kc, down);
             if (kc < 0 || kc == 0x37 || kc == 0x38 || kc == 0x39 || kc == 0x3A || kc == 0x3B) break;
-            /* Alt+Enter or Ctrl+Cmd+F: toggle fullscreen (not seen by the game) */
+            /* Ctrl+Alt+Enter (Cmd+Option+Enter): cycle the display mode; Alt+Enter
+               or Ctrl+Cmd+F: toggle fullscreen (neither is seen by the game) */
             SDL_Keymod km = (SDL_Keymod)e.key.keysym.mod;
+            if ((e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_KP_ENTER) &&
+                (km & KMOD_ALT) && (km & (KMOD_CTRL | KMOD_GUI))) {
+                if (down && !e.key.repeat) cycle_display_mode();
+                break;
+            }
             if ((e.key.keysym.sym == SDLK_RETURN && (km & KMOD_ALT)) ||
                 (e.key.keysym.sym == SDLK_f && (km & KMOD_CTRL) && (km & KMOD_GUI))) {
                 if (down && !e.key.repeat) toggle_fullscreen();
@@ -266,11 +374,21 @@ void host_pump(bool wait) {
             break;
         }
         case SDL_WINDOWEVENT:
-            if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && g_cur_set) make_cursor();
+            if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+                if (g_cur_set) make_cursor();
+                g_resized_at = SDL_GetTicks() | 1;
+            }
             if (e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) push_event((HostEvent){ .type = HEV_FOCUS_IN });
             if (e.window.event == SDL_WINDOWEVENT_FOCUS_LOST) push_event((HostEvent){ .type = HEV_FOCUS_OUT });
             break;
         }
+    }
+    /* once the window has stopped changing size: in Large mode the screen
+       follows it; the size is remembered */
+    if (g_resized_at && SDL_GetTicks() - g_resized_at > 300) {
+        g_resized_at = 0;
+        if (g_mode == MODE_LARGE) request_mode_size();
+        save_display_settings();
     }
     extern bool g_deterministic;
     extern void vclock_idle(void);
@@ -348,6 +466,7 @@ void host_set_fullscreen(bool on) {
 }
 static void toggle_fullscreen(void) {
     host_set_fullscreen(!(SDL_GetWindowFlags(g_win) & SDL_WINDOW_FULLSCREEN_DESKTOP));
+    save_display_settings();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -524,6 +643,17 @@ void script_tick(void) {
             script_key(key, 0);
             g_script_wait_until = now + (u32)every;
             return;
+        }
+        else if (!strcmp(s->cmd, "display")) {
+            /* display: what Ctrl+Alt+Enter does (cycle the display mode) */
+            if (g_headless) LOG_W("script: display needs a window (not headless)");
+            else cycle_display_mode();
+        }
+        else if (!strcmp(s->cmd, "screen")) {
+            /* screen WxH: change the emulated screen size (a display mode switch) */
+            int w, h;
+            if (sscanf(s->arg, "%dx%d", &w, &h) == 2 && w >= 512 && h >= 342) { g_req_w = w; g_req_h = h; }
+            else LOG_W("script: bad screen size %s", s->arg);
         }
         else if (!strcmp(s->cmd, "trace")) { extern bool g_trace_traps; g_trace_traps = !strcmp(s->arg, "on"); }
         else if (!strcmp(s->cmd, "click") && sscanf(s->arg, "%d %d", &x, &y) == 2) {

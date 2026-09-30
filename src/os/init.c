@@ -72,7 +72,13 @@ void os_init(void) {
     snprintf(app, sizeof app, "%s/%s", g_cfg.data_dir, g_cfg.app);
     res_open_app(app);
     threads_init(g_cpu);
-    host_init(g_cfg.screen_w, g_cfg.screen_h, g_cfg.headless, g_cfg.scale);
+    if (!g_cfg.headless) {
+        /* display settings, next to the System Folder (not for headless runs) */
+        char cfg[1100];
+        snprintf(cfg, sizeof cfg, "%s/../port.cfg", sysdir);
+        host_display_settings(cfg, g_cfg.screen_given);
+    }
+    host_init(&g_cfg.screen_w, &g_cfg.screen_h, g_cfg.headless, g_cfg.scale);
     if (g_cfg.fullscreen) host_set_fullscreen(true);
     qd_init_screen(g_cfg.screen_w, g_cfg.screen_h);
     text_init();

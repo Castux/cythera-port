@@ -178,6 +178,11 @@ bool surf_from_bitmap(u32 bm, Surf *s) {
         if (!pmh || !hderef(pmh)) return false;
         bm = hderef(pmh);
         rb = rd16(bm + 4);
+    } else if (!(rb & 0x8000) && g_screen_pm && rd32(bm) == g_screen_base) {
+        /* an old BitMap on the screen draws at the screen's depth, as
+           Color QuickDraw does (screenBits, WMgrPort, OpenPort) */
+        bm = hderef(g_screen_pm);
+        rb = rd16(bm + 4);
     }
     s->base = rd32(bm);
     s->rowbytes = rb & 0x3FFF;
@@ -300,6 +305,53 @@ void qd_init_screen(int w, int h) {
     wr16(LM_ScreenRow, (u16)g_srow);
     wr_rgb(LM_HiliteRGB, (RGB){ 0xCCCC, 0xCCCC, 0xFFFF });
     gmemset(g_screen_base, 0, (u32)(g_srow * h)); /* index 0 = white */
+}
+
+/* Ports seen by port_init, so that a screen resize can update those that draw
+   on the screen (windows, WMgrPort, OpenPort ports). */
+static u32 g_ports[1024];
+static int g_nports;
+static void note_port(u32 port) {
+    for (int i = 0; i < g_nports; i++) if (g_ports[i] == port) return;
+    if (g_nports < 1024) g_ports[g_nports++] = port;
+}
+
+/* Change the emulated screen's size, as switching display modes did on a
+   Mac: a new frame buffer, then the device, screenBits and every port on the
+   screen follow (ports keep their origin; their bounds grow or shrink). The
+   caller redraws and tells the application (ae.c, the 'cnfg' notice). */
+void qd_resize_screen(int w, int h) {
+    if (w == g_sw && h == g_sh) return;
+    u32 old = g_screen_base;
+    int ow = g_sw, oh = g_sh, orow = g_srow, row = (w + 3) & ~3;
+    u32 nb = mm_new_ptr((u32)(row * h), true, ZONE_SYS);
+    for (int y = 0; y < h && y < oh; y++) gmemmove(nb + (u32)(y * row), old + (u32)(y * orow), (u32)(w < ow ? w : ow));
+    g_sw = w; g_sh = h; g_srow = row; g_screen_base = nb;
+    Rect r = mkrect(0, 0, h, w);
+    u32 pm = hderef(g_screen_pm);
+    wr32(pm + PM_BASE, nb); wr16(pm + PM_ROWBYTES, (u16)(0x8000 | row)); wr_rect(pm + PM_BOUNDS, r);
+    wr_rect(hderef(g_screen_gd) + GD_RECT, r);
+    wr32(LM_ScrnBase, nb);
+    wr16(LM_ScreenRow, (u16)row);
+    if (g_qd_theport_ptr) {
+        u32 p = g_qd_theport_ptr;
+        wr32(p - 122, nb); wr16(p - 118, (u16)row); wr_rect(p - 116, r);
+    }
+    for (int i = 0; i < g_nports; i++) {
+        u32 port = g_ports[i];
+        bool color = (rd16(port + PORT_VERSION) & 0xC000) == 0xC000;
+        u32 bm = port + PORT_BITS;
+        if (color) { u32 pmh = rd32(port + PORT_BITS); if (!mm_is_handle(pmh) || !hderef(pmh)) continue; bm = hderef(pmh); }
+        if (rd32(bm) != old) continue;
+        Rect b = rd_rect(bm + 6);
+        b.bottom = (s16)(b.top + h); b.right = (s16)(b.left + w);
+        wr32(bm, nb);
+        wr16(bm + 4, (u16)((rd16(bm + 4) & 0xC000) | row));
+        wr_rect(bm + 6, b);
+        port_mirror_bounds(port);
+    }
+    mm_dispose_ptr(old);
+    g_screen_dirty = true;
 }
 
 u32 qd_main_device(void) { return g_screen_gd; }
@@ -433,6 +485,7 @@ void port_mirror_bounds(u32 port) {
 
 /* Initialise the common fields of a port (portBits must already be set). */
 void port_init(u32 port, bool color) {
+    note_port(port);
     Surf s;
     Rect b = { 0, 0, 0, 0 };
     if (surf_from_port(port, &s)) b = s.bounds;
@@ -577,7 +630,7 @@ TRAP(SetPort) { qd_set_port(ARG(0)); }
 TRAP(GetPort) { wr32(ARG(0), qd_port()); }
 TRAP(PortChanged) { }
 TRAP(GetCWMgrPort) { extern u32 wm_port(void); wr32(ARG(0), wm_port()); }
-TRAP(GetWMgrPort) { extern u32 wm_port(void); wr32(ARG(0), wm_port()); }
+TRAP(GetWMgrPort) { extern u32 wm_bw_port(void); wr32(ARG(0), wm_bw_port()); }
 
 TRAP(SetOrigin) {
     s16 h = ARGS16(0), v = ARGS16(1);

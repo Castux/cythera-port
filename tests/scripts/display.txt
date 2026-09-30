@@ -1,0 +1,47 @@
+# Display mode changes while playing: the emulated screen grows to 1024x768 (the
+# game re-lays out its windows through its own Display Manager handler), the
+# map window is enlarged, then the screen shrinks back to 640x480 (the map
+# window must come back onto it), and the game plays, saves and reopens.
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+expect Omen's Test
+screen 1024x768
+wait 120
+shot work/shots/display_1.png
+# enlarge the map window by its grow box (bottom-right corner)
+move 893 406
+wait 5
+mousedown 893 406
+wait 5
+move 950 520
+wait 5
+move 1010 640
+wait 10
+mouseup 1010 640
+wait 200
+shot work/shots/display_2.png
+key down
+wait 40
+expect Omen's Test
+screen 640x480
+wait 200
+shot work/shots/display_3.png
+key up
+wait 40
+key s cmd
+wait 300
+key o cmd
+wait 200
+# "Save Game before Closing?": Save (the default), then Open in the dialog
+expect Save Game before Closing
+key return
+wait 300
+click 507 306
+wait 1200
+shot work/shots/display_4.png
+expect [Game Opened]
+expect Omen's Test
+quit

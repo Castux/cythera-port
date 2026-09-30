@@ -49,7 +49,7 @@ static void usage(void) {
         "  --trace-traps     log every Toolbox call\n"
         "  --trap-stats FILE append per-import call counts to FILE at exit\n"
         "  --strict          abort on unimplemented Toolbox calls\n"
-        "  --screen WxH      emulated screen size (default 640x480)\n"
+        "  --screen WxH      fixed emulated screen size (default 640x480; Ctrl+Alt+Enter: display modes)\n"
         "  --scale N         window scale factor\n"
         "  --fullscreen      start in fullscreen (toggle: Alt+Enter, or Ctrl+Cmd+F on macOS)\n"
         "  -v / -q           more / less logging\n");
@@ -92,6 +92,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
         else if (!strcmp(a, "--screen") && i + 1 < argc) {
             if (sscanf(argv[++i], "%dx%d", &g_cfg.screen_w, &g_cfg.screen_h) != 2) usage();
+            g_cfg.screen_given = true;
         } else if (!strcmp(a, "--scale") && i + 1 < argc) g_cfg.scale = atoi(argv[++i]);
         else if (!strcmp(a, "-v")) g_log_level++;
         else if (!strcmp(a, "-q")) g_log_level--;

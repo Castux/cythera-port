@@ -454,7 +454,16 @@ C11 and SDL2; the source layout is in [DEVELOPING.md](DEVELOPING.md#source-layou
 - **Display:** an emulated 8-bit indexed main GDevice (640×480 by default),
   presented once per tick in an SDL window scaled by whole multiples; the
   menu bar is drawn by our Menu Manager. A video driver (refnum -50) with
-  gamma-table calls makes fades work.
+  gamma-table calls makes fades work. The screen can change size while the
+  game runs (the Large display modes): the frame buffer, device, `screenBits`
+  and every port on the screen follow, then the game gets the Display
+  Manager's notice (`'aevt'/'cnfg'` with `'dspl'` → items of `'dold'`/`'dnew'`
+  records holding `'dmdd'` and `'dddr'`), which its `HandleDisplayNotice` →
+  `TApp::DoMonitorChanged` handles by moving and stretching its windows (the
+  status panel and backdrop follow the screen's edges). When the screen shrinks,
+  the port first fits the game's other windows that wouldn't fit, the way its
+  grow box does (`SizeWindow`, then the window's `ResizeRoutine`), and afterwards
+  moves any left sticking out back onto the screen.
 - **Text:** the game's own fonts (NFNT bitmaps, and the ArgosANouveau
   TrueType font) are used as they are; TrueType is rasterised hinted and
   monochrome with FreeType, like the Mac's scaler. The system fonts it asks

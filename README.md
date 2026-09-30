@@ -61,7 +61,7 @@ are in [docs/DEVELOPING.md](docs/DEVELOPING.md).
 |---|---|
 | `--scale N` | window scale factor (default: as large as fits) |
 | `--fullscreen` | start fullscreen |
-| `--screen WxH` | emulated screen size (default 640x480, as the game was designed for) |
+| `--screen WxH` | a fixed emulated screen size (default 640x480, as the game was designed for) |
 | `--registered NAME` | the name the game is registered to (see below) |
 | `--data DIR` | game directory (default: `gamedata`, here or next to the program) |
 | `--soundfont FILE` | General MIDI SoundFont for the music |
@@ -80,6 +80,16 @@ Option is Alt.
 - **Drag** items onto your portrait in the party roster (bottom right) to pick them up.
 - **Alt+Enter** (or **Ctrl+⌘+F** on macOS) toggles fullscreen. The window can be
   resized freely; the picture is scaled by whole multiples to keep pixels sharp.
+- **Ctrl+Alt+Enter** (**⌘+Option+Enter** on macOS) switches the display mode:
+  - *Classic* (the default): the game's 640×480 screen, enlarged to fit the window.
+  - *Large 2×* and *Large 1×*: the game gets a bigger screen, the size of the
+    window (or the whole display, in fullscreen) at 2 or 1 screen pixels per game
+    pixel, and follows the window as it's resized. Drag the map window's
+    bottom-right corner to see more of the world.
+
+  The game re-arranges its windows when the size changes, as it did on a Mac when
+  the resolution changed. The display mode, window size and fullscreen are
+  remembered in `~/.cythera-port/port.cfg`.
 
 ### Registration
 

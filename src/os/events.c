@@ -167,12 +167,22 @@ static bool mouse_in_rgn(u32 rgn) {
 
 static bool g_oapp_sent;
 
+/* A high-level event: message = event class, where = event ID (ae.c keeps
+   the parameters). */
+void ev_post_high_level(u32 cls, u32 id) {
+    ev_post(kHighLevelEvent, cls, 0);
+    g_q[g_qn - 1].where = pt_from_u32(id);
+}
+
 TRAP(WaitNextEvent) {
     u16 mask = ARGU16(0); u32 ep = ARG(1); u32 sleep = ARG(2); u32 mrgn = ARG(3);
+    /* a display mode change is applied here, between the game's own event
+       handling, as the Mac's Monitors control panel would */
+    int rw, rh;
+    if (host_take_screen_request(&rw, &rh)) { extern void wm_change_screen(int w, int h); wm_change_screen(rw, rh); }
     if (!g_oapp_sent) {
         g_oapp_sent = true;
-        ev_post(kHighLevelEvent, FOURCC('a','e','v','t'), 0);
-        g_q[g_qn - 1].where = pt_from_u32(FOURCC('o','a','p','p'));
+        ev_post_high_level(FOURCC('a','e','v','t'), FOURCC('o','a','p','p'));
     }
     u32 start = tick_count();
     for (;;) {
@@ -300,61 +310,3 @@ void ev_init(void) {
     wr16(LM_KeyRepThresh, 6);
 }
 
-/* ---------------------------------------------------------------------- */
-/* Apple Events (minimal)                                                  */
-
-typedef struct { u32 cls, id, handler, refcon; } AEHandler;
-static AEHandler g_ae[32];
-static int g_nae;
-
-TRAP(AEInstallEventHandler) {
-    u32 cls = ARG(0), id = ARG(1), h = ARG(2), refcon = ARG(3);
-    for (int i = 0; i < g_nae; i++) if (g_ae[i].cls == cls && g_ae[i].id == id) { g_ae[i].handler = h; g_ae[i].refcon = refcon; RETERR(noErr); return; }
-    if (g_nae < 32) g_ae[g_nae++] = (AEHandler){ cls, id, h, refcon };
-    RETERR(noErr);
-}
-
-TRAP(AEProcessAppleEvent) {
-    u32 ep = ARG(0);
-    u32 cls = rd32(ep + 2), id = rd32(ep + 10);
-    for (int i = 0; i < g_nae; i++) {
-        if ((g_ae[i].cls == cls || g_ae[i].cls == FOURCC('*','*','*','*')) && (g_ae[i].id == id || g_ae[i].id == FOURCC('*','*','*','*'))) {
-            /* AppleEvent and reply descriptors: {descriptorType, dataHandle} */
-            u32 evt = sys_alloc(8), reply = sys_alloc(8);
-            wr32(evt, FOURCC('a','e','v','t'));
-            u32 dh = mm_new_handle(8, true, ZONE_SYS);
-            wr32(hderef(dh), cls); wr32(hderef(dh) + 4, id);
-            wr32(evt + 4, dh);
-            wr32(reply, FOURCC('n','u','l','l'));
-            wr32(reply + 4, 0);
-            LOG_I("AppleEvent %s/%s -> handler", fourcc_str(cls), fourcc_str(id));
-            u32 a[3] = { evt, reply, g_ae[i].refcon };
-            u32 r = call_upp(g_ae[i].handler, 3, a);
-            (void)r;
-            RETERR(noErr);
-            return;
-        }
-    }
-    RETERR(errAEEventNotHandled);
-}
-
-TRAP(AEGetParamDesc) { u32 d = ARG(3); if (d) { wr32(d, FOURCC('n','u','l','l')); wr32(d + 4, 0); } RETERR(-1701); }
-TRAP(AEGetParamPtr) { RETERR(-1701); }
-TRAP(AEGetAttributePtr) { RETERR(-1701); }
-TRAP(AECountItems) { u32 p = ARG(1); if (p) wr32(p, 0); RETERR(noErr); }
-TRAP(AEGetNthPtr) { RETERR(-1701); }
-TRAP(AEGetNthDesc) { RETERR(-1701); }
-TRAP(AESizeOfNthItem) { RETERR(-1701); }
-TRAP(AECreateDesc) {
-    u32 type = ARG(0), data = ARG(1), size = ARG(2), d = ARG(3);
-    u32 h = mm_new_handle(size, false, ZONE_APP);
-    if (size && data) gmemmove(hderef(h), data, size);
-    wr32(d, type); wr32(d + 4, h);
-    RETERR(noErr);
-}
-TRAP(AEDisposeDesc) {
-    u32 d = ARG(0);
-    if (d && rd32(d + 4)) mm_dispose_handle(rd32(d + 4));
-    if (d) { wr32(d, FOURCC('n','u','l','l')); wr32(d + 4, 0); }
-    RETERR(noErr);
-}

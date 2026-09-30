@@ -18,7 +18,17 @@ typedef struct {
     u32 when;          /* tick count when the host reported it */
 } HostEvent;
 
-void host_init(int w, int h, bool headless, int scale);
+/* Open the window (or not, headless). *w, *h is the emulated screen size;
+   in Large display mode it's chosen here from the window size. */
+void host_init(int *w, int *h, bool headless, int scale);
+/* Display settings (port.cfg): read before host_init, written on changes.
+   fixed_screen: the size was given on the command line (Classic mode). */
+void host_display_settings(const char *path, bool fixed_screen);
+/* A pending change of the emulated screen size (display mode switch, window
+   resized in Large mode, `screen` script command), taken by the OS layer. */
+bool host_take_screen_request(int *w, int *h);
+/* The emulated screen now has this size. */
+void host_resize_screen(int w, int h);
 void host_shutdown(void);
 void host_set_fullscreen(bool on);
 /* Process pending host events; if `wait`, sleep briefly when idle. */

@@ -14,6 +14,7 @@ typedef struct {
     bool headless;
     bool data_readonly; /* never write into data_dir (packaged builds: it may be a signed app bundle) */
     int screen_w, screen_h;
+    bool screen_given; /* --screen: a fixed size (Classic display mode) */
     int scale;
     int timeout_s;
 } Config;

@@ -26,7 +26,8 @@ static HRgn g_desk_lastvis;
 
 #define MAX_WIN 128
 static WInfo g_wi[MAX_WIN];
-static u32 g_wmport;
+static u32 g_wmport;      /* WMgrCPort: the Window Manager draws in it */
+static u32 g_wmport_bw;   /* WMgrPort: an old GrafPort on the screen */
 static u32 g_last_front;
 
 static WInfo *winfo(u32 w) {
@@ -40,6 +41,7 @@ static WInfo *winfo_new(u32 w) {
 bool wm_is_window(u32 w) { return w && winfo(w) != NULL; }
 
 u32 wm_port(void) { return g_wmport; }
+u32 wm_bw_port(void) { return g_wmport_bw; }
 u32 wm_first(void) { return rd32(LM_WindowList); }
 u32 wm_front(void) {
     for (u32 w = wm_first(); w; w = rd32(w + WIN_NEXT)) if (rd8(w + WIN_VISIBLE)) return w;
@@ -444,6 +446,13 @@ TRAP(InitWindows) {
     wr32(g_wmport + PORT_BITS, pmh);
     wr16(g_wmport + PORT_VERSION, 0xC000);
     port_init(g_wmport, true);
+    /* WMgrPort is a separate old port: application WDEFs copy its pen
+       (pnPat at 0x3A) into WMgrCPort, where that offset holds handles */
+    g_wmport_bw = mm_new_ptr(PORT_SIZE, true, ZONE_SYS);
+    wr32(g_wmport_bw + PORT_BITS, qd_screen_base());
+    wr16(g_wmport_bw + PORT_BITS + 4, (u16)rd16(hderef(pmh) + 4) & 0x3FFF);
+    wr_rect(g_wmport_bw + PORT_BITS + 6, mkrect(0, 0, qd_screen_h(), qd_screen_w()));
+    port_init(g_wmport_bw, false);
     qd_set_port(save ? save : g_wmport);
     /* gray region: screen minus menu bar */
     u32 gray = rgn_new();
@@ -456,6 +465,100 @@ TRAP(InitWindows) {
     paint_desktop(&all);
     hrgn_free(&all);
     menu_draw_bar();
+}
+
+/* After qd_resize_screen: the desktop and the Window Manager ports follow the
+   new screen, and everything is repainted (windows get update events). */
+void wm_screen_resized(void) {
+    int w = qd_screen_w(), h = qd_screen_h(), mb = rds16(LM_MBarHeight);
+    rgn_set_rect(rd32(LM_GrayRgn), mkrect(mb, 0, h, w));
+    wr_rect(g_wmport + PORT_RECT, mkrect(0, 0, h, w));
+    wr_rect(g_wmport_bw + PORT_RECT, mkrect(0, 0, h, w));
+    rgn_set_rect(rd32(g_wmport_bw + PORT_VIS), mkrect(0, 0, h, w));
+    HRgn all; hrgn_rect(&all, 0, 0, h, w);
+    wm_recalc(&all);
+    hrgn_free(&all);
+    menu_draw_bar();
+}
+
+/* Before the screen shrinks: the game's own windows (windowKind 0x7a84, the
+   TWindow object in the refCon) that wouldn't fit are made smaller the way
+   its grow box does (TWindow::HandleResizeWindow): SizeWindow, then the
+   object's ResizeRoutine (vtable +0x34), within its GetResizeRect (+0x30)
+   minimum. The game's DoMonitorChanged only moves windows, so an enlarged map
+   window would otherwise stay partly off a smaller screen. */
+static void size_window(u32 win, int w, int h, bool upd);
+static void fit_game_windows(int w, int h, int ow, int oh) {
+    int mb = rds16(LM_MBarHeight);
+    for (u32 win = wm_first(); win; win = rd32(win + WIN_NEXT)) {
+        if (!rd8(win + WIN_VISIBLE) || rd16(win + WIN_KIND) != 0x7a84) continue;
+        u32 obj = rd32(win + WIN_REFCON);
+        if (!obj || rd32(obj + 4) != win) continue;
+        Rect st = rgn_bbox(rd32(win + WIN_STRUC)), pr = rd_rect(win + PORT_RECT);
+        /* windows spanning the screen edge to edge (the backdrop, the status
+           panel) are stretched by the game itself */
+        if ((st.left <= 0 && st.right >= ow) || (st.top <= mb && st.bottom >= oh)) continue;
+        int over_w = (st.right - st.left) - w, over_h = (st.bottom - st.top) - (h - mb);
+        if (over_w <= 0 && over_h <= 0) continue;
+        u32 lim = sys_alloc(8);
+        u32 a[2] = { obj, lim };
+        guest_call(rd32(rd32(obj) + 0x30), 2, a); /* GetResizeRect: min (top,left), max */
+        int cw = pr.right - pr.left, ch = pr.bottom - pr.top;
+        if (over_w > 0) cw -= over_w;
+        if (over_h > 0) ch -= over_h;
+        if (cw < rds16(lim + 2)) cw = rds16(lim + 2);
+        if (ch < rds16(lim)) ch = rds16(lim);
+        size_window(win, cw, ch, true);
+        u32 b[1] = { obj };
+        guest_call(rd32(rd32(obj) + 0x34), 1, b); /* ResizeRoutine */
+        LOG_I("window %08x fitted to %dx%d for the %dx%d screen", win, cw, ch, w, h);
+    }
+}
+
+/* After the game has handled a display change: its windows that still stick
+   out of the screen are moved back onto it (title bar first), as the Mac's
+   Display Manager did for applications. */
+static void move_window(u32 win, int h, int v, bool front);
+void wm_constrain_windows(void) {
+    int w = qd_screen_w(), h = qd_screen_h(), mb = rds16(LM_MBarHeight);
+    for (u32 win = wm_first(); win; win = rd32(win + WIN_NEXT)) {
+        if (!rd8(win + WIN_VISIBLE) || rd16(win + WIN_KIND) != 0x7a84) continue;
+        Rect st = rgn_bbox(rd32(win + WIN_STRUC));
+        /* the ones the game stretches touch both edges; small overhangs (the
+           To Do and Journal tabs sit 1 pixel past the edges) are intended */
+        if ((st.left <= 0 && st.right >= w) || (st.top <= mb && st.bottom >= h)) continue;
+        const int slack = 4;
+        int dx = 0, dy = 0;
+        if (st.right > w + slack) dx = w - st.right;
+        if (st.left + dx < -slack) dx = -st.left;
+        if (st.bottom > h + slack) dy = h - st.bottom;
+        if (st.top + dy < mb - slack) dy = mb - st.top;
+        if (!dx && !dy) continue;
+        /* move_window takes the new global top-left of the content */
+        int cx = 0, cy = 0;
+        wm_local_to_global(win, &cx, &cy);
+        Rect pr = rd_rect(win + PORT_RECT);
+        cx += pr.left; cy += pr.top;
+        move_window(win, cx + dx, cy + dy, false);
+        LOG_I("window %08x moved by %d,%d onto the screen", win, dx, dy);
+    }
+}
+
+/* A display mode change requested by the host (window resized in Large
+   mode, Ctrl+Alt+Enter, the `screen` script command): resize the screen,
+   repaint, and send the game the Display Manager's notice, which it handles
+   by moving and re-laying out its windows (TApp::DoMonitorChanged). */
+void wm_change_screen(int w, int h) {
+    extern void qd_resize_screen(int w, int h);
+    extern void ae_post_display_notice(u32 gd, Rect old, Rect now);
+    Rect old = mkrect(0, 0, qd_screen_h(), qd_screen_w());
+    if (w == old.right && h == old.bottom) return;
+    if (w < old.right || h < old.bottom) fit_game_windows(w, h, old.right, old.bottom);
+    qd_resize_screen(w, h);
+    host_resize_screen(w, h);
+    wm_screen_resized();
+    ae_post_display_notice(qd_main_device(), old, mkrect(0, 0, h, w));
+    LOG_I("screen %dx%d -> %dx%d", old.right, old.bottom, w, h);
 }
 
 TRAP(GetGrayRgn) { RET(rd32(LM_GrayRgn)); }
@@ -634,8 +737,7 @@ static void move_window(u32 win, int h, int v, bool front) {
 
 TRAP(MoveWindow) { move_window(ARG(0), ARGS16(1), ARGS16(2), ARGB(3)); }
 
-TRAP(SizeWindow) {
-    u32 win = ARG(0); s16 w = ARGS16(1), h = ARGS16(2); bool upd = ARGB(3);
+static void size_window(u32 win, int w, int h, bool upd) {
     if (!winfo(win)) return;
     HRgn old; hrgn_from_guest(&old, rd32(win + WIN_STRUC));
     Rect pr = rd_rect(win + PORT_RECT);
@@ -654,6 +756,7 @@ TRAP(SizeWindow) {
     }
     hrgn_free(&old);
 }
+TRAP(SizeWindow) { size_window(ARG(0), ARGS16(1), ARGS16(2), ARGB(3)); }
 
 TRAP(FindWindow) {
     Point p = pt_from_u32(ARG(0)); u32 wp = ARG(1);

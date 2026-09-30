@@ -111,7 +111,10 @@ drawn, at most MAX times: pages through a conversation), `dclickchar N`
 wandered: found in the character table relative to the hero), `dclickfoe`
 (double-click on the nearest active monster within 3 tiles, if any: attacks
 it once it is hostile; repeat it to fight), `peek ADDR [N]` (hex dump of
-guest memory), `bt`, `dumpwin`, `trace on|off`, `quit`. If the program quits (e.g. the game ends) before an `expect`,
+guest memory), `screen WxH` (change the emulated screen size, as a display
+mode switch does: `tests/scripts/display.txt`), `display` (what Ctrl+Alt+Enter
+does; needs a window, e.g. `SDL_VIDEODRIVER=dummy` without `--deterministic`),
+`bt`, `dumpwin`, `trace on|off`, `quit`. If the program quits (e.g. the game ends) before an `expect`,
 `keyuntil` or `dclickchar` line has run, that fails too. A first line
 `# app: NAME` makes `run.sh` start another application. A line
 `# save: NAME` starts the script from the stage save `tests/saves/NAME`
