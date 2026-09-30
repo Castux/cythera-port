@@ -5,6 +5,7 @@ SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null || pkg-config --cflags sd
 SDL_LIBS   := $(shell sdl2-config --libs 2>/dev/null || pkg-config --libs sdl2)
 ifeq ($(OS),Windows_NT)
 # plain main() with a console for the log (see SDL_SetMainReady in host/sdl.c)
+SDL_CFLAGS := $(filter-out -Dmain=SDL_main,$(SDL_CFLAGS))
 SDL_LIBS   := $(filter-out -lSDL2main -mwindows,$(SDL_LIBS))
 EXE        := .exe
 ifeq ($(GUI),1)
