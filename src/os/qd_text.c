@@ -5,7 +5,9 @@
  * 'sfnt' TrueType outlines (rasterised with stb_truetype). Missing system
  * fonts fall back to a built-in proportional bitmap font. QuickDraw style
  * variations (bold, italic, underline, outline, shadow, condense, extend)
- * are synthesised.
+ * are synthesised. TrueType is hinted with FreeType when it is built in, which
+ * gives crisp monochrome text like the Mac's scaler; otherwise stb_truetype
+ * outlines are thresholded.
  */
 #include "qd.h"
 #include "resources.h"
@@ -13,6 +15,10 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 
 #include "../../third_party/stb_truetype.h"
+#ifdef HAVE_FREETYPE
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#endif
 
 #define LM_ApFontID 0x0984
 #define LM_SysFontFam 0x0BA6
@@ -152,7 +158,61 @@ static bool load_nfnt(Font *f, const u8 *d, u32 len, int target_size, int native
 }
 
 /* ---- TrueType ---- */
+#ifdef HAVE_FREETYPE
+/* Hinted monochrome glyphs, as QuickDraw drew TrueType without smoothing. */
+static bool load_sfnt_ft(Font *f, const u8 *d, u32 len, int size) {
+    static FT_Library lib;
+    if (!lib && FT_Init_FreeType(&lib)) { lib = NULL; return false; }
+    FT_Face face;
+    if (FT_New_Memory_Face(lib, d, (FT_Long)len, 0, &face)) return false;
+    /* index Mac Roman fonts directly, others through Unicode */
+    bool roman = !FT_Select_Charmap(face, FT_ENCODING_APPLE_ROMAN);
+    bool uni = !FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+    if (!uni && roman) FT_Select_Charmap(face, FT_ENCODING_APPLE_ROMAN);
+    if (FT_Set_Pixel_Sizes(face, 0, (FT_UInt)size)) { FT_Done_Face(face); return false; }
+    const FT_Size_Metrics *m = &face->size->metrics;
+    f->ascent = (int)((m->ascender + 63) >> 6);
+    f->descent = (int)((-m->descender + 63) >> 6);
+    f->leading = (int)(m->height >> 6) - f->ascent - f->descent;
+    if (f->leading < 0) f->leading = 0;
+    f->height = f->ascent + f->descent;
+    f->widmax = 0;
+    for (int c = 0; c < 256; c++) {
+        Glyph *g = &f->g[c];
+        g->adv = 0; g->w = 0; g->img = NULL;
+        if (c < 32) continue;
+        FT_UInt gi = uni ? FT_Get_Char_Index(face, c < 128 ? (FT_ULong)c : mr_hi[c - 128]) : 0;
+        if (!gi && roman) {
+            FT_Select_Charmap(face, FT_ENCODING_APPLE_ROMAN);
+            gi = FT_Get_Char_Index(face, (FT_ULong)c);
+            if (uni) FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+        }
+        if (FT_Load_Glyph(face, gi, FT_LOAD_RENDER | FT_LOAD_TARGET_MONO | FT_LOAD_MONOCHROME)) continue;
+        FT_GlyphSlot sl = face->glyph;
+        g->adv = (s16)((sl->advance.x + 32) >> 6);
+        if (g->adv > f->widmax) f->widmax = g->adv;
+        const FT_Bitmap *b = &sl->bitmap;
+        if (!b->width || !b->rows || b->pixel_mode != FT_PIXEL_MODE_MONO) continue;
+        int w = (int)b->width;
+        g->w = (s16)w; g->xoff = (s16)sl->bitmap_left;
+        g->img = calloc((size_t)w * (size_t)f->height, 1);
+        for (int y = 0; y < (int)b->rows; y++) {
+            int yy = f->ascent - sl->bitmap_top + y;
+            if (yy < 0 || yy >= f->height) continue;
+            const u8 *src = b->buffer + (ptrdiff_t)y * b->pitch;
+            for (int x = 0; x < w; x++)
+                g->img[(size_t)yy * (size_t)w + (size_t)x] = (src[x >> 3] >> (7 - (x & 7))) & 1;
+        }
+    }
+    FT_Done_Face(face);
+    return true;
+}
+#endif
+
 static bool load_sfnt(Font *f, const u8 *d, u32 len, int size) {
+#ifdef HAVE_FREETYPE
+    if (load_sfnt_ft(f, d, len, size)) return true;
+#endif
     stbtt_fontinfo fi;
     if (!stbtt_InitFont(&fi, d, stbtt_GetFontOffsetForIndex(d, 0))) return false;
     (void)len;
@@ -203,7 +263,7 @@ static const char *const *host_font_candidates(int family) {
     static const char *const chicago[] = { "Charcoal.ttf", "ChicagoFLF.ttf", "Chicago.ttf", "/System/Library/Fonts/Geneva.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "C:/Windows/Fonts/tahomabd.ttf", NULL };
     static const char *const geneva[] = { "Geneva.ttf", "/System/Library/Fonts/Geneva.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/tahoma.ttf", NULL };
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/verdana.ttf", NULL };
     static const char *const monaco[] = { "Monaco.ttf", "/System/Library/Fonts/Monaco.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "C:/Windows/Fonts/consola.ttf", NULL };
     static const char *const times[] = { "Times.ttf", "/System/Library/Fonts/Times.ttc",

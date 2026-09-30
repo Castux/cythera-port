@@ -27,6 +27,13 @@ sudo apt install build-essential libsdl2-dev unar python3-venv
 make
 ```
 
+Optional but recommended: FreeType, for crisp (hinted) text. It is used when
+`pkg-config freetype2` finds it (`brew install freetype`, `apt install
+libfreetype-dev`, `pacman -S mingw-w64-x86_64-freetype`), or build a minimal
+static copy from the [source tarball](https://download.savannah.gnu.org/releases/freetype/)
+with `tools/build_freetype.sh freetype-2.x.tar.xz`. Without it, text is rasterised
+unhinted and looks rough at small sizes.
+
 Windows: build in an [MSYS2](https://www.msys2.org/) MinGW64 shell
 (`pacman -S make mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 python`), then `make`.
 With a standalone MinGW-w64 instead (native `mingw32-make`, run from Git Bash),

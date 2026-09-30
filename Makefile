@@ -8,9 +8,18 @@ ifeq ($(OS),Windows_NT)
 SDL_LIBS   := $(filter-out -lSDL2main -mwindows,$(SDL_LIBS))
 EXE        := .exe
 endif
+# Optional FreeType for hinted (crisp) TrueType text: tools/build_freetype.sh, else the system's
+FT_DIR  := third_party/freetype
+ifneq ($(wildcard $(FT_DIR)/lib/libfreetype.a),)
+FT_CFLAGS := -DHAVE_FREETYPE -I$(FT_DIR)/include
+FT_LIBS   := $(FT_DIR)/lib/libfreetype.a
+else ifneq ($(shell pkg-config --exists freetype2 2>/dev/null && echo y),)
+FT_CFLAGS := -DHAVE_FREETYPE $(shell pkg-config --cflags freetype2)
+FT_LIBS   := $(shell pkg-config --libs freetype2)
+endif
 CFLAGS  ?= -O2 -g
-override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS)
-override LDLIBS += $(SDL_LIBS) -lm -lpthread
+override CFLAGS += -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers $(SDL_CFLAGS) $(FT_CFLAGS)
+override LDLIBS += $(FT_LIBS) $(SDL_LIBS) -lm -lpthread
 
 BUILD   := build
 SRCS    := $(wildcard src/*.c src/cpu/*.c src/loader/*.c src/os/*.c src/host/*.c)

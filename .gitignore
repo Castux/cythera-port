@@ -3,6 +3,7 @@ work/
 gamedata/
 build/
 build-*/
+third_party/freetype/
 *.o
 .venv/
 __pycache__/
