@@ -26,7 +26,11 @@ enum { drawCntl = 0, testCntl, calcCRgns, initCntl, dispCntl, posCntl, thumbCntl
        calcCntlRgn = 10, calcThumbRgn = 11 };
 enum { inButton = 10, inCheckBox = 11, inUpButton = 20, inDownButton = 21, inPageUp = 22, inPageDown = 23, inThumb = 129 };
 
-typedef struct { u32 ctl; s16 procid; int var; bool native; int kind; } CInfo;
+typedef struct {
+    u32 ctl; s16 procid; int var; bool native; int kind;
+    u32 menu; s16 title_w; /* pop-up menus */
+} CInfo;
+enum { kindPopup = 32 };
 #define MAX_CTL 1024
 static CInfo g_ci[MAX_CTL];
 
@@ -68,6 +72,113 @@ static int title_width(u32 port, u32 c) {
     u32 p = hderef(c);
     u8 n = rd8(p + CR_TITLE);
     return text_width(port, gptr(p + CR_TITLE + 1, n), n);
+}
+
+/* ---- pop-up menu control (System 7 CDEF 63, popupMenuProc = 1008) ----
+   NewControl passes the menu ID as the minimum and the title width as the
+   maximum; the CDEF puts the menu in the hierarchical menu list, stores
+   {MenuHandle, menuID} in a handle in contrlData (applications read the
+   menu from there) and sets min 1, max = item count, value 1. Variation
+   popupFixedWidth (1) keeps the control rect's width, popupUseWFont (8)
+   draws in the window's font. */
+static u32 trapcall(void (*fn)(CPU *), int n, const u32 *a) {
+    CPU f; memset(&f, 0, sizeof f);
+    for (int i = 0; i < n; i++) f.r[3 + i] = a[i];
+    fn(&f);
+    return f.r[3];
+}
+extern void trap_GetMenuHandle(CPU *), trap_GetMenu(CPU *), trap_InsertMenu(CPU *), trap_CountMItems(CPU *),
+            trap_GetMenuItemText(CPU *), trap_SetItemMark(CPU *), trap_PopUpMenuSelect(CPU *);
+static int popup_count(CInfo *ci) { u32 a[1] = { ci->menu }; return ci->menu ? (int)(s16)trapcall(trap_CountMItems, 1, a) : 0; }
+static void popup_init(u32 c, CInfo *ci) {
+    u32 p = hderef(c);
+    s16 id = rds16(p + CR_MIN);
+    ci->title_w = rds16(p + CR_MAX);
+    u32 a[2] = { (u32)(u16)id, 0 };
+    u32 m = trapcall(trap_GetMenuHandle, 1, a);
+    if (!m) {
+        m = trapcall(trap_GetMenu, 1, a);
+        if (m) { u32 b[2] = { m, (u32)-1 }; trapcall(trap_InsertMenu, 2, b); }
+    }
+    ci->menu = m;
+    u32 data = mm_new_handle(10, true, ZONE_APP);
+    wr32(hderef(data), m); wr16(hderef(data) + 4, (u16)id);
+    p = hderef(c);
+    wr32(p + CR_DATA, data);
+    wr16(p + CR_MIN, 1);
+    wr16(p + CR_MAX, (u16)popup_count(ci));
+    wr16(p + CR_VALUE, 1);
+}
+static Rect popup_box(u32 c, CInfo *ci) {
+    Rect r = rd_rect(hderef(c) + CR_RECT);
+    int tw = ci->title_w > 0 ? ci->title_w : 0;
+    if (tw > r.right - r.left - 24) tw = 0;
+    return mkrect(r.top, r.left + tw, r.bottom, r.right);
+}
+static void popup_draw(u32 port, u32 c, CInfo *ci, bool dim) {
+    u32 p = hderef(c);
+    Rect r = rd_rect(p + CR_RECT), b = popup_box(c, ci);
+    RGB black = { 0, 0, 0 }, white = { 0xFFFF, 0xFFFF, 0xFFFF }, gray = { 0x8888, 0x8888, 0x8888 };
+    s16 sfont = rds16(port + PORT_TXFONT), ssize = rds16(port + PORT_TXSIZE); u8 sface = rd8(port + PORT_TXFACE);
+    if (!(ci->var & 8)) { wr16(port + PORT_TXFONT, 0); wr16(port + PORT_TXSIZE, 12); wr8(port + PORT_TXFACE, 0); }
+    int asc, desc, wm, lead;
+    text_font_info(port, &asc, &desc, &wm, &lead);
+    int ty = (b.top + b.bottom - 1 + asc - desc) / 2;
+    if (b.left > r.left && rd8(p + CR_TITLE)) draw_title(port, c, r.left + 2, ty, dim, false);
+    Rect in = mkrect(b.top, b.left, b.bottom - 1, b.right - 1);
+    ctl_fill(port, in, white);
+    ctl_frame(port, in, dim ? gray : black);
+    ctl_fill(port, mkrect(b.bottom - 1, b.left + 2, b.bottom, b.right), dim ? gray : black);  /* drop shadow */
+    ctl_fill(port, mkrect(b.top + 2, b.right - 1, b.bottom, b.right), dim ? gray : black);
+    /* current item, truncated to fit before the arrow */
+    u8 txt[256]; txt[0] = 0;
+    s16 v = rds16(p + CR_VALUE);
+    if (ci->menu && v >= 1) {
+        u32 tmp = mm_new_ptr(256, true, ZONE_SYS);
+        u32 a[3] = { ci->menu, (u32)(u16)v, tmp };
+        trapcall(trap_GetMenuItemText, 3, a);
+        gmemcpy_from(txt, tmp, 1u + rd8(tmp));
+        mm_dispose_ptr(tmp);
+    }
+    int room = (in.right - 18) - (in.left + 6), n = txt[0];
+    if (text_width(port, txt + 1, n) > room) {
+        static const u8 ellipsis = 0xC9;
+        int ell = text_width(port, &ellipsis, 1);
+        while (n > 0 && text_width(port, txt + 1, n) + ell > room) n--;
+        txt[1 + n++] = 0xC9; /* ellipsis */
+    }
+    RGB save; rd_rgb(port + PORT_RGBFG, &save);
+    if (is_color_port(port)) wr_rgb(port + PORT_RGBFG, dim ? gray : black);
+    s16 mode = rds16(port + PORT_TXMODE);
+    wr16(port + PORT_TXMODE, srcOr);
+    wr16(port + PORT_PNLOC + 2, (u16)(in.left + 6)); wr16(port + PORT_PNLOC, (u16)ty);
+    text_draw(port, txt + 1, n);
+    wr16(port + PORT_TXMODE, (u16)mode);
+    if (is_color_port(port)) wr_rgb(port + PORT_RGBFG, save);
+    /* down arrow */
+    int ax = in.right - 16, ay = (in.top + in.bottom - 6) / 2;
+    for (int k = 0; k < 6; k++) ctl_fill(port, mkrect(ay + k, ax + k, ay + k + 1, ax + 11 - k), dim ? gray : black);
+    wr16(port + PORT_TXFONT, (u16)sfont); wr16(port + PORT_TXSIZE, (u16)ssize); wr8(port + PORT_TXFACE, sface);
+}
+/* Pop the menu up over the control with the current item under the mouse;
+   returns the part code if an item was chosen. */
+static int popup_track(u32 c, CInfo *ci) {
+    if (!ci->menu) return 0;
+    u32 p = hderef(c);
+    u32 win = rd32(p + CR_OWNER);
+    Rect b = popup_box(c, ci);
+    Surf s; surf_from_port(win, &s);
+    s16 v = rds16(p + CR_VALUE);
+    u32 mk[3] = { ci->menu, (u32)(u16)v, 0x12 }; /* checkMark on the current item */
+    if (v >= 1) trapcall(trap_SetItemMark, 3, mk);
+    u32 a[4] = { ci->menu, (u32)(u16)(b.top - s.bounds.top + 1), (u32)(u16)(b.left - s.bounds.left + 1), (u32)(u16)(v >= 1 ? v : 1) };
+    u32 r = trapcall(trap_PopUpMenuSelect, 4, a);
+    mk[2] = 0;
+    if (v >= 1) trapcall(trap_SetItemMark, 3, mk);
+    int item = (int)(r & 0xFFFF);
+    if (!(r >> 16) || item <= 0) return 0;
+    wr16(hderef(c) + CR_VALUE, (u16)item);
+    return 2; /* kControlMenuPart */
 }
 
 static void std_draw(u32 c, CInfo *ci, int part) {
@@ -129,6 +240,7 @@ static void std_draw(u32 c, CInfo *ci, int part) {
         draw_title(port, c, b.right + 5, ty, dim, false);
         break;
     }
+    case kindPopup: popup_draw(port, c, ci, dim); break;
     case 16: { /* scroll bar */
         bool vert = (r.bottom - r.top) > (r.right - r.left);
         ctl_fill(port, r, (RGB){ 0xDDDD, 0xDDDD, 0xDDDD });
@@ -160,6 +272,7 @@ static int std_test(u32 c, CInfo *ci, Point pt) {
     switch (ci->kind) {
     case 0: return inButton;
     case 1: case 2: return inCheckBox;
+    case kindPopup: return 2; /* kControlMenuPart */
     case 16: {
         bool vert = (r.bottom - r.top) > (r.right - r.left);
         int pos = vert ? pt.v - r.top : pt.h - r.left;
@@ -186,6 +299,10 @@ static u32 call_cdef(u32 c, int msg, u32 param) {
         switch (msg) {
         case drawCntl: std_draw(c, ci, (int)param); return 0;
         case testCntl: return (u32)std_test(c, ci, pt_from_u32(param));
+        case initCntl: if (ci->kind == kindPopup) popup_init(c, ci); return 0;
+        case dispCntl:
+            if (ci->kind == kindPopup && rd32(hderef(c) + CR_DATA)) { mm_dispose_handle(rd32(hderef(c) + CR_DATA)); wr32(hderef(c) + CR_DATA, 0); }
+            return 0;
         case calcCRgns: case calcCntlRgn: {
             Rect r = rd_rect(hderef(c) + CR_RECT);
             rgn_set_rect(param & 0x7FFFFFFF, r);
@@ -247,7 +364,7 @@ u32 ctl_new(u32 win, Rect r, const u8 *title, bool vis, s16 val, s16 mn, s16 mx,
     if (defh && hderef(defh) && rd16(hderef(defh)) == 0x4EF9) wr32(p + CR_DEFPROC, defh);
     else {
         ci->native = true;
-        ci->kind = cdefid == 1 ? 16 : (procid & 7) == 1 ? 1 : (procid & 7) == 2 ? 2 : 0;
+        ci->kind = cdefid == 1 ? 16 : cdefid == 63 ? kindPopup : (procid & 7) == 1 ? 1 : (procid & 7) == 2 ? 2 : 0;
         wr32(p + CR_DEFPROC, defh);
     }
     /* link at head of the window's control list */
@@ -404,6 +521,14 @@ TRAP(TrackControl) {
     u32 win = rd32(p + CR_OWNER);
     u32 save = qd_port();
     qd_set_port(win);
+    CInfo *pci = cinfo(c);
+    if (pci && pci->native && pci->kind == kindPopup) {
+        int r = popup_track(c, pci);
+        ctl_draw(c);
+        qd_set_port(save);
+        RET(r);
+        return;
+    }
     if (action == 0xFFFFFFFFu) action = rd32(p + CR_ACTION);
     /* app CDEFs may do their own tracking via autoTrack/dragCntl; we use the
        generic loop, invoking the action proc for non-thumb parts */
