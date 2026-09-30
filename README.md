@@ -11,8 +11,23 @@ File/Resource/Memory Managers, threads, and more) is reimplemented natively. The
 game data and scripts are used as they are. No Apple ROM or System software is
 needed. Details: [docs/ANALYSIS.md](docs/ANALYSIS.md) and [docs/PLAN.md](docs/PLAN.md).
 
-You need your own copy of the game (`Cythera_Installer.sit`). Nothing
-copyrighted is part of this repository.
+The original game installer is included in [`orig/`](orig/): `Cythera.bin`
+(MacBinary) and `Cythera_Installer.sit` (StuffIt), which contain the same
+installer.
+
+### About the original game
+
+Cythera is © 1999 Ambrosia Software and its authors. This repository
+includes the original game files, on these grounds: Ambrosia Software no
+longer exists, the hardware and operating system the game required are long
+gone, and the game can no longer be bought, nor its authors supported
+financially, in any way.
+
+No harm to anyone's intellectual property is intended. This is a fan and
+hobby project, with no commercial purpose, made to keep a beloved game
+playable. Rights holders are encouraged to contact me (Noé Falzon,
+[@Castux](https://github.com/Castux) on GitHub); I will gladly comply with
+their wishes.
 
 ## Building
 
@@ -45,11 +60,14 @@ The data setup script needs a Unix shell with `unar` (WSL works).
 ## Installing the game data
 
 ```sh
-tools/setup_gamedata.sh /path/to/Cythera_Installer.sit gamedata
+tools/setup_gamedata.sh                     # orig/Cythera.bin -> gamedata/
+tools/setup_gamedata.sh orig/Cythera_Installer.sit gamedata
 ```
 
-This unpacks the StuffIt archive, then extracts the Installer VISE package
-inside it (using [installer-vise](https://github.com/mrmidi/installer-vise)).
+This unpacks the installer from the MacBinary file (no extra tools needed) or
+from the StuffIt archive (needs `unar`), then extracts the Installer VISE
+package (using [installer-vise](https://github.com/mrmidi/installer-vise)).
+Set `PYTHON` if Python 3 isn't `python3` (on Windows, `PYTHON=python`).
 It also downloads the free GeneralUser GS SoundFont, which is used to play the
 game's QuickTime music.
 

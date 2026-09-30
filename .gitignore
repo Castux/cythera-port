@@ -1,4 +1,4 @@
-# Game data and derived artifacts (copyrighted; never commit)
+# Extracted game data (from orig/, see tools/setup_gamedata.sh) and derived artifacts
 work/
 gamedata/
 build/
