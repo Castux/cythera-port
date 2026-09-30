@@ -90,7 +90,8 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Sweep every imported call for correctness; replace all stubs used at runtime
   (inventory and findings: [TOOLBOX.md](TOOLBOX.md))
 - [x] Slideshows, cutscenes, end-game, credits (intro slideshow, death cutscene and game over,
-  scrolling credits in About; the winning ending uses the same calls, see the 2026-09-30 log)
+  scrolling credits in About; the winning ending: `win.txt` from the stage save "endgame",
+  see [ENDGAME.md](ENDGAME.md))
 - [x] Window scaling, fullscreen, HiDPI, configurable screen size
 - [x] Performance: not needed (the switch interpreter runs ~80 M guest instructions/s; play
   needs ~13-20 M/s, see the 2026-09-30 log)
@@ -106,11 +107,13 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Phase 1: `tools/delv_save.py`: show, byte-identical round trip, safe edits (position
   within and across zones, stats, HP/MP, skills, gold and items, clock), each loaded in the
   game (`tests/scripts/saveedit*.txt`); story flags listed read-only
-- [ ] Phase 2: story flag edits (what each QF/QV means; quest to-dos, journal)
+- [~] Phase 2: story flag edits: `qv:`, `qf:`, `cflag:` keys, used where the scripts' tests
+  are known (the endgame chain, [ENDGAME.md](ENDGAME.md)); most flags' meanings still unmapped
 - [x] Phase 3: stage saves `tests/saves/` ("odemia": Ariadne rescued, the town open;
   "magic": trained at the Magisterium, a spell known), rebuilt by `tools/make_stages.py`
   (edits for travel and a stronger hero, real play for the fights, conversations and training);
-  scripts start from them with `# save: NAME` (`odemia.txt`, `sell.txt`, `magic.txt`)
+  scripts start from them with `# save: NAME` (`odemia.txt`, `sell.txt`, `magic.txt`);
+  "endgame": the purified crolna next to Alaric, `win.txt` plays the winning ending
 - **Exit:** a gameplay script can start from a saved stage instead of replaying the opening. (Done.)
 
 ## Working notes
@@ -118,6 +121,15 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (the game can be won): the end of "Cure Alaric" read from the scripts and played
+  ([ENDGAME.md](ENDGAME.md)): Pelagon's last crolna shard (refused three times), combining the
+  pieces, Charax loading his distiller with Sabinate's mushroom, the distiller purifying the
+  crolna, the crolna on Alaric: he is cured, the victory slideshow plays and GameOver says "You
+  have saved the land of Cythera from darkness." Stage save `endgame` (edits: two pieces, the
+  mushroom, Alchemy, story value 3, Charax's flags, travel; the rest played), test `win.txt`.
+  No port bug on the way. Test fix: a script whose program quits before its `expect`s ran
+  (the game ending) passed silently; that now fails. Slides need a key every ~600 frames:
+  a key ends a slide, so faster keys skip each one before its text is drawn.
 - 2026-09-30 (stage saves): `tests/saves/odemia` and `magic`, made by `tools/make_stages.py`
   the hybrid way: the travel test's opening played for real to Odemia's gate, then edits for
   what is bookkeeping (a stronger hero, travel, the clock) and real play for what the story

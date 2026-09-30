@@ -25,3 +25,12 @@ magic    From "odemia": in Pnyx at the Magisterium (10,45), trained in Mana and 
          grimoire; the spell Minor Embrightenment learnt with it from a scroll (the scroll
          edited in).  Magic 22/22; health 53 (training recomputes it).
          Good for: spells, magic training, Pnyx (tests/scripts/magic.txt).
+
+endgame  From "odemia": the end of "Cure Alaric" (docs/ENDGAME.md), next to Alaric in
+         LandKing Hall (41,13) with the whole crolna, purified.  Edited: two crolna
+         pieces (the merged pair and the Maayti shard), the eartheart mushroom, the
+         Alchemy skill, story value 3 = 3, Charax's flags for the Timeflux book and the
+         kelp, the clock, travel.  Played: Pelagon in Kosha's grotto giving the last
+         shard (refused three times), the pieces combined, the mushroom to Charax, his
+         distiller used on the crolna.  Use the crolna on Alaric to win
+         (tests/scripts/win.txt).

@@ -1,0 +1,37 @@
+# The winning ending: from the stage save "endgame" (the whole crolna, purified with
+# Charax's distiller, next to Alaric in LandKing Hall), use the crolna on Alaric: he is
+# cured, thanks the hero, the victory slideshow plays and the game ends.
+# save: endgame
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+expect Land King Hall
+# character window, Inventory: the crolna (glowing crystal) first; use it on Alaric (41,12)
+mousedown 362 404
+wait 6
+mouseup 362 404
+wait 200
+click 60 320
+wait 100
+dclick 37 122
+wait 100
+expect Use crystal on what
+click 470 133
+wait 600
+expect with a look of relief and calm
+shot work/shots/win_1.png
+keyuntil return 200 40 Bahoudin thanks you
+shot work/shots/win_2.png
+# the slides fade in slowly: a key every 600 frames
+keyuntil return 600 10 You awake, with a start
+shot work/shots/win_3.png
+keyuntil return 600 10 a magpie caws twice
+shot work/shots/win_4.png
+keyuntil return 600 10 You have saved the land of Cythera from darkness
+shot work/shots/win_5.png
+# a click ends GameOver: the game quits
+click 320 240
+wait 600
+quit

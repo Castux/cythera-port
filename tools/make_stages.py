@@ -92,6 +92,53 @@ STAGES = {
                   'expect Use grimoire on what', 'click 37 122', 'wait 150',
                   'expect You now know the spell', 'key return', 'wait 100']),
     ]),
+    # From 'odemia': the end of "Cure Alaric" (docs/ENDGAME.md).  Edited: the two
+    # crolna pieces the quest has gathered by then (glowing crystal, type 37:
+    # aspect 4 = the first two merged, 3 = the Maayti shard), Sabinate's
+    # eartheart mushroom (271), the Alchemy skill (the distiller asks for it),
+    # what the earlier quests leave (story value 3 = 3; Charax's character flags
+    # 1, Timeflux book, and 3, kelp), and travel.  Played: Pelagon in Kosha's
+    # grotto giving the last shard (aspect 2), combining the pieces (4+2 -> 5,
+    # 5+3 -> 6, Omen's visions), the mushroom to Charax, who loads the distiller
+    # (type 233 -> 234), the distiller used on the crolna (its d1 -> 1: the Sea
+    # essence removed).  Ends next to Alaric in LandKing Hall;
+    # tests/scripts/win.txt uses the crolna on him.
+    'endgame': ('odemia', [
+        # Kosha's grotto under House Comana (reached with Philinus's pipes, PHJMD):
+        # Pelagon comes there by schedule once story value 3 is 3; let the hour turn
+        ('edit', 'pos=KoshaGrotto,13,18 give=37#4 give=37#3 give=271 skill:alchemy=1 '
+                 'qv:3=3 time=10:59'),
+        ('play', repeat(['key space', 'wait 30'], 40)),
+        # he wants the shards: refuse three times, then call his bluff; he gives
+        # the fourth shard (aspect 2)
+        ('play', ['wait 60', 'dclickchar 13', 'wait 200',
+                  'keyuntil return 200 10 Give us the three shards',
+                  'keyuntil return 200 3 Give Magpie the three shards', 'type n', 'key return',
+                  'wait 200', 'keyuntil return 200 3 Give Magpie', 'type n', 'key return',
+                  'wait 200', 'keyuntil return 200 3 Give Magpie', 'type n', 'key return',
+                  'wait 200', 'keyuntil return 200 3 take them by force', 'type y',
+                  'key return', 'wait 200', 'keyuntil return 200 20 fades away like mist',
+                  'key return', 'wait 200']),
+        ("edit", "pos=Charax'sHouse,9,7"),
+        ('edit', '--char 79 cflag:1=1 cflag:3=1'),
+        # character window, Inventory: the three crystals come first
+        ('play', ['wait 60', 'mousedown 362 404', 'wait 6', 'mouseup 362 404', 'wait 200',
+                  'click 60 320', 'wait 100',
+                  'dclick 37 122', 'wait 100', 'expect Use crystal on what', 'click 103 122',
+                  'wait 150', 'dclick 37 122', 'wait 100', 'click 70 122', 'wait 150',
+                  'expect The fourth part joins onto the first three']),
+        # Omen's vision about the whole crolna shows on the next turn; then Charax
+        # (clicking the map window first, as the character window is in front)
+        ('play', ['wait 100', 'keyuntil return 120 10 do not fail us', 'key return', 'wait 150',
+                  'click 470 33', 'wait 60', 'dclickchar 79', 'wait 200',
+                  'keyuntil return 120 30 spilling it', 'key return', 'wait 150',
+                  'key return', 'wait 150']),
+        # next to the distiller (7,5): use it on the crolna
+        ('play', ['wait 60', 'click 470 33', 'wait 30', 'key up', 'wait 40', 'key left', 'wait 40',
+                  'dclick 438 133', 'wait 100', 'expect Distill what element', 'click 37 122',
+                  'wait 200', 'keyuntil return 120 30 last of him', 'key return', 'wait 150']),
+        ('edit', 'pos=LandKingHall,41,13'),
+    ]),
 }
 
 

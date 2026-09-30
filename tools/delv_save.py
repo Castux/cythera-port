@@ -16,10 +16,13 @@ hero).  Keys:
   hp mp maxhp maxmp body reflex mind level exp training nutrition=N
   skill:NAME=N             skill level 0-15 (adds the skill if missing)
   gold=N                   the character's oboloi (first stack, or a new one)
-  give=ITEM[:N][@D1]       add an item (name as in `show`, or a prop type;
-                           D1: its d1 byte, e.g. a scroll's spell 0-48)
+  give=ITEM[:N][@D1][#A]   add an item (name as in `show`, or a prop type;
+                           D1: its d1 byte, e.g. a scroll's spell 0-48;
+                           A: its aspect, e.g. a crolna piece)
   wear=ITEM                add an item already worn (weapon, armour)
   time=HH:MM  day=N  karma=N
+  qv:N=V  qf:N=0|1         story value N (0-31), story flag N (0-255)
+  cflag:N=0|1              character flag N (0-7) of the --char character
 SAVE is a saved game's data fork (e.g. "Saved Games/Hero").  Game data
 comes from gamedata/ (tools/delv_archive.py).  Standard library only.
 """
@@ -512,18 +515,27 @@ class Save:
         else:
             p.flags = FLAGS_DELETED
 
-    def give(self, c, item, n, d1=0):
+    def give(self, c, item, n, d1=0, aspect=0):
         """n of an item: one stack if it stacks, else n props.  d1: the
-        prop's d1 byte (e.g. a scroll's spell, a key's lock)."""
+        prop's d1 byte (e.g. a scroll's spell, a key's lock); aspect: its
+        aspect (e.g. which piece of the crolna)."""
         t = prop_type(self.scen, item)
         if not self.scen.stacking(t) & 0x03:
             for _ in range(n):
-                self.add_prop(c, 0x10, t).r[6] = d1
+                self.add_prop(c, 0x10, t, aspect).r[6] = d1
             return
-        p = self.add_prop(c, 0x10, t)
+        p = self.add_prop(c, 0x10, t, aspect)
         self.scen.set_count(p, n)
         if d1:
             p.r[6] = d1
+
+    def set_char_flag(self, c, n, on):
+        """Character flags (the scripts' SetCharacterFlag, 0F01/0F02): bit n
+        of the character's byte 8 (6: in the party)."""
+        if not 0 <= n <= 7:
+            sys.exit('character flags are 0-7')
+        b = self.chars[32 * c + 8]
+        self.chars[32 * c + 8] = b | 1 << n if on else b & ~(1 << n)
 
 
 def prop_type(scen, item):
@@ -749,9 +761,22 @@ def set_(sv, args):
         elif k == 'wear':
             sv.add_prop(c, 0x18, prop_type(sv.scen, v))
         elif k == 'give':
+            v, _, asp = v.partition('#')
             v, _, d1 = v.partition('@')
             item, _, n = v.partition(':')
-            sv.give(c, item, int(n or '1', 0), int(d1 or '0', 0))
+            sv.give(c, item, int(n or '1', 0), int(d1 or '0', 0), int(asp or '0', 0))
+        elif k.startswith('qv:'):             # story value
+            n, x = int(k[3:], 0), int(v, 0)
+            if not (0 <= n < 32 and 0 <= x < 256):
+                sys.exit('qv:N=V, N 0-31, V 0-255')
+            sv.qv[n] = x
+        elif k.startswith('qf:'):             # story flag
+            n = int(k[3:], 0)
+            if not 0 <= n < 256:
+                sys.exit('qf:N=0|1, N 0-255')
+            sv.qf[n >> 5] = sv.qf[n >> 5] & ~(1 << (n & 31)) | (int(v, 0) & 1) << (n & 31)
+        elif k.startswith('cflag:'):
+            sv.set_char_flag(c, int(k[6:], 0), int(v, 0) & 1)
         elif k == 'time':
             hh, mm = (int(x) for x in v.split(':'))
             if not (0 <= hh < 24 and 0 <= mm < 60):

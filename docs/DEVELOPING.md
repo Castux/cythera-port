@@ -111,14 +111,15 @@ drawn, at most MAX times: pages through a conversation), `dclickchar N`
 wandered: found in the character table relative to the hero), `dclickfoe`
 (double-click on the nearest active monster within 3 tiles, if any: attacks
 it once it is hostile; repeat it to fight), `peek ADDR [N]` (hex dump of
-guest memory), `bt`, `dumpwin`, `trace on|off`, `quit`. A first line
+guest memory), `bt`, `dumpwin`, `trace on|off`, `quit`. If the program quits (e.g. the game ends) before an `expect`,
+`keyuntil` or `dclickchar` line has run, that fails too. A first line
 `# app: NAME` makes `run.sh` start another application. A line
 `# save: NAME` starts the script from the stage save `tests/saves/NAME`
 instead of the fixture's "Hero" (see [tests/saves/README](../tests/saves/README)),
 and a line `# save-edit: KEY=VALUE...` then edits that game with
 `tools/delv_save.py set` (values without spaces; `$PYTHON`, default
 `python3`, runs it), so a script can start at another stage of the game
-(`tests/scripts/saveedit*.txt`, `odemia.txt`, `sell.txt`, `magic.txt`).
+(`tests/scripts/saveedit*.txt`, `odemia.txt`, `sell.txt`, `magic.txt`, `win.txt`).
 `tools/make_stages.py [STAGE...]` rebuilds the stage saves from their
 recipes: edits for the bookkeeping, real play for what the story scripts
 decide. `peek 228578 4` gives the hero's position: map number, then x and
@@ -168,8 +169,10 @@ code offsets (hex, as `tools/ppcdis.py` prints them): a cheap breakpoint.
   `pos=ZONE,X,Y`, moving the party's belongings between zones as the engine
   does), `hp`/`mp`/`maxhp`/`maxmp`/`body`/`reflex`/`mind`/`level`/`exp`/
   `training`/`nutrition`, `skill:NAME=N` (spells too; `show` marks untrained
-  skills with `*`), `gold=N`, `give=ITEM[:N][@D1]` (D1: a scroll's spell, a
-  key's lock), `wear=ITEM`, `time=HH:MM`, `day=N`, `karma=N`. Writing without
+  skills with `*`), `gold=N`, `give=ITEM[:N][@D1][#A]` (D1: a scroll's spell, a
+  key's lock; `#A` the aspect), `wear=ITEM`, `time=HH:MM`, `day=N`, `karma=N`,
+  `qv:N=V`, `qf:N=0|1` (story values and flags), `cflag:N=0|1` (character
+  flags, with `--char`). Writing without
   edits gives the same file.
 - `tools/delv_props.py maps|props MAP`: maps and the objects on each, using
   [delvmod](https://github.com/BryceSchroeder/delvmod) cloned into

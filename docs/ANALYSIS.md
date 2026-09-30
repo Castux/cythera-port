@@ -331,7 +331,7 @@ windows (`TInventoryWindow::MarshalAll`), empty unless one was open.
 |---|---|---|---|
 | 0 | zone | 1–3 | x:12 y:12 [1, 2] |
 | 4–5 | aspect<<10 \| type (facing in the aspect) [0x24] | 6–7 | status: bit 0 alive [0x14] |
-| 8 | bits: 0x40 in the party [0x13] | 9, 10, 11 | body, reflex, mind [0x17–0x19] |
+| 8 | character flags: bit *n* = the scripts' flag *n* (`SetCharacterFlag`); 6 in the party [0x13] | 9, 10, 11 | body, reflex, mind [0x17–0x19] |
 | 12–13 | experience [0x1A] | 14, 15 | health, maximum [0x1C, 0x1D] |
 | 16, 17 | magic, maximum [0x1E, 0x1F] | 18 | timing [0x23] |
 | 19 | level [0x1B] | 20–21 | [0x25] |

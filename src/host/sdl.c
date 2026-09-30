@@ -89,7 +89,9 @@ void host_init(int w, int h, bool headless, int scale) {
     SDL_ShowCursor(SDL_ENABLE);
 }
 
+static void script_check_end(void);
 void host_shutdown(void) {
+    script_check_end();
     if (g_ren) SDL_DestroyRenderer(g_ren);
     if (g_win) SDL_DestroyWindow(g_win);
     if (!g_headless) SDL_Quit();
@@ -355,6 +357,17 @@ typedef struct { char cmd[16]; char arg[256]; } ScriptLine;
 static ScriptLine *g_script;
 static int g_script_n, g_script_pc;
 static u32 g_script_wait_until;
+/* The program quit (e.g. the game ended) before the script's checks ran: that
+   must fail, not pass silently. */
+static void script_check_end(void) {
+    for (int i = g_script_pc; i < g_script_n; i++)
+        if (!strcmp(g_script[i].cmd, "expect") || !strcmp(g_script[i].cmd, "keyuntil") ||
+            !strcmp(g_script[i].cmd, "dclickchar")) {
+            LOG_E("EXPECT FAILED: the program quit before script line %d (%s %s)", i + 1,
+                  g_script[i].cmd, g_script[i].arg);
+            return;
+        }
+}
 
 void script_load(const char *path) {
     FILE *f = fopen(path, "r");
