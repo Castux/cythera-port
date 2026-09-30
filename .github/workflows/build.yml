@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash  # (unlike the implicit default) runs with -o pipefail, for "| tee build.log"
+
 env:
   FREETYPE_VERSION: 2.14.3
   FREETYPE_SHA256: 36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f
@@ -72,13 +76,13 @@ jobs:
         run: |
           curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
           echo "$FREETYPE_SHA256  ft.tar.xz" | sha256sum -c
-          CC=gcc tools/build_freetype.sh ft.tar.xz
+          CC=gcc sh tools/build_freetype.sh ft.tar.xz 2>&1 | tee -a build.log
       - name: Build
-        run: make -j"$(nproc)" CC=gcc
+        run: make -j"$(nproc)" CC=gcc 2>&1 | tee -a build.log
       - name: CPU tests
-        run: make test CC=gcc
+        run: make test CC=gcc 2>&1 | tee -a build.log
       - name: Scripted game tests
-        run: tests/run.sh
+        run: tests/run.sh 2>&1 | tee -a build.log
       - name: Package
         run: |
           V="$(git describe --tags --always)"
@@ -97,6 +101,9 @@ jobs:
           name: cythera-linux
           path: ${{ env.PKG }}
           compression-level: 0
+      - name: Report errors
+        if: failure()
+        run: sh .github/report-errors.sh
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
@@ -120,11 +127,11 @@ jobs:
           fetch-depth: 0
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
             make git tar xz curl
-            mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2 mingw-w64-x86_64-python
+            mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-python
       - uses: actions/download-artifact@v8
         with:
           name: gamedata
@@ -133,14 +140,18 @@ jobs:
         run: |
           curl -fsSLo ft.tar.xz "https://download.savannah.gnu.org/releases/freetype/freetype-$FREETYPE_VERSION.tar.xz"
           echo "$FREETYPE_SHA256  ft.tar.xz" | sha256sum -c
-          CC=gcc tools/build_freetype.sh ft.tar.xz
+          set -o pipefail
+          CC=gcc sh tools/build_freetype.sh ft.tar.xz 2>&1 | tee -a build.log
       - name: Build (static, no console window)
         run: |
+          set -o pipefail
           make -j"$(nproc)" CC=gcc PYTHON=python GUI=1 LDFLAGS=-static \
-            SDL_LIBS="$(sdl2-config --static-libs | sed -e 's/-lSDL2main//' -e 's/-mwindows//')"
+            SDL_LIBS="$(sdl2-config --static-libs | sed -e 's/-lSDL2main//' -e 's/-mwindows//')" 2>&1 | tee -a build.log
           objdump -p build/cythera.exe | grep 'DLL Name'
       - name: CPU tests
-        run: make test CC=gcc PYTHON=python
+        run: |
+          set -o pipefail
+          make test CC=gcc PYTHON=python 2>&1 | tee -a build.log
       - name: Stage package
         run: |
           V="$(git describe --tags --always)"
@@ -164,6 +175,9 @@ jobs:
           name: cythera-windows
           path: ${{ env.PKG }}
           compression-level: 0
+      - name: Report errors
+        if: failure()
+        run: sh .github/report-errors.sh
 
   macos:
     needs: gamedata
@@ -197,16 +211,17 @@ jobs:
           echo "$FREETYPE_SHA256  ft.tar.xz" | shasum -a 256 -c
       - name: Build (arm64 + x86_64)
         run: |
+          set -o pipefail
           for arch in arm64 x86_64; do
-            CC="clang -arch $arch" tools/build_freetype.sh ft.tar.xz
+            CC="clang -arch $arch" sh tools/build_freetype.sh ft.tar.xz 2>&1 | tee -a build.log
             make -j"$(sysctl -n hw.ncpu)" CC="clang -arch $arch" BUILD="build-$arch" \
-              SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" SDL_LIBS="$(sdl/bin/sdl2-config --static-libs)"
+              SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" SDL_LIBS="$(sdl/bin/sdl2-config --static-libs)" 2>&1 | tee -a build.log
           done
           lipo -create -output cythera build-arm64/cythera build-x86_64/cythera
           lipo -info cythera
           otool -L cythera
       - name: CPU tests
-        run: make test CC="clang -arch arm64" BUILD=build-arm64 SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)"
+        run: make test CC="clang -arch arm64" BUILD=build-arm64 SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" 2>&1 | tee -a build.log
       - name: App bundle
         run: |
           V="$(git describe --tags --always)"
@@ -268,6 +283,9 @@ jobs:
           name: cythera-macos
           path: ${{ env.PKG }}
           compression-level: 0
+      - name: Report errors
+        if: failure()
+        run: sh .github/report-errors.sh
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
