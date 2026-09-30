@@ -512,6 +512,31 @@ TRAP(MenuEvent) {
     RET(menu_key((u8)rd32(ep + 2)));
 }
 
+/* A pop-up menu taller than the screen scrolls, as on the Mac: the visible
+   part is `fr`, the whole menu `mr`; resting the mouse on the arrow at the
+   top or bottom edge scrolls it. */
+static void popup_paint(u32 m, Rect mr, Rect fr, int hil, const Item *items, int n) {
+    fill(mkrect(fr.top - 1, fr.left - 1, fr.bottom + 1, fr.right + 1), (RGB){ 0, 0, 0 });
+    fill(mkrect(fr.top + 2, fr.right + 1, fr.bottom + 2, fr.right + 2), (RGB){ 0, 0, 0 });
+    fill(mkrect(fr.bottom + 1, fr.left + 2, fr.bottom + 2, fr.right + 2), (RGB){ 0, 0, 0 });
+    u32 clip = rd32(g_mport + PORT_CLIP);
+    rgn_set_rect(clip, fr);
+    for (int i = 0; i < n; i++) {
+        int t = mr.top + i * ITEM_H;
+        if (t + ITEM_H > fr.top && t < fr.bottom) draw_item(m, &items[i], i, mr, i + 1 == hil);
+    }
+    int cx = (fr.left + fr.right) / 2;
+    if (mr.top < fr.top) {
+        fill(mkrect(fr.top, fr.left, fr.top + ITEM_H, fr.right), (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
+        for (int k = 0; k < 5; k++) fill(mkrect(fr.top + 5 + k, cx - k, fr.top + 6 + k, cx + k + 1), (RGB){ 0, 0, 0 });
+    }
+    if (mr.bottom > fr.bottom) {
+        fill(mkrect(fr.bottom - ITEM_H, fr.left, fr.bottom, fr.right), (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
+        for (int k = 0; k < 5; k++) fill(mkrect(fr.bottom - 6 - k, cx - k, fr.bottom - 5 - k, cx + k + 1), (RGB){ 0, 0, 0 });
+    }
+    rgn_set_rect(clip, mkrect(-32767, -32767, 32767, 32767));
+}
+
 TRAP(PopUpMenuSelect) {
     u32 m = ARG(0); s16 top = ARGS16(1), left = ARGS16(2); s16 popitem = ARGS16(3);
     u32 save = qd_port();
@@ -519,30 +544,61 @@ TRAP(PopUpMenuSelect) {
     mport_prepare();
     int w = rds16(hderef(m) + MI_WIDTH), h = rds16(hderef(m) + MI_HEIGHT);
     int y = top - (popitem > 0 ? (popitem - 1) * ITEM_H : 0);
-    int mb = rds16(LM_MBarHeight);
-    if (y < mb) y = mb;
-    if (y + h > qd_screen_h() - 2) y = qd_screen_h() - 2 - h;
+    int vt = rds16(LM_MBarHeight), vb = qd_screen_h() - 2;
+    Rect fr;
+    if (h <= vb - vt) {
+        if (y < vt) y = vt;
+        if (y + h > vb) y = vb - h;
+        fr = mkrect(y, 0, y + h, 0);
+    } else { /* too tall: show what fits, keeping popitem under the mouse */
+        if (y > vt) y = vt;
+        if (y + h < vb) y = vb - h;
+        fr = mkrect(vt, 0, vt + (vb - vt) / ITEM_H * ITEM_H, 0);
+    }
     int x = left;
     if (x + w > qd_screen_w() - 2) x = qd_screen_w() - 2 - w;
     Rect mr = mkrect(y, x, y + h, x + w);
+    fr.left = mr.left; fr.right = mr.right;
     Saved sv;
-    save_under(&sv, mkrect(mr.top - 1, mr.left - 1, mr.bottom + 2, mr.right + 2));
-    draw_menu(m, mr, 0);
-    int hil = 0;
+    save_under(&sv, mkrect(fr.top - 1, fr.left - 1, fr.bottom + 2, fr.right + 2));
     Item items[256]; int n = menu_items(m, items, 256);
+    popup_paint(m, mr, fr, 0, items, n);
+    int hil = 0;
+    u32 last_scroll = tick_count();
     for (;;) {
         bool down = ev_mouse_button();
-        int it = item_at(m, mr, ev_mouse_global());
+        Point pt = ev_mouse_global();
+        bool in = pt.h >= fr.left && pt.h < fr.right;
+        int dir = 0;
+        if (in && mr.top < fr.top && pt.v >= fr.top - 8 && pt.v < fr.top + ITEM_H) dir = 1;
+        if (in && mr.bottom > fr.bottom && pt.v >= fr.bottom - ITEM_H && pt.v < fr.bottom + 8) dir = -1;
+        if (dir) {
+            if (tick_count() - last_scroll >= 4) {
+                last_scroll = tick_count();
+                mr.top = (s16)(mr.top + dir * ITEM_H); mr.bottom = (s16)(mr.bottom + dir * ITEM_H);
+                hil = 0;
+                popup_paint(m, mr, fr, 0, items, n);
+            }
+        }
+        int it = !dir && pt.v >= fr.top && pt.v < fr.bottom ? item_at(m, mr, pt) : 0;
         if (it && (it > n || item_is_sep(m, it - 1, &items[it - 1]) || !item_enabled(m, it))) it = 0;
         if (it != hil) {
+            u32 clip = rd32(g_mport + PORT_CLIP);
+            rgn_set_rect(clip, fr);
             if (hil) draw_item(m, &items[hil - 1], hil - 1, mr, false);
             if (it) draw_item(m, &items[it - 1], it - 1, mr, true);
+            rgn_set_rect(clip, mkrect(-32767, -32767, 32767, 32767));
             hil = it;
         }
         if (!down) break;
         ev_idle_frame();
     }
-    if (hil) flash_item(m, mr, hil);
+    if (hil) {
+        u32 clip = rd32(g_mport + PORT_CLIP);
+        rgn_set_rect(clip, fr);
+        flash_item(m, mr, hil);
+        rgn_set_rect(clip, mkrect(-32767, -32767, 32767, 32767));
+    }
     restore_under(&sv);
     mport_done();
     qd_set_port(save);
