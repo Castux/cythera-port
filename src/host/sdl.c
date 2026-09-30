@@ -498,9 +498,12 @@ void script_tick(void) {
             unsigned a = 0, cnt = 16;
             sscanf(s->arg, "%x %u", &a, &cnt);
             extern u8 *g_mem;
-            char buf[512]; int o = 0;
-            for (unsigned i = 0; i < cnt && i < 128; i++) o += snprintf(buf + o, sizeof buf - (size_t)o, "%02x%s", g_mem[a + i], (i & 1) ? " " : "");
-            LOG_I("peek %08x: %s", a, buf);
+            if (cnt > 65536) cnt = 65536;
+            for (unsigned l = 0; l < cnt; l += 32) { /* 32 bytes per line */
+                char buf[128]; int o = 0;
+                for (unsigned i = l; i < cnt && i < l + 32; i++) o += snprintf(buf + o, sizeof buf - (size_t)o, "%02x%s", g_mem[a + i], (i & 1) ? " " : "");
+                LOG_I("peek %08x: %s", a + l, buf);
+            }
         } else if (!strcmp(s->cmd, "dumpwin")) {
             extern void wm_debug_dump(void);
             wm_debug_dump();
