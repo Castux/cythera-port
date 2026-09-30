@@ -129,7 +129,10 @@ static void audio_cb(void *ud, Uint8 *stream, int len) {
                     c->db_need[c->dbcur] = true;
                     if (c->db_last) { c->playing = false; c->done_flag = true; break; }
                     int nb = c->dbcur ^ 1;
+                    /* audio thread: a bad header stops the channel, not the program */
+                    if (hdr > GUEST_MEM_SIZE - 24) { c->playing = false; break; }
                     u32 buf = rd32(hdr + 12 + 4 * (u32)nb);
+                    if (buf > GUEST_MEM_SIZE - 16) { c->playing = false; break; }
                     u32 flags = rd32(buf + 4);
                     if (!(flags & 1)) { c->playing = false; break; } /* starved */
                     c->dbcur = nb;

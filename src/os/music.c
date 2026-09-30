@@ -142,7 +142,7 @@ static u32 general_event(Player *p, u32 at) {
     u32 w = rd32(at);
     int part = (int)((w >> 16) & 0xFFF);
     u32 len = w & 0xFFFF;
-    if (len < 2) return at + 4;
+    if (len < 2 || at + 4 * len > GUEST_MEM_SIZE - 8) return at + 4;
     u32 tail = rd32(at + 4 * (len - 1));
     int sub = (int)((tail >> 16) & 0x3FFF);
     if (sub == 1 && len >= 23) set_part_instrument(p, part, rd32(at + 4 + 80)); /* NoteRequest: gmNumber */
@@ -180,6 +180,12 @@ static void seq_start(Player *p) {
 /* Run events due at or before p->t. */
 static void seq_events(Player *p) {
     for (int guard = 0; guard < 20000 && p->playing && p->next <= p->t; guard++) {
+        /* runs on the audio thread: bad tune data stops the tune, not the program */
+        if (p->pos > GUEST_MEM_SIZE - 8) {
+            LOG_W("tune position %08x outside memory; stopping", p->pos);
+            p->qn = 0; p->playing = false; release_all(p);
+            return;
+        }
         u32 w = rd32(p->pos);
         u32 top3 = w >> 29;
         if (!(w >> 31)) {
@@ -342,7 +348,7 @@ TRAP(TuneQueue) {
         }
         if (p->qn < QLEN) {
             p->q[p->qn++] = (Seq){ data, rate ? rate / 65536.0 : 1.0, flags };
-            if (!p->playing) seq_start(p);
+            if (!p->playing || (flags & 1)) seq_start(p);
         } else err = -2003;
     }
     SDL_UnlockMutex(g_mx);
@@ -364,8 +370,12 @@ TRAP(TuneGetStatus) {
     SDL_LockMutex(g_mx);
     Player *p = player_of(ARG(0), false);
     if (p) {
-        wr32(st, p->qn ? p->q[0].data : 0);
-        wr32(st + 4, p->pos);
+        /* tune and tunePtr together, or neither: GMSTune::Pause saves
+           (tunePtr - tune) as the position to resume from, and pausing twice
+           (tune 0, stale tunePtr) resumed at a wild address */
+        bool on = p->playing && p->qn;
+        wr32(st, on ? p->q[0].data : 0);
+        wr32(st + 4, on ? p->pos : 0);
         wr32(st + 8, (u32)p->t);
         wr16(st + 12, (u16)(p->playing ? p->qn : 0));
         wr16(st + 14, (u16)(QLEN - p->qn));
