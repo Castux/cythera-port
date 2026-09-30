@@ -45,33 +45,7 @@ key down
 wait 40
 # Omen ends the test and sends us to LandKing Hall
 expect The vision of Omen returns
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-wait 600
-expect the bed looks comfortable
-key return
+keyuntil return 120 40 the bed looks comfortable
 wait 60
 # walk out of LandKing Hall: oak door (17,38), corridor, pool room, stone door (52,32)
 key right
@@ -243,36 +217,7 @@ wait 200
 key right
 wait 20
 wait 200
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
+keyuntil return 100 40 Omen fades away
 key return
 wait 100
 key right

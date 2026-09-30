@@ -44,33 +44,7 @@ key down
 wait 40
 # Omen ends the test and sends us to LandKing Hall
 expect The vision of Omen returns
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-wait 600
-expect the bed looks comfortable
-key return
+keyuntil return 120 40 the bed looks comfortable
 wait 60
 # take the oboloi (13,35): drag them onto the portrait
 key right
@@ -263,36 +237,7 @@ wait 200
 key right
 wait 20
 wait 200
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
-key return
-wait 100
+keyuntil return 100 40 Omen fades away
 key return
 wait 100
 # World: to Catamarca (221,116), avoiding Odemia and the farmhouse
@@ -672,7 +617,8 @@ key left
 wait 20
 key left
 wait 20
-dclick 348 168
+# talk to Parium, the innkeeper (character 0x28), wherever he is
+dclickchar 0x28
 wait 120
 type food
 key return
@@ -687,7 +633,8 @@ click 437 103
 wait 30
 click 380 259
 wait 120
-expect Take it or leave it
+# (his answer is picked at random)
+expect Current Price
 shot work/shots/sh_3.png
 click 397 302
 wait 120

@@ -43,33 +43,7 @@ key down
 wait 40
 # Omen ends the test and sends us to LandKing Hall
 expect The vision of Omen returns
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-key return
-wait 120
-wait 600
-expect the bed looks comfortable
-key return
+keyuntil return 120 40 the bed looks comfortable
 wait 60
 key left
 wait 20
