@@ -8,6 +8,9 @@
 # (a new game saved after the first conversation with the king).
 # Extra emulator options can be passed in $CYTHERA_ARGS (e.g. "--trap-stats FILE").
 cd "$(dirname "$0")/.."
+# The same fonts on every platform (DejaVu stands in for Geneva and Chicago):
+# text layout decides line breaks and conversation pages the scripts rely on.
+export CYTHERA_FONT_DIR="${CYTHERA_FONT_DIR:-tests/fonts}"
 mkdir -p work/shots
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/cythera-tests.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT

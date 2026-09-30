@@ -96,7 +96,9 @@ it is.
   Folder, copied from a fixture that `tests/fixture.txt` makes (a new game
   saved as "Hero"), never `~/.cythera-port`. `CYTHERA=path/to/binary` picks
   the program, `CYTHERA_ARGS` adds options. Screenshots and logs go to
-  `work/shots/`.
+  `work/shots/`. The runs use the fonts in `tests/fonts/` (DejaVu Sans for
+  Geneva and Chicago) on every platform, so text lays out identically
+  everywhere: scripts depend on line breaks and conversation pages.
 - CI runs both on every push (Linux), see [Releases](#ci-and-releases).
 
 Scripts (`--script FILE`) are one command per line: `wait N` (frames),
