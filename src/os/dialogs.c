@@ -703,6 +703,7 @@ static int run_alert(s16 id, u32 filter, int kind) {
     u32 dl;
     u8 *ditl = res_load_raw(FOURCC('D','I','T','L'), ditl_id, &dl);
     if (!ditl) return 1;
+    u32 save = qd_port(); /* Alert returns with the caller's port current */
     u32 dlg = new_dialog(0, r, "", false, 1, 0xFFFFFFFFu, false, 0, ditl, dl, 0);
     free(ditl);
     dinfo(dlg)->is_alert = true;
@@ -747,6 +748,7 @@ static int run_alert(s16 id, u32 filter, int kind) {
     }
     mm_dispose_ptr(ep); mm_dispose_ptr(hitp);
     dispose_dialog(dlg, true);
+    if (save != dlg) qd_set_port(save);
     return hit;
 }
 
@@ -807,8 +809,8 @@ TRAP(StandardPutFile) {
     ditl_add(&d, mkrect(12, 15, 30, 355), statText | itemDisable, pr);
     ditl_add(&d, mkrect(42, 18, 58, 352), editText, dn);
     ditl_add(&d, mkrect(70, 15, 88, 355), statText | itemDisable, "Location: Saved Games");
+    u32 save = qd_port(); /* the caller's port, restored at the end */
     u32 dlg = sf_dialog(370, 132, &d);
-    u32 save = qd_port();
     qd_set_port(dlg);
     u32 te = rd32(dlg + DLG_TEXTH);
     te_api_activate(te, true);
@@ -827,7 +829,7 @@ TRAP(StandardPutFile) {
     if (hit == 1) {
         u32 th = rd32(hderef(te) + 62);
         int n = rds16(hderef(te) + 60);
-        if (n > 63) n = 63;
+        if (n > 31) n = 31; /* HFS file names are at most 31 characters (Standard File enforces it) */
         gmemcpy_from(name, hderef(th), (u32)n);
         name[n] = 0;
         for (int i = 0; name[i]; i++) if (name[i] == ':') name[i] = '-';
@@ -843,7 +845,37 @@ TRAP(StandardPutFile) {
     } else fill_reply(reply, false, false, 0, 0, "");
 }
 
-static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply) {
+/* StandardGetFilePreview's preview box: the selected file's QuickTime
+   preview (the thumbnail AddFilePreview stored), centred. */
+static void sf_draw_preview(u32 dlg, Rect box, const char *name) {
+    u32 save = qd_port();
+    qd_set_port(dlg);
+    Paint w = { .kind = 0, .fg = { 0xFFFF, 0xFFFF, 0xFFFF } };
+    draw_rect(dlg, mkrect(box.top + 1, box.left + 1, box.bottom - 1, box.right - 1), &w, patCopy);
+    draw_frame_rect(dlg, box);
+    char host[1100];
+    u32 type = 0, len = 0;
+    u8 *d = NULL;
+    if (name && vfs_resolve(VOL_REFNUM, files_saves_dir(), name, host, sizeof host, NULL, NULL) == noErr)
+        d = res_file_preview(host, &type, &len);
+    if (d && type == FOURCC('P','I','C','T') && len >= 10) {
+        Rect fr = { (s16)be16(d + 2), (s16)be16(d + 4), (s16)be16(d + 6), (s16)be16(d + 8) };
+        int fw = fr.right - fr.left, fh = fr.bottom - fr.top;
+        int bw = box.right - box.left - 4, bh = box.bottom - box.top - 4;
+        if (fw > 0 && fh > 0) {
+            if (fw > bw || fh > bh) { /* shrink to fit, keeping the aspect ratio */
+                if (fw * bh > fh * bw) { fh = fh * bw / fw; fw = bw; } else { fw = fw * bh / fh; fh = bh; }
+            }
+            int x = (box.left + box.right - fw) / 2, y = (box.top + box.bottom - fh) / 2;
+            u32 h = mm_handle_from_data(d, len, ZONE_SYS);
+            if (h) { pict_draw(h, mkrect(y, x, y + fh, x + fw)); mm_dispose_handle(h); }
+        }
+    }
+    free(d);
+    qd_set_port(save);
+}
+
+static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply, bool preview) {
     (void)filter;
     static char names[512][64];
     static char shown[512][64];
@@ -860,17 +892,20 @@ static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply) {
         if (ok) snprintf(shown[k++], 64, "%s", names[i]);
     }
     LOG_I("StandardGetFile: %d candidate files", k);
+    s16 px = preview ? 116 : 0; /* the preview box goes on the left */
+    Rect pbox = mkrect(36, 15, 136, 115);
     Ditl d = { .n = 0 };
-    ditl_add(&d, mkrect(222, 280, 242, 350), btnCtrl, "Open");
-    ditl_add(&d, mkrect(222, 200, 242, 270), btnCtrl, "Cancel");
-    ditl_add(&d, mkrect(12, 15, 30, 355), statText | itemDisable, "Saved Games:");
-    ditl_add(&d, mkrect(36, 16, 210, 338), userItem | itemDisable, "");
-    u32 dlg = sf_dialog(370, 254, &d);
-    u32 save = qd_port();
+    ditl_add(&d, mkrect(222, 280 + px, 242, 350 + px), btnCtrl, "Open");
+    ditl_add(&d, mkrect(222, 200 + px, 242, 270 + px), btnCtrl, "Cancel");
+    ditl_add(&d, mkrect(12, 15 + px, 30, 355 + px), statText | itemDisable, "Saved Games:");
+    ditl_add(&d, mkrect(36, 16 + px, 210, 338 + px), userItem | itemDisable, "");
+    if (preview) ditl_add(&d, mkrect(12, 15, 30, 115), statText | itemDisable, "Preview");
+    u32 save = qd_port(); /* the caller's port, restored at the end */
+    u32 dlg = sf_dialog(370 + px, 254, &d);
     qd_set_port(dlg);
     /* list */
     u32 rp = mm_new_ptr(8, false, ZONE_SYS), bp = mm_new_ptr(8, false, ZONE_SYS);
-    Rect lr = mkrect(37, 17, 209, 321);
+    Rect lr = mkrect(37, 17 + px, 209, 321 + px);
     wr_rect(rp, lr);
     wr_rect(bp, mkrect(0, 0, (s16)k, 1));
     extern void trap_LNew(CPU *), trap_LSetCell(CPU *), trap_LSetSelect(CPU *), trap_LClick(CPU *),
@@ -897,7 +932,15 @@ static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply) {
     u32 ep = mm_new_ptr(16, true, ZONE_SYS);
     int hit = 0;
     u32 cellp = mm_new_ptr(4, true, ZONE_SYS);
+    int shown_sel = -2; /* file whose preview is on screen */
     for (;;) {
+        if (preview) {
+            wr32(cellp, 0);
+            memset(&f, 0, sizeof f); f.r[3] = 1; f.r[4] = cellp; f.r[5] = list;
+            trap_LGetSelect(&f);
+            int cur = (f.r[3] & 0xFF) ? rds16(cellp) : -1;
+            if (cur != shown_sel) { shown_sel = cur; sf_draw_preview(dlg, pbox, cur >= 0 && cur < k ? shown[cur] : NULL); }
+        }
         next_event(ep);
         u16 what = rd16(ep);
         if (what == 6 && rd32(ep + 2) == dlg) {
@@ -905,6 +948,7 @@ static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply) {
             outline_default(dlg, 1);
             draw_frame_rect(dlg, mkrect(lr.top - 1, lr.left - 1, lr.bottom + 1, lr.right + 17));
             memset(&f, 0, sizeof f); f.r[3] = 0; f.r[4] = list; trap_LUpdate(&f);
+            shown_sel = -2;
             continue;
         }
         if (what == 6) continue;
@@ -959,5 +1003,5 @@ static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply) {
     } else fill_reply(reply, false, false, 0, 0, "");
 }
 
-TRAP(StandardGetFile) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3)); }
-TRAP(StandardGetFilePreview) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3)); }
+TRAP(StandardGetFile) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3), false); }
+TRAP(StandardGetFilePreview) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3), true); }

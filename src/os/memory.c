@@ -29,9 +29,14 @@ typedef struct {
     Extent *free;               /* sorted by address */
     int nfree, capfree;
     u32 fake_zone;              /* guest THz */
+    bool used;
 } Zone;
 
-static Zone g_zones[2];
+/* ZONE_APP, ZONE_SYS, then heap zones the application builds inside its
+   own blocks with InitZone (they nest inside the application zone, so
+   address lookups try them first). */
+#define MAX_ZONES 8
+static Zone g_zones[MAX_ZONES];
 
 void mm_set_memerr(s16 err) { wr16(LOWMEM_MemErr, (u16)err); }
 
@@ -46,6 +51,7 @@ static void zone_init(Zone *z, u32 start, u32 end, u32 nmp) {
     z->free = malloc(sizeof(Extent) * (size_t)z->capfree);
     z->free[0] = (Extent){ z->start, z->end - z->start };
     z->nfree = 1;
+    z->used = true;
 }
 
 static void free_insert(Zone *z, u32 addr, u32 size) {
@@ -109,8 +115,8 @@ static bool raw_extend(Zone *z, u32 addr, u32 size, u32 extra) {
 }
 
 static Zone *zone_of(u32 addr) {
-    for (int i = 0; i < 2; i++)
-        if (addr >= g_zones[i].mp_start && addr < g_zones[i].end) return &g_zones[i];
+    for (int i = MAX_ZONES - 1; i >= 0; i--)
+        if (g_zones[i].used && addr >= g_zones[i].mp_start && addr < g_zones[i].end) return &g_zones[i];
     return NULL;
 }
 
@@ -158,13 +164,15 @@ void mm_init(void) {
 u32 mm_new_ptr(u32 size, bool clear, int zone) {
     u32 p = block_alloc(&g_zones[zone], size, MAGIC_PTR, 0, clear);
     mm_set_memerr(p ? noErr : memFullErr);
-    if (!p) LOG_W("NewPtr(%u) failed", size);
+    if (!p && zone <= ZONE_SYS) LOG_W("NewPtr(%u) failed", size);
     return p;
 }
 
+static void subzones_in(u32 start, u32 end);
 void mm_dispose_ptr(u32 p) {
     if (!p) return;
     if (!block_valid(p, MAGIC_PTR)) { LOG_W("DisposePtr(%08x): not a pointer block", p); mm_set_memerr(paramErr); return; }
+    subzones_in(p, p + rd32(p - 8)); /* a heap zone built in this block goes with it */
     block_free(p);
     mm_set_memerr(noErr);
 }
@@ -190,12 +198,14 @@ static u32 mp_alloc(Zone *z) {
             return h;
         }
     }
-    fatal("out of master pointers");
+    if (z == &g_zones[ZONE_APP] || z == &g_zones[ZONE_SYS]) fatal("out of master pointers");
+    return 0; /* an application heap zone: memFullErr, like a full zone */
 }
 
 static bool mp_index(u32 h, Zone **zo, u32 *idx) {
-    for (int i = 0; i < 2; i++) {
+    for (int i = MAX_ZONES - 1; i >= 0; i--) {
         Zone *z = &g_zones[i];
+        if (!z->used) continue;
         if (h >= z->mp_start && h < z->mp_start + 4 * z->mp_count && !((h - z->mp_start) & 3)) {
             u32 k = (h - z->mp_start) / 4;
             if (!z->mp_used[k]) return false;
@@ -211,18 +221,20 @@ bool mm_is_handle(u32 h) { Zone *z; u32 k; return mp_index(h, &z, &k); }
 u32 mm_new_empty_handle(int zone) {
     Zone *z = &g_zones[zone];
     u32 h = mp_alloc(z);
-    mm_set_memerr(noErr);
+    mm_set_memerr(h ? noErr : memFullErr);
     return h;
 }
 
 u32 mm_new_handle(u32 size, bool clear, int zone) {
     Zone *z = &g_zones[zone];
     u32 h = mp_alloc(z);
-    u32 p = block_alloc(z, size, MAGIC_HDL, h, clear);
+    u32 p = h ? block_alloc(z, size, MAGIC_HDL, h, clear) : 0;
     if (!p) {
-        z->mp_used[(h - z->mp_start) / 4] = 0;
+        if (h) z->mp_used[(h - z->mp_start) / 4] = 0;
         mm_set_memerr(memFullErr);
-        LOG_W("NewHandle(%u) failed", size);
+        /* a full application-built zone is routine (the game's segment cache
+           evicts and retries) */
+        if (zone <= ZONE_SYS) LOG_W("NewHandle(%u) failed", size);
         return 0;
     }
     wr32(h, p);
@@ -337,7 +349,49 @@ u32 mm_max_block(int zone) {
 /* Traps                                                                   */
 
 static int cur_zone(void) {
-    return rd32(0x0118) == g_zones[ZONE_SYS].fake_zone ? ZONE_SYS : ZONE_APP;
+    u32 thz = rd32(0x0118);
+    for (int i = 1; i < MAX_ZONES; i++) if (g_zones[i].used && g_zones[i].fake_zone == thz) return i;
+    return ZONE_APP;
+}
+
+/* Forget the heap zones whose header lies in [start, end) (their block is
+   being disposed of). */
+static void subzones_in(u32 start, u32 end) {
+    for (int i = ZONE_SYS + 1; i < MAX_ZONES; i++) {
+        Zone *z = &g_zones[i];
+        if (!z->used || z->fake_zone < start || z->fake_zone >= end) continue;
+        if (rd32(0x0118) == z->fake_zone) wr32(0x0118, g_zones[ZONE_APP].fake_zone);
+        free(z->mp_flags); free(z->mp_used); free(z->free);
+        memset(z, 0, sizeof *z);
+    }
+}
+
+/* InitZone(pGrowZone, cMoreMasters, limitPtr, startPtr): make a heap zone
+   in [startPtr, limitPtr) and make it the current zone. The zone header
+   (THz) is at startPtr, as on the Mac. The game builds its data-file
+   segment cache this way and evicts cached segments when the zone is full.
+   The Mac adds master pointer blocks on demand; here the zone gets enough
+   up front for the zone's size. */
+TRAP(InitZone) {
+    u32 grow = ARG(0); s16 more = ARGS16(1); u32 limit = ARG(2), start = ARG(3);
+    const u32 hdr = 64;
+    if (!start || limit <= start + hdr + 1024) { mm_set_memerr(paramErr); return; }
+    subzones_in(start, start + 1); /* re-initialised in place */
+    Zone *z = NULL;
+    for (int i = ZONE_SYS + 1; i < MAX_ZONES; i++) if (!g_zones[i].used) { z = &g_zones[i]; break; }
+    if (!z) { LOG_W("InitZone: too many heap zones"); mm_set_memerr(memFullErr); return; }
+    u32 size = limit - start;
+    u32 nmp = size / 512;
+    if (nmp < (u32)(more > 0 ? more : 64)) nmp = (u32)(more > 0 ? more : 64);
+    zone_init(z, (start + hdr + 15) & ~15u, limit, nmp);
+    z->fake_zone = start;
+    gmemset(start, 0, hdr);
+    wr32(start, limit);            /* bkLim */
+    wr32(start + 16, grow);        /* gzProc */
+    wr16(start + 20, (u16)more);   /* moreMast */
+    wr32(0x0118, start);           /* TheZone */
+    LOG_D("InitZone %08x-%08x (%u master pointers)", start, limit, nmp);
+    mm_set_memerr(noErr);
 }
 
 TRAP(NewPtr) { RET(mm_new_ptr(ARG(0), false, cur_zone())); }
@@ -383,7 +437,6 @@ TRAP(MaxBlock) { RET(mm_max_block(cur_zone())); }
 TRAP(MaxApplZone) { mm_set_memerr(noErr); }
 TRAP(MoreMasters) { mm_set_memerr(noErr); }
 TRAP(SetGrowZone) { }
-TRAP(InitZone) { }
 TRAP(GetZone) { RET(rd32(0x0118)); }
 TRAP(SetZone) { wr32(0x0118, ARG(0)); }
 TRAP(SystemZone) { RET(g_zones[ZONE_SYS].fake_zone); }

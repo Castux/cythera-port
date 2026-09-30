@@ -8,7 +8,9 @@ static int g_hide_level;
 static u8 g_cur_rgba[16 * 16 * 4];
 static int g_hotx, g_hoty;
 
-static void apply_cursor(void) { host_set_cursor(g_cur_rgba, g_hotx, g_hoty, g_hide_level >= 0); }
+static bool g_obscured; /* ObscureCursor: hidden until the mouse moves */
+static void apply_cursor(void) { host_set_cursor(g_cur_rgba, g_hotx, g_hoty, g_hide_level >= 0 && !g_obscured); }
+void cursor_mouse_moved(void) { if (g_obscured) { g_obscured = false; apply_cursor(); } }
 
 static void set_bw_cursor(u32 crs) {
     for (int y = 0; y < 16; y++) {
@@ -27,7 +29,7 @@ static void set_bw_cursor(u32 crs) {
 
 TRAP(InitCursor) {
     extern u32 g_qd_theport_ptr;
-    g_hide_level = 0;
+    g_hide_level = 0; g_obscured = false;
     if (g_qd_theport_ptr) set_bw_cursor(g_qd_theport_ptr - 108);
 }
 TRAP(SetCursor) { set_bw_cursor(ARG(0)); }
@@ -67,7 +69,7 @@ TRAP(GetCursor) {
 }
 TRAP(HideCursor) { g_hide_level--; apply_cursor(); }
 TRAP(ShowCursor) { if (g_hide_level < 0) g_hide_level++; apply_cursor(); }
-TRAP(ObscureCursor) { }
+TRAP(ObscureCursor) { if (!g_obscured) { g_obscured = true; apply_cursor(); } }
 TRAP(ShieldCursor) { }
 
 /* 'crsr' resources are kept as their raw resource image in a handle; the

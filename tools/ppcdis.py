@@ -261,3 +261,29 @@ if __name__ == '__main__':
                 img.disasm(prev, s, out)
             img.disfunc(s, out)
             prev = s + img.funcs[s][1]
+        # runtime library code and glue after the last traceback table
+        if prev < len(img.code):
+            out.write(f"\n; --- unnamed region {prev:#x}-{len(img.code):#x}\n")
+            img.disasm(prev, len(img.code), out)
+    elif cmd == 'xref':
+        # direct calls (bl) to a function or an import's glue stub
+        byname = {}
+        for a, nm in img.names.items():
+            byname.setdefault(nm[5:] if nm.startswith('glue:') else nm, []).append(a)
+        c = img.code
+        for want in sys.argv[3:]:
+            targets = set(byname.get(want, []))
+            if re.match(r'^(0x)?[0-9a-fA-F]+$', want) and not targets:
+                targets = {int(want, 16)}
+            n = 0
+            for o in range(0, len(c) - 3, 4):
+                w = struct.unpack('>I', c[o:o+4])[0]
+                if w & 0xFC000003 != 0x48000001: continue
+                d = w & 0x03FFFFFC
+                if d & 0x02000000: d -= 0x04000000
+                if o + d in targets:
+                    f = img.func_at(o)
+                    fn = img.names.get(f, '?') if f is not None and o < f + img.funcs[f][1] else '(no traceback)'
+                    print(f"{o:06x} {fn}")
+                    n += 1
+            print(f"; {want}: {n} call sites", file=sys.stderr)

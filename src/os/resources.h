@@ -18,4 +18,6 @@ void res_set_err(s16 e);
 void res_add_system(u32 type, s16 id, const char *name, const void *data, u32 len);
 /* Host-side copy of resource data (no handle); returns malloc'd buffer. */
 u8 *res_load_raw(u32 type, s16 id, u32 *len);
+/* A file's QuickTime preview ('pnot'), read from disk: malloc'd data or NULL. */
+u8 *res_file_preview(const char *hostpath, u32 *type, u32 *len);
 #endif

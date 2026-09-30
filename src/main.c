@@ -47,6 +47,7 @@ static void usage(void) {
         "  --wav FILE        record audio output (headless testing)\n"
         "  --timeout N       exit after N seconds\n"
         "  --trace-traps     log every Toolbox call\n"
+        "  --trap-stats FILE append per-import call counts to FILE at exit\n"
         "  --strict          abort on unimplemented Toolbox calls\n"
         "  --screen WxH      emulated screen size (default 640x480)\n"
         "  --scale N         window scale factor\n"
@@ -87,6 +88,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--trace-traps")) g_trace_traps = true;
         else if (!strcmp(a, "--trace-only") && i + 1 < argc) { extern const char *g_trace_only; g_trace_only = argv[++i]; g_trace_traps = true; }
         else if (!strcmp(a, "--profile")) { extern bool g_profile; extern void trap_profile_report(void); g_profile = true; atexit(trap_profile_report); }
+        else if (!strcmp(a, "--trap-stats") && i + 1 < argc) { extern const char *g_trap_stats; extern void trap_stats_report(void); g_trap_stats = argv[++i]; atexit(trap_stats_report); }
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
         else if (!strcmp(a, "--screen") && i + 1 < argc) {
             if (sscanf(argv[++i], "%dx%d", &g_cfg.screen_w, &g_cfg.screen_h) != 2) usage();

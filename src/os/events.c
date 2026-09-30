@@ -77,6 +77,8 @@ static void post_host_events(void) {
     }
     int x, y; bool d;
     host_mouse(&x, &y, &d);
+    extern void cursor_mouse_moved(void);
+    if (g_mouse.h != x || g_mouse.v != y) cursor_mouse_moved();
     g_mouse = (Point){ (s16)y, (s16)x };
     if (!host_is_headless()) g_button = d;
 }

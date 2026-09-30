@@ -17,7 +17,12 @@ static int g_nbar;
 static u32 g_hier[MAX_MENUS];  /* hierarchical / popup menus */
 static int g_nhier;
 static s16 g_hilited;
-static const int ITEM_H = 16;
+/* Menus are drawn in the system font (low memory SysFontFam/SysFontSize),
+   which the game switches to the window's font around some pop-ups
+   (PopUpMenuSelectWithCurFont). Item height and baseline follow it. */
+static int ITEM_H = 16, ITEM_BASE = 12;
+#define LM_SysFontFam  0x0BA6
+#define LM_SysFontSize 0x0BA8
 #define BAR_H 20
 int menu_bar_height(void) { return BAR_H; }
 
@@ -216,7 +221,17 @@ static void mport_prepare(void) {
     g_mport = port;
     rgn_set_rect(rd32(port + PORT_VIS), mkrect(0, 0, qd_screen_h(), qd_screen_w()));
     rgn_set_rect(rd32(port + PORT_CLIP), mkrect(-32767, -32767, 32767, 32767));
-    wr16(port + PORT_TXFONT, 0); wr16(port + PORT_TXSIZE, 12); wr8(port + PORT_TXFACE, 0);
+    s16 fam = rds16(LM_SysFontFam), size = rds16(LM_SysFontSize);
+    if (size <= 0) size = 12;
+    wr16(port + PORT_TXFONT, (u16)fam); wr16(port + PORT_TXSIZE, (u16)size); wr8(port + PORT_TXFACE, 0);
+    if (fam == 0 && size == 12) { ITEM_H = 16; ITEM_BASE = 12; } /* Chicago 12 */
+    else {
+        int a, d, w, l;
+        text_font_info(port, &a, &d, &w, &l);
+        ITEM_H = a + d + l + 1;
+        if (ITEM_H < 10) ITEM_H = 10;
+        ITEM_BASE = a + (ITEM_H - (a + d + l)) / 2;
+    }
     wr16(port + PORT_TXMODE, srcOr);
     wr_rgb(port + PORT_RGBFG, (RGB){ 0, 0, 0 });
     wr_rgb(port + PORT_RGBBK, (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
@@ -324,19 +339,19 @@ static void draw_item(u32 m, const Item *it, int idx, Rect mr, bool hil) {
     if (sep) {
         static const u8 dots[1] = { 0xAA };
         (void)dots;
-        for (int x = r.left; x < r.right; x += 2) fill(mkrect(r.top + 8, x, r.top + 9, x + 1), (RGB){ 0x8888, 0x8888, 0x8888 });
+        for (int x = r.left; x < r.right; x += 2) fill(mkrect(r.top + ITEM_H / 2, x, r.top + ITEM_H / 2 + 1, x + 1), (RGB){ 0x8888, 0x8888, 0x8888 });
         return;
     }
     RGB c = !en ? (RGB){ 0x8888, 0x8888, 0x8888 } : hil ? (RGB){ 0xFFFF, 0xFFFF, 0xFFFF } : (RGB){ 0, 0, 0 };
-    if (it->mark == 0x12) draw_glyph(GLYPH_CHECK, 9, r.left + 3, r.top + 4, c);
-    else if (it->mark && it->key != 0x1B) { u8 mc = it->mark; draw_str(&mc, 1, r.left + 4, r.top + 12, c, 0); }
+    if (it->mark == 0x12) draw_glyph(GLYPH_CHECK, 9, r.left + 3, r.top + (ITEM_H - 8) / 2, c);
+    else if (it->mark && it->key != 0x1B) { u8 mc = it->mark; draw_str(&mc, 1, r.left + 4, r.top + ITEM_BASE, c, 0); }
     u8 l = rd8(it->name); u8 buf[256];
     gmemcpy_from(buf, it->name + 1, l);
-    draw_str(buf, l, r.left + 16, r.top + 12, c, it->style);
+    draw_str(buf, l, r.left + 16, r.top + ITEM_BASE, c, it->style);
     if (it->key > 32 && it->key != 0x1B) {
-        draw_glyph(GLYPH_CMD, 9, r.right - 26, r.top + 4, c);
+        draw_glyph(GLYPH_CMD, 9, r.right - 26, r.top + (ITEM_H - 8) / 2, c);
         u8 k = it->key;
-        draw_str(&k, 1, r.right - 15, r.top + 12, c, 0);
+        draw_str(&k, 1, r.right - 15, r.top + ITEM_BASE, c, 0);
     }
     if (it->key == 0x1B) {
         for (int k = 0; k < 5; k++) fill(mkrect(r.top + 4 + k, r.right - 12, r.top + 5 + k, r.right - 12 + k), c);
@@ -512,6 +527,31 @@ TRAP(MenuEvent) {
     RET(menu_key((u8)rd32(ep + 2)));
 }
 
+/* A pop-up menu taller than the screen scrolls, as on the Mac: the visible
+   part is `fr`, the whole menu `mr`; resting the mouse on the arrow at the
+   top or bottom edge scrolls it. */
+static void popup_paint(u32 m, Rect mr, Rect fr, int hil, const Item *items, int n) {
+    fill(mkrect(fr.top - 1, fr.left - 1, fr.bottom + 1, fr.right + 1), (RGB){ 0, 0, 0 });
+    fill(mkrect(fr.top + 2, fr.right + 1, fr.bottom + 2, fr.right + 2), (RGB){ 0, 0, 0 });
+    fill(mkrect(fr.bottom + 1, fr.left + 2, fr.bottom + 2, fr.right + 2), (RGB){ 0, 0, 0 });
+    u32 clip = rd32(g_mport + PORT_CLIP);
+    rgn_set_rect(clip, fr);
+    for (int i = 0; i < n; i++) {
+        int t = mr.top + i * ITEM_H;
+        if (t + ITEM_H > fr.top && t < fr.bottom) draw_item(m, &items[i], i, mr, i + 1 == hil);
+    }
+    int cx = (fr.left + fr.right) / 2;
+    if (mr.top < fr.top) {
+        fill(mkrect(fr.top, fr.left, fr.top + ITEM_H, fr.right), (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
+        for (int k = 0; k < 5; k++) fill(mkrect(fr.top + 5 + k, cx - k, fr.top + 6 + k, cx + k + 1), (RGB){ 0, 0, 0 });
+    }
+    if (mr.bottom > fr.bottom) {
+        fill(mkrect(fr.bottom - ITEM_H, fr.left, fr.bottom, fr.right), (RGB){ 0xFFFF, 0xFFFF, 0xFFFF });
+        for (int k = 0; k < 5; k++) fill(mkrect(fr.bottom - 6 - k, cx - k, fr.bottom - 5 - k, cx + k + 1), (RGB){ 0, 0, 0 });
+    }
+    rgn_set_rect(clip, mkrect(-32767, -32767, 32767, 32767));
+}
+
 TRAP(PopUpMenuSelect) {
     u32 m = ARG(0); s16 top = ARGS16(1), left = ARGS16(2); s16 popitem = ARGS16(3);
     u32 save = qd_port();
@@ -519,30 +559,61 @@ TRAP(PopUpMenuSelect) {
     mport_prepare();
     int w = rds16(hderef(m) + MI_WIDTH), h = rds16(hderef(m) + MI_HEIGHT);
     int y = top - (popitem > 0 ? (popitem - 1) * ITEM_H : 0);
-    int mb = rds16(LM_MBarHeight);
-    if (y < mb) y = mb;
-    if (y + h > qd_screen_h() - 2) y = qd_screen_h() - 2 - h;
+    int vt = rds16(LM_MBarHeight), vb = qd_screen_h() - 2;
+    Rect fr;
+    if (h <= vb - vt) {
+        if (y < vt) y = vt;
+        if (y + h > vb) y = vb - h;
+        fr = mkrect(y, 0, y + h, 0);
+    } else { /* too tall: show what fits, keeping popitem under the mouse */
+        if (y > vt) y = vt;
+        if (y + h < vb) y = vb - h;
+        fr = mkrect(vt, 0, vt + (vb - vt) / ITEM_H * ITEM_H, 0);
+    }
     int x = left;
     if (x + w > qd_screen_w() - 2) x = qd_screen_w() - 2 - w;
     Rect mr = mkrect(y, x, y + h, x + w);
+    fr.left = mr.left; fr.right = mr.right;
     Saved sv;
-    save_under(&sv, mkrect(mr.top - 1, mr.left - 1, mr.bottom + 2, mr.right + 2));
-    draw_menu(m, mr, 0);
-    int hil = 0;
+    save_under(&sv, mkrect(fr.top - 1, fr.left - 1, fr.bottom + 2, fr.right + 2));
     Item items[256]; int n = menu_items(m, items, 256);
+    popup_paint(m, mr, fr, 0, items, n);
+    int hil = 0;
+    u32 last_scroll = tick_count();
     for (;;) {
         bool down = ev_mouse_button();
-        int it = item_at(m, mr, ev_mouse_global());
+        Point pt = ev_mouse_global();
+        bool in = pt.h >= fr.left && pt.h < fr.right;
+        int dir = 0;
+        if (in && mr.top < fr.top && pt.v >= fr.top - 8 && pt.v < fr.top + ITEM_H) dir = 1;
+        if (in && mr.bottom > fr.bottom && pt.v >= fr.bottom - ITEM_H && pt.v < fr.bottom + 8) dir = -1;
+        if (dir) {
+            if (tick_count() - last_scroll >= 4) {
+                last_scroll = tick_count();
+                mr.top = (s16)(mr.top + dir * ITEM_H); mr.bottom = (s16)(mr.bottom + dir * ITEM_H);
+                hil = 0;
+                popup_paint(m, mr, fr, 0, items, n);
+            }
+        }
+        int it = !dir && pt.v >= fr.top && pt.v < fr.bottom ? item_at(m, mr, pt) : 0;
         if (it && (it > n || item_is_sep(m, it - 1, &items[it - 1]) || !item_enabled(m, it))) it = 0;
         if (it != hil) {
+            u32 clip = rd32(g_mport + PORT_CLIP);
+            rgn_set_rect(clip, fr);
             if (hil) draw_item(m, &items[hil - 1], hil - 1, mr, false);
             if (it) draw_item(m, &items[it - 1], it - 1, mr, true);
+            rgn_set_rect(clip, mkrect(-32767, -32767, 32767, 32767));
             hil = it;
         }
         if (!down) break;
         ev_idle_frame();
     }
-    if (hil) flash_item(m, mr, hil);
+    if (hil) {
+        u32 clip = rd32(g_mport + PORT_CLIP);
+        rgn_set_rect(clip, fr);
+        flash_item(m, mr, hil);
+        rgn_set_rect(clip, mkrect(-32767, -32767, 32767, 32767));
+    }
     restore_under(&sv);
     mport_done();
     qd_set_port(save);

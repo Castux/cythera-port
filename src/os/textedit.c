@@ -599,7 +599,19 @@ TRAP(TEKey) {
         break;
     case 0x1C: { int q = s0 != s1 ? s0 : (s0 > 0 ? s0 - 1 : 0); wr16(p + TE_SELSTART, (u16)q); wr16(p + TE_SELEND, (u16)q); break; }
     case 0x1D: { int q = s0 != s1 ? s1 : (s1 < n ? s1 + 1 : n); wr16(p + TE_SELSTART, (u16)q); wr16(p + TE_SELEND, (u16)q); break; }
-    case 0x1E: case 0x1F: break;
+    case 0x1E: case 0x1F: { /* up/down: same x on the line above/below; past the first/last line: start/end */
+        TEInfo *ti = teinfo(te);
+        u32 port = rd32(p + TE_INPORT);
+        int from = s0 != s1 ? (ch == 0x1E ? s0 : s1) : s0;
+        int line = line_of(te, from), nl = rds16(p + TE_NLINES), q;
+        int tl = ch == 0x1E ? line - 1 : line + 1;
+        if (tl < 0) q = 0;
+        else if (tl >= nl) q = n;
+        else q = pos_from_point(te, ti, port, (Point){ (s16)(line_top(te, ti, port, tl) + 1), (s16)pos_x(te, ti, port, from) });
+        p = te_rec(te);
+        wr16(p + TE_SELSTART, (u16)q); wr16(p + TE_SELEND, (u16)q);
+        break;
+    }
     default: {
         u8 c = ch == 0x03 ? '\r' : ch;
         text_replace(te, s0, s1, &c, 1);

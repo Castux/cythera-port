@@ -6,6 +6,7 @@
 # Folder and Saved Games (never ~/.cythera-port). The copy starts from a
 # fixture made by tests/fixture.txt, which creates the saved game "Hero"
 # (a new game saved after the first conversation with the king).
+# Extra emulator options can be passed in $CYTHERA_ARGS (e.g. "--trap-stats FILE").
 cd "$(dirname "$0")/.."
 mkdir -p work/shots
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/cythera-tests.XXXXXX")
@@ -16,7 +17,7 @@ run() { # run SCRIPT HOME LOG
   # optional first line "# app: NAME" selects another application
   app=$(sed -n '1s/^# app: //p' "$1")
   "${CYTHERA:-./build/cythera}" --deterministic --timeout 900 --sysdir "$2/System Folder" \
-    ${app:+--app "$app"} --script "$1" > "$3" 2>&1
+    ${app:+--app "$app"} $CYTHERA_ARGS --script "$1" > "$3" 2>&1
 }
 check() { # check NAME RC LOG
   bad=$(grep -E "FATAL|unimplemented trap|stall:|EXPECT FAILED" "$3" | head -3)
