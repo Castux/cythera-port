@@ -25,6 +25,12 @@ static u8 g_keymap[16];
 static u16 g_mods;
 
 bool host_is_headless(void) { return g_headless; }
+void host_error_box(const char *msg) { SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Cythera", msg, NULL); }
+const char *host_base_path(void) {
+    static char *p;
+    if (!p) p = SDL_GetBasePath();
+    return p ? p : "";
+}
 
 static char *g_clip; /* headless clipboard */
 char *host_clipboard_get(void) {

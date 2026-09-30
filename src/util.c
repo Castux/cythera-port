@@ -22,15 +22,18 @@ void log_msg(int level, const char *fmt, ...) {
 
 void cpu_backtrace(CPU *c, FILE *f);
 
+void (*g_fatal_hook)(const char *msg);
+
 _Noreturn void fatal(const char *fmt, ...) {
+    char msg[1024];
     va_list ap;
     va_start(ap, fmt);
-    fprintf(stderr, "FATAL: ");
-    vfprintf(stderr, fmt, ap);
-    fputc('\n', stderr);
+    vsnprintf(msg, sizeof msg, fmt, ap);
     va_end(ap);
+    fprintf(stderr, "FATAL: %s\n", msg);
     if (g_cpu) cpu_backtrace(g_cpu, stderr);
     fflush(stderr);
+    if (g_fatal_hook) g_fatal_hook(msg);
     exit(1);
 }
 

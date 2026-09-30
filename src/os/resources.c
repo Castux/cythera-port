@@ -130,7 +130,7 @@ static int open_res_file(const char *hostpath, int perm, s16 *out) {
     ResFile *f = rf_new(ref);
     if (!f) { free(buf); return tmfoErr; }
     snprintf(f->path, sizeof f->path, "%s", rp);
-    f->writable = perm != 1;
+    f->writable = perm != 1 && !vfs_read_only(rp);
     if (!parse_fork(f, buf, (u32)n)) {
         free(buf);
         f->used = false;
@@ -471,6 +471,7 @@ TRAP(HOpenResFile) {
 }
 
 static void create_res_file(const char *host, u32 creator, u32 type, bool set_type) {
+    if (vfs_read_only(host)) return;
     if (!vfs_exists(host)) {
         FILE *fp = fopen(host, "wb");
         if (fp) fclose(fp);

@@ -11,6 +11,7 @@
 #include "wm.h"
 #include "misc.h"
 #include "../plat.h"
+#include "../config.h"
 #include <dirent.h>
 #include <time.h>
 #include <errno.h>
@@ -85,6 +86,10 @@ s32 files_saves_dir(void) { return g_saves_id; }
 
 bool vfs_is_dir(const char *p) { struct stat st; return !stat(p, &st) && S_ISDIR(st.st_mode); }
 bool vfs_exists(const char *p) { struct stat st; return !stat(p, &st); }
+bool vfs_read_only(const char *p) {
+    size_t n = strlen(g_dirs[2].path);
+    return g_cfg.data_readonly && !strncmp(p, g_dirs[2].path, n) && (p[n] == '/' || p[n] == '\\' || !p[n]);
+}
 
 s32 vfs_dir_id_for(const char *hostpath, s32 parent, const char *macname) {
     for (s32 i = 2; i < g_ndirs; i++)
@@ -287,6 +292,7 @@ void finfo_get(const char *hostpath, u32 *type, u32 *creator, u16 *flags) {
 void finfo_set(const char *hostpath, u32 type, u32 creator, u16 flags) {
     char db[1100], leaf[512];
     finfo_dbpath(hostpath, db, sizeof db, leaf, sizeof leaf);
+    if (vfs_read_only(db)) return;
     /* rewrite db without the leaf, then append */
     char tmp[1200];
     snprintf(tmp, sizeof tmp, "%s.tmp", db);
@@ -355,10 +361,11 @@ int fcb_open(const char *hostpath, bool rsrc_fork, int perm, s16 *refnum) {
     bool want_write = perm == 2 || perm == 3 || perm == 4 || perm == 0;
     if (!vfs_exists(hostpath) && !(rsrc_fork && vfs_exists(path))) return fnfErr;
     if (vfs_is_dir(hostpath)) return fnfErr;
+    bool ro = vfs_read_only(path);
     FILE *f = NULL;
     if (want_write) {
-        f = fopen(path, "r+b");
-        if (!f && rsrc_fork) f = fopen(path, "w+b"); /* create empty resource fork */
+        if (!ro) f = fopen(path, "r+b");
+        if (!f && rsrc_fork && !ro) f = fopen(path, "w+b"); /* create empty resource fork */
         if (!f && perm == 0) f = fopen(path, "rb");  /* fsCurPerm: fall back to read-only */
         if (!f) return perm == 0 ? fnfErr : permErr;
     } else {
@@ -520,7 +527,7 @@ TRAP(FSpOpenRF) {
 
 static int create_file(const char *host, u32 creator, u32 type) {
     if (vfs_exists(host)) return dupFNErr;
-    FILE *f = fopen(host, "wb");
+    FILE *f = vfs_read_only(host) ? NULL : fopen(host, "wb");
     if (!f) return ioErr;
     fclose(f);
     finfo_set(host, type, creator, 0);

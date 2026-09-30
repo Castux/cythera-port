@@ -49,6 +49,7 @@ void log_msg(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3
 #define LOG_T(...) do { if (g_log_level >= 4) log_msg(4, __VA_ARGS__); } while (0)
 
 _Noreturn void fatal(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+extern void (*g_fatal_hook)(const char *msg); /* also report fatal errors, e.g. in a dialog */
 
 /* ---- Guest memory access (big-endian) ---------------------------------- */
 _Noreturn void mem_fault(u32 addr, u32 size, bool write);

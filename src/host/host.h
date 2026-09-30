@@ -35,6 +35,11 @@ bool host_screenshot(const char *path);
 
 void host_set_cursor(const u8 *rgba32x32, int hotx, int hoty, bool visible);
 bool host_is_headless(void);
+/* Directory of the executable (Contents/Resources in a macOS app bundle),
+   ending with a separator; "" if unknown. */
+const char *host_base_path(void);
+/* Error dialog, for fatal errors when there is no console. */
+void host_error_box(const char *msg);
 
 /* Clipboard text (UTF-8). get returns a malloc'd string, or NULL if empty. */
 char *host_clipboard_get(void);

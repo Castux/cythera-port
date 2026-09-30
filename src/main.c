@@ -5,6 +5,8 @@
 #include "loader/pef.h"
 #include "os/os.h"
 #include "config.h"
+#include "host/host.h"
+#include <sys/stat.h>
 
 Config g_cfg;
 
@@ -29,7 +31,7 @@ static u32 resolver(int index, const PefImport *imp) {
 static void usage(void) {
     fprintf(stderr,
         "usage: cythera [options]\n"
-        "  --data DIR        game directory (default: gamedata)\n"
+        "  --data DIR        game directory (default: gamedata, here or next to the program)\n"
         "  --headless        no window; render offscreen\n"
         "  --app NAME        run another application from the game folder (e.g. \"Register Cythera\")\n"
         "  --script FILE     run an input script (see README.md, tests/scripts/)\n"
@@ -54,7 +56,7 @@ static void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    g_cfg.data_dir = "gamedata";
+    g_cfg.data_dir = NULL;
     g_cfg.app = "Cythera";
     g_cfg.screen_w = 640;
     g_cfg.screen_h = 480;
@@ -92,6 +94,16 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "-v")) g_log_level++;
         else if (!strcmp(a, "-q")) g_log_level--;
         else usage();
+    }
+
+    if (!g_cfg.headless) g_fatal_hook = host_error_box;
+    /* default: ./gamedata, else gamedata next to the executable (packaged builds) */
+    if (!g_cfg.data_dir) {
+        static char base[1024];
+        struct stat st;
+        snprintf(base, sizeof base, "%sgamedata", host_base_path());
+        g_cfg.data_dir = "gamedata";
+        if (stat("gamedata", &st) != 0 && stat(base, &st) == 0) { g_cfg.data_dir = base; g_cfg.data_readonly = true; }
     }
 
     g_mem = calloc(1, GUEST_MEM_SIZE);

@@ -22,6 +22,8 @@ const char *vfs_dir_name(s32 dirid);
 s32 vfs_dir_id_for(const char *hostpath, s32 parent, const char *macname);
 bool vfs_is_dir(const char *hostpath);
 bool vfs_exists(const char *hostpath);
+/* Files under a read-only game folder (g_cfg.data_readonly) are never created or written. */
+bool vfs_read_only(const char *hostpath);
 
 /* FSSpec helpers (guest address of a 70-byte FSSpec) */
 void fsspec_read(u32 spec, s16 *vref, s32 *parid, char *name);
