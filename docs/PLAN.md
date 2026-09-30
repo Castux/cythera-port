@@ -97,11 +97,33 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - [x] Documentation: README (players), DEVELOPING, ANALYSIS, TOOLBOX, this plan
 - **Exit:** full-feature playable port.
 
+## M8 — Save editor (tests and testers start at any stage)
+- [x] Phase 0: the saved-game format ([ANALYSIS.md §3.1](ANALYSIS.md#31-saved-games))
+- [x] Phase 1: `tools/delv_save.py`: show, byte-identical round trip, safe edits (position
+  within and across zones, stats, HP/MP, skills, gold and items, clock), each loaded in the
+  game (`tests/scripts/saveedit*.txt`); story flags listed read-only
+- [ ] Phase 2: story flag edits (what each QF/QV means; quest to-dos, journal)
+- [ ] Phase 3: stage saves (after the test, Ariadne rescued, Magisterium...) for the scripts
+- **Exit:** a gameplay script can start from a saved stage instead of replaying the opening.
+
 ## Working notes
 - Commit and push after each significant chunk.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (save editor): saved games decoded ([ANALYSIS.md §3.1](ANALYSIS.md#31-saved-games)):
+  the 0400 stream (`Char`: karma, difficulty, the 32 story values QV and 256 story flags QF, clock
+  and day, play time; active monsters, spell effects, windows), the character table F009 (every
+  byte the VM's Character fields reach), the zone props with the character slots (F306), the
+  to-do list, the heap. No checksum. Characters' belongings live in the current zone's prop
+  list, so moving to another zone replays `GoToLocation`'s bookkeeping (carry, renumber, cue
+  characters): checked against a real zone change in play (identical but for what the scripts
+  did) and by loading moved saves (Omen's Test -> LandKing Hall, -> the World at night,
+  Catamarca -> World, back into a zone stored in the save). `tools/delv_save.py` shows and edits;
+  `run.sh` applies a script's `# save-edit:` line to the fixture first. Story flags have no names
+  in the data; scripts using each are listed (QF 0 = first audience with Alaric). Also:
+  `delv_archive.py` labels saves' pages (04 is the game state there) and no longer fails on
+  consoles without Mac Roman glyphs.
 - 2026-09-30 (release, CI, crash): GitHub Actions build, test and package the game for Linux
   (tarball), Windows (static zip, no console) and macOS (universal app in a dmg, ad-hoc signed;
   Developer ID signing and notarization when secrets are set); v* tags publish a release

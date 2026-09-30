@@ -1,0 +1,40 @@
+# Saved-game editor: run.sh edits the fixture's "Hero" with tools/delv_save.py before the game
+# loads it: the hero moves from Omen's Test to his quarters in LandKing Hall (with his belongings,
+# as the engine carries them between zones), at noon, with new stats, skills, gold and bread.
+# save-edit: pos=3,11,37 time=12:00 karma=77 hp=40 maxhp=45 mp=7 maxmp=9 body=21 reflex=22 mind=23 level=3 exp=1234 training=6 skill:attack=5 skill:sword=3 gold=77 give=flatbread:3
+# load the edited "Hero"
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+expect Land King Hall
+shot work/shots/saveedit_1.png
+# the character window: health 40/45, magic 7/9, body/reflex/mind 21/22/23
+mousedown 362 404
+wait 6
+mouseup 362 404
+wait 200
+expect 45
+expect 9
+expect 21
+expect 22
+expect 23
+# inventory: 77 oboloi, 3 flatbread and the LandKing Amulet
+click 60 320
+wait 100
+expect 77
+shot work/shots/saveedit_2.png
+# abilities: level 3, 1234 experience, Attack 5 and a new skill, Sword 3
+click 198 320
+wait 100
+expect 1234
+expect Sword
+shot work/shots/saveedit_3.png
+# walk: the game plays on from the edited position
+key escape
+wait 30
+hold right 20
+wait 60
+shot work/shots/saveedit_4.png
+quit

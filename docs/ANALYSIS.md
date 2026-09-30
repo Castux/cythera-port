@@ -204,14 +204,13 @@ of this (`info`, `list`, `dump`, `export`).
   8F sized graphics, 90 music, 91 sounds, F0 general data (tile
   names/attributes/compositions, prop→tile, prop offsets, schedules,
   zoneports, monster stats, characters, symbol lists).
-  Saved games use the same format (delvmod: pages 82 explored-area bitmaps
-  and E0 journal).
+  Saved games use the same format (§3.1).
 - **Maps (80xx):** 32-byte header (u16 width, height, 0, two roof-layer
   sizes; u8 ×2 edge propagation; u16 ×4 exit zoneports N/E/S/W; zero
   padding). Then `0x40·(roof1+roof2)` bytes of roof data and `w·h` u16 tile
   ids. **Prop lists (81xx):** 16-byte records: flags, x:12 y:12 (or the
-  container index + 0x100 if flags&0x18), u16 aspect<<10|type, u16
-  persistence d1:d2, u16, u32, u16.
+  holder, see §3.1), u16 aspect<<10|type, u16 persistence d1:d2, u16,
+  u32, u16.
 - **Sounds (91xx, `asnd`):** magic, u32 N (there are 512 + 1024·N samples),
   a **Fixed** sample rate (0x56220000 = 22050, 0x56EE8B9F = 22254.55,
   0x2B7745D0 = 11127.27; delvmod reads it as u16 rate + u16 flags). Then
@@ -267,6 +266,126 @@ and near/far data refs (`0x8…`).
 
 Since the port reuses the original engine code, the VM does not have to be
 reimplemented. This knowledge helps with debugging and verification.
+
+### 3.1 Saved games
+
+A saved game ("Saved Games/Hero") is a Delver archive in the same format
+whose resources override the scenario's; its resource fork holds the
+Finder preview (`PICT`/`pnot`) and `SCEN` 128, an alias record naming
+"Cythera Data". Its header has the player's name at 0x20.
+There is no checksum: `TSegFile::Verify` only checks that TOC entries lie
+inside the file and don't overlap, and `SegFileHeader::CompatibleVersions`
+the u16 at 0x42 (2). `TDelverApp::SaveToFile` writes, in order, the preview,
+`SaveLevelProps` (current zone), the to-do list, macros, `THeap::Save`, then
+the game state stream, and copies every segment of the "Delver Temp"
+archive (segments changed since loading) into the file. `RestoreModel`
+reads it back: F009, F00E, then the hero's zone from F009, its map and props,
+the heap, F306, the stream, to-do, journal, macros. `tools/delv_save.py`
+decodes and edits all this (verified by loading edited saves in the game).
+
+| Resource | Contents |
+|---|---|
+| 0400 | Game state stream: chunks of 4-char tag, u32 length (counting itself), data: `Char`, `Mons`, `FXQ `, `Wind`, `Grem` (below) |
+| 0401 | To-do list: 256 × (u8 done, u8, u16 day added, u32 text: VM value `0x3kkk021A` = quest text *k*, `none` if unused); scripts pick the slot |
+| 0404 | F-key macros, 10 × u16 (`FFFF` none) |
+| 81zz | Props of each visited zone, scenario format (records from list index 0x100) |
+| 82zz | Explored map of each visited zone: a bit per tile, rows of (w+7)/8 bytes, LSB first |
+| 8800 | The hero's portrait (DCG, 64×64) |
+| E0xx | Journal pages (not decoded) |
+| F009 | Character table, 512 × 32 bytes (only 0–255 are used; guest 0x228558) |
+| F00E | Room fields: 1024 × u16, the Room objects' field 0x14 |
+| F306 | The current zone's 256 character slots (prop records, list indexes 0–255) |
+| F307 | VM heap, 256 KB: blocks of u32 size, u16 handle, u8 (bits 4–6 kind, 0 = free; bit 3 adds 4 bytes), data padded to 4 |
+| F308 | Prop frames, 8 KB (`PropItem::AllocateFrame`) |
+
+**`Char` chunk** (110 bytes, `WriteData` formats; stream offsets in brackets):
+
+| Offset | Type | Contents (VM global number, `GetGlobal__Fs`) |
+|---|---|---|
+| 0 [08] | h | karma (12), 55 at start |
+| 2 | h | languages known (14) |
+| 4 | h | difficulty 0–4 (monster strength in `TActiveMonster::__ct`), 2 |
+| 6 | h | next unique name (`cbNewUniqueName`), 0x800 |
+| 8 [10] | 32 × b | story state values QV 0–31 (syscalls DC get, DD set) |
+| 40 [30] | 8 × l | story flags QF 0–255, bit *n*&31 of long *n*>>5 (DE get, DF set) |
+| 72 [50] | l | clock: 0x1000 per hour, hour = clock>>12 (global 0); the day rolls over at 0x18000 |
+| 76 [54] | h | day (15), 1 at start |
+| 78 | b | automap enabled (viewer+0xd, `cbEnableAutoMap`) |
+| 79 [57] | l | seconds played (`GetDateTime` differences) |
+| 83 | 27 × b | zero |
+
+**Other chunks.** `Mons`, the active monsters (`TActiveMonster::SaveMonsters`):
+per monster a byte (property 0x37, the kind: 9/10 crawler, 11 dragon, 12
+octopus), then `Save`: h prop index, h, h; for level monsters (index ≥
+0x100) h and 32 bytes of monster data; b facing (0–3) and 4 × h; h queue
+length and b h h l per queued activity; crawlers add h *n* and *n* × h (their
+segments), dragons 4 × h, octopuses 8 × h. `FXQ `:
+timed spell effects, 3 × h each. `Wind`: open inventory and character
+windows (`TInventoryWindow::MarshalAll`), empty unless one was open.
+`Grem`: 1024 raw bytes of `TGremlin` state.
+
+**Character record** (F009; offsets = the VM's Character fields in
+`SetField__Fsss5VAddr`, field numbers in brackets):
+
+| Offset | Contents | Offset | Contents |
+|---|---|---|---|
+| 0 | zone | 1–3 | x:12 y:12 [1, 2] |
+| 4–5 | aspect<<10 \| type (facing in the aspect) [0x24] | 6–7 | status: bit 0 alive [0x14] |
+| 8 | bits: 0x40 in the party [0x13] | 9, 10, 11 | body, reflex, mind [0x17–0x19] |
+| 12–13 | experience [0x1A] | 14, 15 | health, maximum [0x1C, 0x1D] |
+| 16, 17 | magic, maximum [0x1E, 0x1F] | 18 | timing [0x23] |
+| 19 | level [0x1B] | 20–21 | [0x25] |
+| 22 | behaviour: 2 player, 1 party [0x15] | 23 | [0x27] |
+| 27 | nutrition [0x28] | 28 | training points [0x21] |
+| 29 | [0x20] | 30 | behaviour 2 [0x16] |
+
+Bytes 24–26 and 31 are unknown. The hero is character 1 (`RestoreModel`
+sets the player to 1); names are `0201`, the hero's is the header's.
+
+**Props of a zone in memory** are 256 character slots (list indexes 0–255;
+F306 for the current zone) followed by the 81zz records (index 0x100 +
+record number), which is what container references use. The flags byte:
+
+| Flags | Meaning | Location field |
+|---|---|---|
+| 00 | on the map | x:12 y:12 |
+| 09 | inside a container | container's list index |
+| 10, 18 | carried, worn by a character | character (low 16 bits) |
+| 11 | held by a character, but stays in this zone (NPCs' gear) | character |
+| 1C | a skill: level = aspect & 0xF (bit 0x10 shown in italics) | character |
+| 42 | a character or monster "egg" to hatch; 04 once active | x:12 y:12 |
+| FF | free (a chain of free records at run time) | |
+
+Item counts (`GetItemCount`/`SetItemCount`) follow the Stacking field (0x28)
+of the prop's class, resource 1000+type: 0x01 count in d2, 0x02 count in
+d1:d2, 0x20 the aspect shows it (1, 2, 3, 4, <10, <20, <35, more). The
+oboloi (type 0x82) have 0x22. Skills are classes 1Axx (Attack = 1AC0), whose
+Look method returns their name.
+
+**Everything the characters hold lives in the current zone's list**, for
+all 256 characters. Changing zones (`TGameViewer::GoToLocation`) moves
+them: `ShuffleUpPartyInventory` copies each held prop (flags 10/18/1C) and,
+recursively, its contents (flags exactly 09) to the end of the list and frees
+the originals (`CopyProp`), `SaveLevelProps` stores the old zone (character
+slots write their position back to F009; trailing free records are dropped),
+`LoadLevelProps(zone, n, 1)` loads the new list (the save's 81zz, else the
+scenario's; props with flags 20/21 and some flag-00 props are refreshed from
+the scenario) and appends the n carried props, renumbering their container
+references. `MovePartyBetweenLevels` puts party members at the arrival
+point (slot flags 42), `CueCharacters` places the characters whose F009
+zone is the new one and frees the other slots, `RebuildParty` hatches the
+party. The active monsters of the old zone are dropped (`LeavingLevel`).
+
+**Story state.** The QF/QV bits and bytes of `Char` are the scripts' story
+flags. Syscall opcode 0xA4+*n* is entry *n* of the engine's callback table
+(`cbsetportrait` … `cbDebugStr`, 91 entries at data 0x10a000), so DC–DF are
+`cbGetQV`/`cbSetQV`/`cbGetQF`/`cbSetQF` (and delvmod's
+SetFlag/ClearFlag/TestFlag, C1/C2/C4, are Add/Remove/HasAbility). The scenario
+names none of them (0101 lists engine methods and resources only), but the
+scripts that test and set each one can be found (`delv_save.py flags
+--refs`): QF 0 is set by Alaric (1802) at the first audience; QV 1 is read by
+most townspeople (a plot stage). The to-do list, the journal, prop states
+(d1:d2, positions) and VM heap objects hold the rest of the story state.
 
 ## 4. Porting strategy
 
