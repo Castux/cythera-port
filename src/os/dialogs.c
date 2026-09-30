@@ -829,7 +829,7 @@ TRAP(StandardPutFile) {
     if (hit == 1) {
         u32 th = rd32(hderef(te) + 62);
         int n = rds16(hderef(te) + 60);
-        if (n > 63) n = 63;
+        if (n > 31) n = 31; /* HFS file names are at most 31 characters (Standard File enforces it) */
         gmemcpy_from(name, hderef(th), (u32)n);
         name[n] = 0;
         for (int i = 0; name[i]; i++) if (name[i] == ':') name[i] = '-';
