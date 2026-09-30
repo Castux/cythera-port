@@ -137,13 +137,18 @@ static u32 general_event(Player *p, u32 at) {
     return at + 4 * len;
 }
 
+/* kMarkerEventEnd (subtype 0) stops only with value 0; others are ignored.
+   Cythera's tunes put 0x60000001 between sections, and the game requeues
+   the tune from the top as soon as TuneGetStatus reports it finished. */
+static bool is_end_marker(u32 w) { return (w >> 29) == 3 && (w & 0x00FFFFFF) == 0; }
+
 static void parse_header(Player *p, u32 h) {
     for (int i = 0; i < MAX_PARTS; i++) { p->program[i] = -1; p->drum[i] = false; }
     u32 at = h;
     for (int guard = 0; guard < 4096; guard++) {
         u32 w = rd32(at);
         if ((w >> 28) == 0xF) at = general_event(p, at);
-        else if ((w >> 29) == 3 && ((w >> 16) & 0xFF) == 0) break; /* end marker */
+        else if (is_end_marker(w)) break;
         else if (w >> 31) at += 8;
         else at += 4;
     }
@@ -188,11 +193,11 @@ static void seq_events(Player *p) {
                 break;
             }
             case 3: /* marker */
-                if (((w >> 16) & 0xFF) == 0) {
+                if (is_end_marker(w)) {
                     /* end of sequence: next queued sequence or stop */
                     if (p->qn) { memmove(&p->q[0], &p->q[1], sizeof(Seq) * (size_t)(p->qn - 1)); p->qn--; }
                     seq_start(p);
-                    if (!p->playing) return;
+                    if (!p->playing) { release_all(p); return; } /* no more note-offs once stopped */
                 } else p->pos += 4;
                 break;
             }
