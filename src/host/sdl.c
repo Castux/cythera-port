@@ -463,6 +463,35 @@ void script_tick(void) {
             g_script_wait_until = now + 10;
             return;
         }
+        else if (!strcmp(s->cmd, "dclickfoe")) {
+            /* dclickfoe: double-click on the nearest active monster (to attack it):
+               a prop with flags 04 or 24 (a level monster) in the zone's prop list (pointer at 0x227d50,
+               count at 0x227d4e, 16-byte records: flags, x:12 y:12), other than a
+               party member (character table byte 8 bit 0x40), within 3 tiles of the
+               hero. Does nothing if there is none. */
+            extern u8 *g_mem;
+            const u8 *h = g_mem + 0x228558 + 32;
+            int hx = h[1] << 4 | h[2] >> 4, hy = (h[2] & 15) << 8 | h[3];
+            u32 props = rd32(0x227d50);
+            int cnt = (s16)rd16(0x227d4e), best = -1, bd = 99, bx = 0, by = 0;
+            for (int i = 0; props && i < cnt && i < 0x4000; i++) {
+                const u8 *p = g_mem + props + 16 * (u32)i;
+                if ((p[0] != 0x04 && p[0] != 0x24) || (i < 0x100 && (g_mem[0x228558 + 32 * i + 8] & 0x40))) continue;
+                int px = p[1] << 4 | p[2] >> 4, py = (p[2] & 15) << 8 | p[3];
+                int d = abs(px - hx) > abs(py - hy) ? abs(px - hx) : abs(py - hy);
+                if (d < bd && d <= 3) { bd = d; best = i; bx = px; by = py; }
+            }
+            if (best < 0) { LOG_I("script: dclickfoe: none near (%d,%d)", hx, hy); continue; }
+            x = 470 + (bx - hx) * 32; y = 165 + (by - hy) * 32;
+            LOG_I("script: foe prop %#x at (%d,%d) -> dclick %d %d", best, bx, by, x, y);
+            g_mx = x; g_my = y;
+            for (int k = 0; k < 2; k++) {
+                push_event((HostEvent){ .type = HEV_MOUSE_DOWN, .x = x, .y = y });
+                push_event((HostEvent){ .type = HEV_MOUSE_UP, .x = x, .y = y });
+            }
+            g_script_wait_until = now + 10;
+            return;
+        }
         else if (!strcmp(s->cmd, "keyuntil")) {
             /* keyuntil KEY TICKS MAX TEXT: press KEY every TICKS ticks until TEXT has
                been drawn (at most MAX presses): pages through a conversation

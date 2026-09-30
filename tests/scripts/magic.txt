@@ -1,0 +1,28 @@
+# Magic: from the stage save "magic" (trained by Lindus at the Magisterium, the spell Minor
+# Embrightenment learnt from a scroll), cast it in the dark farmhouse cellar: magic 22 -> 20,
+# the cellar lights up around the hero.
+# save: magic
+# save-edit: pos=FarmhouseCellar,4,5
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+expect Cellar
+shot work/shots/magic_1.png
+# character window, Abilities: select the spell, Perform
+mousedown 362 404
+wait 6
+mouseup 362 404
+wait 200
+click 198 320
+wait 100
+expect Magic: 22
+expect Minor Embrightenment
+click 110 148
+wait 60
+click 190 284
+wait 200
+expect Magic: 20
+shot work/shots/magic_2.png
+quit

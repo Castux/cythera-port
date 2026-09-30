@@ -41,6 +41,13 @@ check tests/fixture.txt $? work/shots/fixture.log || exit 1
 for s in ${@:-tests/scripts/*.txt}; do
   log="work/shots/$(basename "$s" .txt).log"
   rm -rf "$tmp/run" && cp -R "$tmp/fixture" "$tmp/run"
+  # "# save: NAME" starts from the stage save tests/saves/NAME instead of the fixture's
+  stage=$(sed -n 's/^# save: //p' "$s")
+  if [ -n "$stage" ]; then
+    [ -f "tests/saves/$stage" ] || { echo "FAIL $s (no tests/saves/$stage)"; status=1; continue; }
+    cp "tests/saves/$stage" "$tmp/run/Saved Games/Hero"
+    cp "tests/saves/$stage.rsrc" "$tmp/run/Saved Games/Hero.rsrc"
+  fi
   # "# save-edit: KEY=VALUE..." edits the fixture's saved game first (tools/delv_save.py set)
   edit=$(sed -n 's/^# save-edit: //p' "$s")
   if [ -n "$edit" ] && ! $PY tools/delv_save.py set "$tmp/run/Saved Games/Hero" $edit > "$log" 2>&1; then

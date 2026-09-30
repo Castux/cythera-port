@@ -69,12 +69,16 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 ## M5 — Gameplay
 - [~] Main map view, roster, text log, character/inventory windows work
 - [x] Keyboard/mouse movement, take/use/talk, conversations, journal, to-do (movement, contextual menu, conversations verified)
-- [x] Travel between maps, combat and death, sleeping, shops (buying, haggling), potions (verified by scripts)
-- [ ] Magic spells: need training at the Magisterium in Pnyx (not reached by a script yet)
+- [x] Travel between maps, combat and death, sleeping, shops (buying, haggling, selling), potions
+  (verified by scripts; selling: `sell.txt`, flax to Hebe in Odemia)
+- [x] Magic spells: training at the Magisterium in Pnyx, a spell learnt from a scroll with the
+  grimoire, cast (`magic.txt`, from the stage save "magic")
 - [x] Save / load games (verified); [x] preferences dialog
 - [x] Timing correctness (ticks, animation, heartbeat)
-- **Exit:** play through the opening of the game (Odemia) with save/load. (Odemia's gate is
-  reached; the town stays closed until Ariadne is rescued from the bandits at the Abandoned Farmhouse.)
+- **Exit:** play through the opening of the game (Odemia) with save/load. Done: the stage save
+  "odemia" plays the opening and Ariadne's rescue (Eudoxus killed, Ariadne freed and brought home,
+  the gate opens); `odemia.txt` walks through the open gate, saves, reopens and the guard greets
+  the hero as her saviour.
 
 ## M6 — Audio
 - [x] Sound Manager (snd resources, SndDoCommand/Immediate, SndPlay, double buffer, callbacks)
@@ -103,14 +107,30 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
   within and across zones, stats, HP/MP, skills, gold and items, clock), each loaded in the
   game (`tests/scripts/saveedit*.txt`); story flags listed read-only
 - [ ] Phase 2: story flag edits (what each QF/QV means; quest to-dos, journal)
-- [ ] Phase 3: stage saves (after the test, Ariadne rescued, Magisterium...) for the scripts
-- **Exit:** a gameplay script can start from a saved stage instead of replaying the opening.
+- [x] Phase 3: stage saves `tests/saves/` ("odemia": Ariadne rescued, the town open;
+  "magic": trained at the Magisterium, a spell known), rebuilt by `tools/make_stages.py`
+  (edits for travel and a stronger hero, real play for the fights, conversations and training);
+  scripts start from them with `# save: NAME` (`odemia.txt`, `sell.txt`, `magic.txt`)
+- **Exit:** a gameplay script can start from a saved stage instead of replaying the opening. (Done.)
 
 ## Working notes
 - Commit and push after each significant chunk.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-09-30 (stage saves): `tests/saves/odemia` and `magic`, made by `tools/make_stages.py`
+  the hybrid way: the travel test's opening played for real to Odemia's gate, then edits for
+  what is bookkeeping (a stronger hero, travel, the clock) and real play for what the story
+  scripts decide: the fight with Eudoxus and his ruffians (new script command `dclickfoe`; he
+  is attacked from the context menu, as he isn't hostile until then), Ariadne's rescue, the
+  guard, Philinus, Lindus's training, learning a spell with the grimoire. Reading the scripts
+  (delvmod's ddasm, offline) and the schedules (F00B, format in ANALYSIS §3.1) gave the recipe:
+  story value 1 is the opening's plot stage, Ariadne's schedule puts her in the farmhouse
+  cellar only once it is 1 or 2, and schedules run on hour and zone changes, not on loading.
+  New tests from the stage saves: `odemia.txt` (M5's exit: through the open gate, save,
+  reopen, the guard's greeting), `sell.txt` (flax to Hebe, gold 100 -> 120), `magic.txt`
+  (Minor Embrightenment in the dark cellar: magic 22 -> 20 and light). `run.sh` takes
+  `# save: NAME`.
 - 2026-09-30 (save editor): saved games decoded ([ANALYSIS.md §3.1](ANALYSIS.md#31-saved-games)):
   the 0400 stream (`Char`: karma, difficulty, the 32 story values QV and 256 story flags QF, clock
   and day, play time; active monsters, spell effects, windows), the character table F009 (every

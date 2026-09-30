@@ -352,7 +352,7 @@ record number), which is what container references use. The flags byte:
 | 09 | inside a container | container's list index |
 | 10, 18 | carried, worn by a character | character (low 16 bits) |
 | 11 | held by a character, but stays in this zone (NPCs' gear) | character |
-| 1C | a skill: level = aspect & 0xF (bit 0x10 shown in italics) | character |
+| 1C | a skill or spell: level = aspect & 0xF (bit 0x10: not trained yet, below) | character |
 | 42 | a character or monster "egg" to hatch; 04 once active | x:12 y:12 |
 | FF | free (a chain of free records at run time) | |
 
@@ -383,9 +383,29 @@ flags. Syscall opcode 0xA4+*n* is entry *n* of the engine's callback table
 SetFlag/ClearFlag/TestFlag, C1/C2/C4, are Add/Remove/HasAbility). The scenario
 names none of them (0101 lists engine methods and resources only), but the
 scripts that test and set each one can be found (`delv_save.py flags
---refs`): QF 0 is set by Alaric (1802) at the first audience; QV 1 is read by
-most townspeople (a plot stage). The to-do list, the journal, prop states
-(d1:d2, positions) and VM heap objects hold the rest of the story state.
+--refs`): QF 0 is set by Alaric (1802) at the first audience; QF 1 by Lindus
+(1850) once he has trained the hero in magic. QV 1 is the opening's plot
+stage, read by most townspeople: 0 at start; 1 when Odemia's gate guard (1864)
+turns the hero away; 2 when Eudoxus (185C) dies while it is 1; 3 when Ariadne
+(1835) joins the party; 4 when the guard sees her back (the gate opens,
+signal 1) or Philinus (1832) does; 5–7 later (Antiphus 185E, zone scripts
+1401/1402). The to-do list, the journal, prop states (d1:d2, positions) and VM
+heap objects hold the rest of the story state.
+
+**Schedules** (F00B) move the characters: 256 × u16 entry counts, then per
+character 8-byte entries: u8 hour, u8 behaviour, u8 condition, u8 argument,
+u32 zone<<24 | x:12 y:12 (zone 255: nowhere). `ScheduleOne` takes the first
+entry whose condition holds (`EvalCondition`): 00 always, 01 never, 02/03
+story flag *arg* set/clear, 20–38 random, 40–7F a character bit, 80+*n*
+QV *n* == arg, A0+*n* ≥, C0+*n* ≠, E0+*n* < (e.g. Ariadne: nowhere while
+QV 1 = 0, the farmhouse cellar while QV 1 < 3, then her day in Odemia).
+They run when the hour changes and on zone changes (`ScheduleTime`), not when
+a game is loaded.
+
+**Skills** have a bit 0x10 in the aspect that the Abilities list shows in
+italics: a class skill not trained yet. It counts as no skill at all where
+scripts check (0EAC returns 0), e.g. the grimoire needs Casting without it;
+trainers (0EB1) clear it.
 
 ## 4. Porting strategy
 

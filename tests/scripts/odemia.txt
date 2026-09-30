@@ -1,0 +1,43 @@
+# Odemia open (PLAN M5's exit): from the stage save "odemia" (Ariadne rescued and brought
+# home), walk out through the open gate and back in, save and reopen the game, then the
+# gate guard greets the hero as Ariadne's saviour: the story state survived save/load.
+# save: odemia
+# save-edit: pos=12,32
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+expect Odemia
+# out through the gate (the portcullis at (10,32) is open), and one step back
+key left
+wait 40
+key left
+wait 40
+key left
+wait 40
+key left
+wait 40
+peek 228578 4
+shot work/shots/odemia_1.png
+key right
+wait 40
+# save and reopen
+key o cmd
+wait 200
+expect Save Game before Closing
+key return
+wait 1500
+key return
+wait 1500
+expect Game Opened
+expect Odemia
+shot work/shots/odemia_2.png
+# the gate guard (character 100), in the guardroom
+dclickchar 100
+wait 120
+expect savior of our fair lady Ariadne
+key return
+wait 120
+shot work/shots/odemia_3.png
+quit

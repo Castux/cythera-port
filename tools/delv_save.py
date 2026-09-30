@@ -16,7 +16,9 @@ hero).  Keys:
   hp mp maxhp maxmp body reflex mind level exp training nutrition=N
   skill:NAME=N             skill level 0-15 (adds the skill if missing)
   gold=N                   the character's oboloi (first stack, or a new one)
-  give=ITEM[:N]            add an item (name as in `show`, or a prop type)
+  give=ITEM[:N][@D1]       add an item (name as in `show`, or a prop type;
+                           D1: its d1 byte, e.g. a scroll's spell 0-48)
+  wear=ITEM                add an item already worn (weapon, armour)
   time=HH:MM  day=N  karma=N
 SAVE is a saved game's data fork (e.g. "Saved Games/Hero").  Game data
 comes from gamedata/ (tools/delv_archive.py).  Standard library only.
@@ -490,11 +492,11 @@ class Save:
             if self.scen.skill_name(p.type).lower() == name.lower():
                 p.set_aspect(p.aspect & 0x30 | n)
                 return
-        known = {self.scen.skill_name(t).lower(): t for t in range(0xC0, 0x100)
+        known = {self.scen.skill_name(t).lower(): t for t in range(0x100)
                  if 0x1A00 | t in self.scen.arc.entries}
         if name.lower() not in known:
             sys.exit(f'unknown skill {name!r} (skills: {", ".join(sorted(known))})')
-        self.add_prop(c, 0x1C, known[name.lower()], 0x10 | n)
+        self.add_prop(c, 0x1C, known[name.lower()], n)       # added trained
 
     def set_gold(self, c, n):
         lv = self.level(self.zone)
@@ -510,14 +512,18 @@ class Save:
         else:
             p.flags = FLAGS_DELETED
 
-    def give(self, c, item, n):
-        """n of an item: one stack if it stacks, else n props."""
+    def give(self, c, item, n, d1=0):
+        """n of an item: one stack if it stacks, else n props.  d1: the
+        prop's d1 byte (e.g. a scroll's spell, a key's lock)."""
         t = prop_type(self.scen, item)
         if not self.scen.stacking(t) & 0x03:
             for _ in range(n):
-                self.add_prop(c, 0x10, t)
+                self.add_prop(c, 0x10, t).r[6] = d1
             return
-        self.scen.set_count(self.add_prop(c, 0x10, t), n)
+        p = self.add_prop(c, 0x10, t)
+        self.scen.set_count(p, n)
+        if d1:
+            p.r[6] = d1
 
 
 def prop_type(scen, item):
@@ -580,6 +586,7 @@ def show(sv, args):
               f'nutrition {f["nutrition"]}  gold {sv.gold(c)}')
         lv = sv.level(sv.zone)
         sk = [f'{sc.skill_name(lv.props[i].type)} {lv.props[i].aspect & 0xF}'
+              f'{"*" if lv.props[i].aspect & 0x10 else ""}'
               for i in sv.skills(c)]
         print('  skills: ' + (', '.join(sk) or '-'))
         def item(i, depth):
@@ -739,9 +746,12 @@ def set_(sv, args):
             sv.set_skill(c, k[6:], int(v, 0))
         elif k == 'gold':
             sv.set_gold(c, int(v, 0))
+        elif k == 'wear':
+            sv.add_prop(c, 0x18, prop_type(sv.scen, v))
         elif k == 'give':
+            v, _, d1 = v.partition('@')
             item, _, n = v.partition(':')
-            sv.give(c, item, int(n or '1', 0))
+            sv.give(c, item, int(n or '1', 0), int(d1 or '0', 0))
         elif k == 'time':
             hh, mm = (int(x) for x in v.split(':'))
             if not (0 <= hh < 24 and 0 <= mm < 60):

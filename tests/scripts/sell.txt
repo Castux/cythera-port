@@ -1,0 +1,50 @@
+# Selling: from the stage save "odemia", with three bales of flax (edited in; the farmhouse
+# has some), sell two to Hebe, who buys flax in her house in Odemia (43,27 by day) at 10
+# oboloi a bale: 100 oboloi become 120, one bale is left.
+# save: odemia
+# save-edit: pos=42,27 give=162:3
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+dclickchar 35
+wait 150
+keyuntil return 120 5 help you
+type sell
+key return
+wait 150
+expect pay you 10 oboloi a bale
+type y
+key return
+wait 150
+# her list of what she buys: the 3 bales, 30 oboloi
+expect Flax (3)
+expect 30 ob
+click 210 38
+wait 150
+# quantity 2 (down arrow), accept
+expect Item For Sale
+click 437 122
+wait 60
+click 397 302
+wait 150
+expect Flax (1)
+shot work/shots/sell_1.png
+click 525 265
+wait 150
+type bye
+key return
+wait 150
+key return
+wait 150
+# the character window: 120 oboloi and one bale
+mousedown 362 404
+wait 6
+mouseup 362 404
+wait 200
+click 60 320
+wait 100
+expect 120
+shot work/shots/sell_2.png
+quit

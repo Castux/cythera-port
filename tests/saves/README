@@ -1,0 +1,27 @@
+Stage saves: saved games at points of the story, for the scripted tests (a first line
+"# save: NAME" in a script makes tests/run.sh start from tests/saves/NAME) and for human
+testers (copy NAME and NAME.rsrc into the port's Saved Games folder, e.g. as "Hero" and
+"Hero.rsrc", and give the copy the Finder type the Open dialog lists: delv_save.py set
+NAME -o "Saved Games/Hero" does both).
+
+They are made by tools/make_stages.py, the recipe for each: tools/delv_save.py edits do the
+bookkeeping (a stronger hero, travel, the clock) and the game plays the rest for real
+(fights, conversations, training), so the story state is the scenario scripts' own.
+Rebuild them after engine or script changes with `tools/make_stages.py` ($CYTHERA = the
+program); check them with `tools/delv_save.py check NAME` and `show NAME`.
+
+odemia   Day 1, 10:06, in Odemia at Philinus's house (27,26).  The opening played through
+         (Omen's Test, LandKing Hall, the World, the guard at the gate), then Eudoxus and
+         his ruffians killed at the Abandoned Farmhouse, Ariadne freed from the cellar,
+         brought to the gate (which opens) and to Philinus: quest "Rescue kidnapped
+         Ariadne" done, story value 1 = 4 (the town open).  Edited: a strong hero (body 30,
+         reflex 30, level 8, 250 health, Attack/Defense/Sword/Shield 10-12, sword,
+         cuirass, helmet, light shield, boots, 100 oboloi).
+         Good for: anything in Odemia (shops, townspeople, the next quests), save/load
+         (tests/scripts/odemia.txt), selling (tests/scripts/sell.txt).
+
+magic    From "odemia": in Pnyx at the Magisterium (10,45), trained in Mana and Casting by
+         Lindus (quest "Learn Magic at Magisterium" done, story flag 1), who gave the
+         grimoire; the spell Minor Embrightenment learnt with it from a scroll (the scroll
+         edited in).  Magic 22/22; health 53 (training recomputes it).
+         Good for: spells, magic training, Pnyx (tests/scripts/magic.txt).
