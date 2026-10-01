@@ -47,13 +47,14 @@ golden() { # golden NAME LOG: compare with (or record) tests/golden/NAME.txt
   update) mkdir -p tests/golden; cp "$got" "$want"; return 0 ;;
   esac
   [ -f "$want" ] || { echo "FAIL $1 (no $want: GOLDEN=update records it)"; return 1; }
-  cmp -s "$want" "$got" && return 0
-  echo "FAIL $1 (golden trace differs; first difference:)"
-  cp "$want" "${2%.log}.want" # next to the run's .golden, for the CI artifacts
+  # awk, not cmp or diff: the Windows runner's MSYS2 has neither
   awk 'NR == FNR { w[FNR] = $0; n = FNR; next }
-       w[FNR] != $0 { print "  want: " w[FNR]; print "  got:  " $0; d = 1; exit }
-       END { if (!d && n != FNR) print "  (one trace is a prefix of the other: " n " vs " FNR " lines)"
-             else if (!d) print "  (the same lines: line ends or trailing bytes differ)" }' "$want" "$got"
+       w[FNR] != $0 { print "  want: " w[FNR]; print "  got:  " $0; d = 1; exit 1 }
+       END { if (!d && n != FNR) { print "  (one trace is a prefix of the other: " n " vs " FNR " lines)"; exit 1 } }' \
+    "$want" "$got" > "${2%.log}.gdiff" && return 0
+  echo "FAIL $1 (golden trace differs; first difference:)"
+  cat "${2%.log}.gdiff"
+  cp "$want" "${2%.log}.want" # next to the run's .golden, for the CI artifacts
   return 1
 }
 check() { # check NAME RC LOG
