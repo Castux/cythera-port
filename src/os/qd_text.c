@@ -4,9 +4,9 @@
  * resource chain -> font association table -> NFNT/FONT bitmap strike or
  * 'sfnt' TrueType outlines, rasterised hinted and monochrome with FreeType
  * (third_party/freetype) like the Mac's scaler. Missing system fonts are
- * substituted by host TrueType fonts, or else a built-in proportional bitmap
- * font. QuickDraw style variations (bold, italic, underline, outline, shadow,
- * condense, extend) are synthesised.
+ * substituted by built-in TrueType fonts (third_party/fonts), or else a
+ * built-in proportional bitmap font. QuickDraw style variations (bold,
+ * italic, underline, outline, shadow, condense, extend) are synthesised.
  */
 #include "qd.h"
 #include "resources.h"
@@ -201,60 +201,12 @@ static bool load_sfnt(Font *f, const u8 *d, u32 len, int size) {
     return true;
 }
 
-/* ---- host font substitution for classic system families ---- */
-static const char *const *host_font_candidates(int family) {
-    static const char *const chicago[] = { "Charcoal.ttf", "ChicagoFLF.ttf", "Chicago.ttf", "/System/Library/Fonts/Geneva.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "C:/Windows/Fonts/tahomabd.ttf", NULL };
-    static const char *const geneva[] = { "Geneva.ttf", "/System/Library/Fonts/Geneva.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/verdana.ttf", NULL };
-    static const char *const monaco[] = { "Monaco.ttf", "/System/Library/Fonts/Monaco.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "C:/Windows/Fonts/consola.ttf", NULL };
-    static const char *const times[] = { "Times.ttf", "/System/Library/Fonts/Times.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", "C:/Windows/Fonts/times.ttf", NULL };
-    static const char *const helv[] = { "Helvetica.ttf", "/System/Library/Fonts/Helvetica.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/arial.ttf", NULL };
-    static const char *const courier[] = { "Courier.ttf", "/System/Library/Fonts/Courier.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", "C:/Windows/Fonts/cour.ttf", NULL };
-    switch (family) {
-    case 0: return chicago;
-    case 4: return monaco;
-    case 2: case 20: return times;
-    case 21: return helv;
-    case 22: return courier;
-    default: return geneva;
-    }
-}
-
-static u8 *load_host_font(int family, u32 *len) {
-    static struct { int family; u8 *data; u32 len; bool tried; } cache[8];
-    int slot = family == 0 ? 0 : family == 4 ? 1 : (family == 2 || family == 20) ? 2 : family == 21 ? 3 : family == 22 ? 4 : 5;
-    if (cache[slot].tried) { *len = cache[slot].len; return cache[slot].data; }
-    cache[slot].tried = true;
-    const char *dir = getenv("CYTHERA_FONT_DIR");
-    for (const char *const *c = host_font_candidates(family); *c; c++) {
-        char path[1024];
-        if ((*c)[0] == '/' || (*c)[1] == ':') snprintf(path, sizeof path, "%s", *c);
-        else if (dir) snprintf(path, sizeof path, "%s/%s", dir, *c);
-        else continue;
-        FILE *f = fopen(path, "rb");
-        if (!f) continue;
-        fseek(f, 0, SEEK_END);
-        long n = ftell(f);
-        fseek(f, 0, SEEK_SET);
-        u8 *d = malloc((size_t)n);
-        if (fread(d, 1, (size_t)n, f) == (size_t)n) {
-            fclose(f);
-            cache[slot].data = d; cache[slot].len = (u32)n;
-            LOG_I("font family %d substituted by %s", family, path);
-            *len = (u32)n;
-            return d;
-        }
-        fclose(f);
-        free(d);
-    }
-    *len = 0;
-    return NULL;
-}
+/* ---- built-in stand-ins for the system families (third_party/fonts) ---- */
+/* The game asks for Chicago and Geneva, which it doesn't ship: the same
+ * built-in fonts stand in everywhere, so text lays out identically on every
+ * host. Chicago is ChicagoFLF; Geneva, and any other family, DejaVu Sans. */
+extern const unsigned char font_chicago[], font_geneva[];
+extern const unsigned int font_chicago_len, font_geneva_len;
 
 /* Resolve family/size into a Font (without synthesised styles). */
 static Font *get_font(int family, int size) {
@@ -298,11 +250,9 @@ static Font *get_font(int family, int size) {
             if (nf) { ok = load_nfnt(f, nf, len, size, bestsize); free(nf); }
         }
     }
-    if (!ok && !fond) {
-        u32 hl;
-        u8 *hd = load_host_font(family, &hl);
-        if (hd) ok = load_sfnt(f, hd, hl, size);
-    }
+    if (!ok && !fond)
+        ok = family == 0 ? load_sfnt(f, font_chicago, font_chicago_len, size)
+                         : load_sfnt(f, font_geneva, font_geneva_len, size);
     LOG_D("get_font(%d, %d): FOND %s, %s", family, size, fond ? "found" : "missing", ok ? "loaded" : "builtin fallback");
     free(fond);
     if (!ok) builtin_font(f, size);

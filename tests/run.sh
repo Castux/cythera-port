@@ -8,9 +8,6 @@
 # (a new game saved after the first conversation with the king).
 # Extra emulator options can be passed in $CYTHERA_ARGS (e.g. "--trap-stats FILE").
 cd "$(dirname "$0")/.."
-# The same fonts on every platform (DejaVu stands in for Geneva and Chicago):
-# text layout decides line breaks and conversation pages the scripts rely on.
-export CYTHERA_FONT_DIR="${CYTHERA_FONT_DIR:-tests/fonts}"
 # a Python 3 that runs (on Windows, python3 may be the Microsoft Store stub)
 PY="${PYTHON:-}"
 [ -n "$PY" ] || { python3 -c '' 2>/dev/null && PY=python3 || PY=python; }

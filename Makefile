@@ -30,7 +30,10 @@ BUILD   := build
 SRCS    := $(wildcard src/*.c src/cpu/*.c src/loader/*.c src/os/*.c src/host/*.c)
 OS_SRCS := $(wildcard src/os/*.c)
 GEN     := $(BUILD)/gen/trap_table.c
-OBJS    := $(SRCS:%.c=$(BUILD)/%.o) $(BUILD)/gen/trap_table.o $(FT_SRCS:%.c=$(BUILD)/%.o)
+# the stand-ins for the system fonts, built in (see third_party/fonts/README)
+FONTS   := third_party/fonts/ChicagoFLF.ttf third_party/fonts/DejaVuSans.ttf
+FONTS_C := $(BUILD)/gen/fonts.c
+OBJS    := $(SRCS:%.c=$(BUILD)/%.o) $(BUILD)/gen/trap_table.o $(BUILD)/gen/fonts.o $(FT_SRCS:%.c=$(BUILD)/%.o)
 DEPS    := $(OBJS:.o=.d)
 
 all: $(BUILD)/cythera$(EXE)
@@ -40,6 +43,9 @@ $(BUILD)/cythera$(EXE): $(OBJS)
 
 $(GEN): $(OS_SRCS) tools/gen_traps.py
 	$(PYTHON) tools/gen_traps.py $@ $(OS_SRCS)
+
+$(FONTS_C): $(FONTS) tools/gen_fonts.py
+	$(PYTHON) tools/gen_fonts.py $@ font_chicago=third_party/fonts/ChicagoFLF.ttf font_geneva=third_party/fonts/DejaVuSans.ttf
 
 # FreeType's own sources: its build flags, without our warnings. (Before the
 # generic rule: GNU make 3.81, macOS's, takes the first matching pattern.)
@@ -53,6 +59,9 @@ $(BUILD)/%.o: %.c
 
 $(BUILD)/gen/trap_table.o: $(GEN)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BUILD)/gen/fonts.o: $(FONTS_C)
+	$(CC) -c -o $@ $<
 
 # CPU unit tests
 $(BUILD)/test_ppc: tests/test_ppc.c src/cpu/ppc.c src/util.c

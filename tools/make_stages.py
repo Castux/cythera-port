@@ -167,12 +167,11 @@ def run_game(home, lines, log):
     script = os.path.join(home, 'script.txt')
     with open(script, 'w') as f:
         f.write('\n'.join(lines) + '\n')
-    env = dict(os.environ, CYTHERA_FONT_DIR=os.environ.get('CYTHERA_FONT_DIR', 'tests/fonts'))
     exe = os.environ.get('CYTHERA', os.path.join(ROOT, 'build', 'cythera'))
     with open(log, 'w') as f:
         rc = subprocess.call([exe, '--deterministic', '--timeout', '1800', '--sysdir',
                               os.path.join(home, 'System Folder'), '--script', script],
-                             cwd=ROOT, env=env, stdout=f, stderr=subprocess.STDOUT)
+                             cwd=ROOT, stdout=f, stderr=subprocess.STDOUT)
     bad = [l.rstrip() for l in open(log, encoding='utf-8', errors='replace')
            if any(k in l for k in ('FATAL', 'unimplemented trap', 'stall:', 'EXPECT FAILED'))]
     if rc or bad:

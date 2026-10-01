@@ -1,0 +1,11 @@
+The stand-ins for the classic Mac system fonts the game asks for but doesn't
+ship. They are built into the program (tools/gen_fonts.py), so the text looks
+and lays out the same on every platform, whatever fonts the host has.
+
+ChicagoFLF.ttf (Chicago): ChicagoFLF 2.0 by Robin Casady, a scalable remake of
+  Susan Kare's Chicago, from https://fontlibrary.org/en/font/chicagoflf
+  License: public domain (README.ChicagoFLF).
+DejaVuSans.ttf (Geneva and every other system family): DejaVu Sans 2.37,
+  https://dejavu-fonts.github.io/. No permissively licensed remake of Geneva
+  covers the sizes (9, 10, 12) and characters the game uses.
+  License: Bitstream Vera / Arev (LICENSE.DejaVu), shipped with the packages.

@@ -1,4 +1,0 @@
-DejaVu Sans 2.37 (https://dejavu-fonts.github.io/), renamed so the runtime
-uses it for Geneva (DejaVuSans.ttf) and Chicago (DejaVuSans-Bold.ttf) in the
-scripted tests, which then lay out text identically on every platform.
-License: LICENSE (Bitstream Vera / Arev: free to use and redistribute).

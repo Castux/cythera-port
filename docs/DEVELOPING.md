@@ -8,7 +8,7 @@ look like is in [ANALYSIS.md](ANALYSIS.md); the milestones and history are in
 
 Requirements: a C11 compiler, `make`, SDL2 development files and Python 3. The
 other libraries are vendored in `third_party/` (FreeType, TinySoundFont,
-minicoro, stb_image_write, font8x8).
+minicoro, stb_image_write, font8x8, and the fonts in `third_party/fonts/`).
 
 ```sh
 # macOS
@@ -96,9 +96,9 @@ it is.
   Folder, copied from a fixture that `tests/fixture.txt` makes (a new game
   saved as "Hero"), never `~/.cythera-port`. `CYTHERA=path/to/binary` picks
   the program, `CYTHERA_ARGS` adds options. Screenshots and logs go to
-  `work/shots/`. The runs use the fonts in `tests/fonts/` (DejaVu Sans for
-  Geneva and Chicago) on every platform, so text lays out identically
-  everywhere: scripts depend on line breaks and conversation pages.
+  `work/shots/`. Text lays out identically on every platform (the system
+  fonts are built in, see `third_party/fonts/`): scripts depend on line
+  breaks and conversation pages.
 - CI runs both on every push (Linux), see [Releases](#ci-and-releases).
 
 Scripts (`--script FILE`) are one command per line: `wait N` (frames),
@@ -151,8 +151,7 @@ conversation pages.
 
 `CYTHERA_WATCH=off,...` logs the registers whenever execution reaches the given
 code offsets (hex, as `tools/ppcdis.py` prints them): a cheap breakpoint.
-`CYTHERA_FONT_DIR` is searched first for substitute system fonts (`Geneva.ttf`,
-`Chicago.ttf`, ...). `SDL_RENDER_VSYNC=1` turns vsync back on.
+`SDL_RENDER_VSYNC=1` turns vsync back on.
 
 ## Analysis tools
 

@@ -467,8 +467,9 @@ C11 and SDL2; the source layout is in [DEVELOPING.md](DEVELOPING.md#source-layou
 - **Text:** the game's own fonts (NFNT bitmaps, and the ArgosANouveau
   TrueType font) are used as they are; TrueType is rasterised hinted and
   monochrome with FreeType, like the Mac's scaler. The system fonts it asks
-  for (Chicago, Geneva) aren't shipped, so host TrueType fonts stand in
-  (Verdana/Tahoma on Windows, DejaVu on Linux, Geneva on macOS).
+  for (Chicago, Geneva) aren't shipped, so fonts built into the program
+  stand in on every platform (ChicagoFLF for Chicago, DejaVu Sans for
+  Geneva): the host's fonts are never used.
 - **Files:** a host directory is the Mac volume. Resource forks are
   `<name>.rsrc` sidecars, Finder info goes in `.finderinfo` files, and
   `FindFolder` maps the System Folder, Preferences and Saved Games to a

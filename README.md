@@ -114,7 +114,9 @@ released as shareware with a 30 days trial period.
 
 Third-party code in `third_party/`: FreeType (a subset, FreeType License),
 TinySoundFont (MIT), minicoro (MIT/Unlicense), stb_image_write and font8x8
-(public domain). The Delver file-format knowledge comes from delvmod
+(public domain). Built-in fonts: ChicagoFLF (Robin Casady, public domain) and
+DejaVu Sans (Bitstream Vera license: `third_party/fonts/LICENSE.DejaVu`,
+`Font license.txt` in the packages). The Delver file-format knowledge comes from delvmod
 (Bryce Schroeder) and the DelvTechWiki.
 
 ## Cythera Credits

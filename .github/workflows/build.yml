@@ -89,6 +89,7 @@ jobs:
           mkdir -p "pkg/$D"
           cp build/cythera "pkg/$D/" && strip "pkg/$D/cythera"
           cp -R gamedata README.md "pkg/$D/"
+          cp third_party/fonts/LICENSE.DejaVu "pkg/$D/Font license.txt"
           tar -czf "$D.tar.gz" -C pkg "$D"
           echo "PKG=$D.tar.gz" >> "$GITHUB_ENV"
       - if: ${{ !github.event.repository.private }}
@@ -153,6 +154,7 @@ jobs:
           mkdir -p "pkg/$D"
           cp build/cythera.exe "pkg/$D/Cythera.exe" && strip "pkg/$D/Cythera.exe"
           cp -R gamedata README.md "pkg/$D/"
+          cp third_party/fonts/LICENSE.DejaVu "pkg/$D/Font license.txt"
           echo "PKGDIR=$D" >> "$GITHUB_ENV"
       - name: Zip
         shell: pwsh
@@ -223,6 +225,7 @@ jobs:
           sed -e "s/@VERSION@/${SV:-0.0.0}/g" -e "s/@MIN_MACOS@/$MACOSX_DEPLOYMENT_TARGET/g" \
             packaging/macos/Info.plist > "$APP/Contents/Info.plist"
           cp README.md dist/
+          cp third_party/fonts/LICENSE.DejaVu "dist/Font license.txt"
           echo "PKG=cythera-$V-macos.dmg" >> "$GITHUB_ENV"
       - name: Sign
         env:
