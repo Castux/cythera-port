@@ -1,0 +1,16 @@
+2 wait 200 | traps 7 calls 84b95c35c2204c78 vals 63e90dd9605873e5 fb 4bd87a07a4536325
+3 click 540 430 | traps 315 calls 666376ae6c99783d vals c990a74291927d8c fb a2b84d070bf9bf49
+4 wait 100 | traps 1021447 calls 17ded2d089ca7cd8 vals 931be0ed8afe6ee0 fb c2a00cb1a47e5fa3
+5 click 242 203 | traps 1021457 calls 01c3dba5db4e249a vals 0376346baef68318 fb c2a00cb1a47e5fa3
+6 wait 100 | traps 2043020 calls 00145af3241731f3 vals 5b672f6f45eb75a9 fb 998a91867a0846d7
+7 type Test User | traps 2043049 calls 4651854fd26d65ce vals 09c81884183db813 fb 0a86617b2186509f
+8 key tab | traps 2043053 calls 684733f59ab6796e vals 9097e2a930be1543 fb c7a6fc077690cca4
+9 type 1 | traps 2043057 calls bf5ce6585aab948e vals 47062fec2e0e3543 fb 89cfa010caab59d9
+10 key tab | traps 2043061 calls 9c8d3fa3ad8ec72e vals 6ef12ee141ac4d83 fb 675dd08bd325ae86
+11 type ABCD-EFGH | traps 2043065 calls f558d1fe9c8dc14e vals f6f548f2ec472253 fb 13efcff7c53143fc
+12 wait 20 | traps 2043071 calls d65b50a8a0fc4daf vals 2e24f5a3a3ec8932 fb 124e0f78ab15db85
+13 click 540 430 | traps 2043094 calls 0736f03d4b3961f3 vals 87ad067b348ce629 fb bfef1b8d42b36512
+14 wait 100 | traps 3064381 calls 9b32d2f49f51bfc2 vals f77d154913ab4367 fb 3f6d25499d2e6127
+15 shot work/shots/register_5.png | traps 3064410 calls d28b14505f5feb5d vals 8dda15a42703af11 fb 3f6d25499d2e6127
+16 quit | traps 3064410 calls d28b14505f5feb5d vals 8dda15a42703af11 fb 3f6d25499d2e6127
+0 exit | traps 3064410 calls d28b14505f5feb5d vals 8dda15a42703af11 fb 3f6d25499d2e6127

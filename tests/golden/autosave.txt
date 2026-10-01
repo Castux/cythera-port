@@ -1,0 +1,34 @@
+3 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+4 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
+5 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+6 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+7 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
+8 key down | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
+9 wait 2000 | traps 828596 calls c5daad34bf00510d vals bce9751650e279fb fb 3aa513450c4b3b51
+10 expect [Game Backed Up] | traps 893395 calls f92c5881bd0e1f3f vals b08b58a925326e91 fb c3b2687b4c222751
+11 key down | traps 893395 calls f92c5881bd0e1f3f vals b08b58a925326e91 fb c3b2687b4c222751
+12 wait 2000 | traps 893544 calls 6cc9de5609afbd12 vals 3dd325c154cb6f71 fb c3b2687b4c222751
+13 key down | traps 958240 calls b4e131d9f3000f92 vals 1ac2ee447d9a7697 fb c9ccd4c511382446
+14 wait 2000 | traps 958463 calls 8105bf8f08c7249c vals 51e681e350ca53d4 fb c9ccd4c511382446
+15 key down | traps 1023146 calls a8856e9fe0793270 vals a5dfe44310caefed fb a26c7d34c1ceb874
+16 wait 2000 | traps 1023217 calls d0e12a584c6e3fea vals a6defc7528e75be2 fb a26c7d34c1ceb874
+18 wait 4000 | traps 1088012 calls 53ce15a2a1f0c33f vals 4761d83257babcac fb 20229aacaefefc9c
+19 key o cmd | traps 1213326 calls 924898d702b1ceb5 vals de234ef1710fa9ac fb 5e97ce13e671fb2f
+20 wait 200 | traps 1213807 calls 4f0388f5405ddf63 vals 80d0e47832547247 fb 13dde00a93004827
+21 expect Save Game before Closing | traps 1214497 calls eca436c71a8a0235 vals 67a2e978647bd0f1 fb c6d69a3bfa795b32
+22 key return | traps 1214497 calls eca436c71a8a0235 vals 67a2e978647bd0f1 fb c6d69a3bfa795b32
+23 wait 1500 | traps 1214573 calls 91eccb433b0d05cf vals 8a1d46dc4a5ba093 fb 8e60b253af70c706
+24 expect Hero autosave 1 | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb 6c41327a147a33ef
+25 expect Hero autosave 2 | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb 6c41327a147a33ef
+26 expect Hero autosave 3 | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb 6c41327a147a33ef
+27 shot work/shots/as_open.png | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb 6c41327a147a33ef
+29 key down | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb 6c41327a147a33ef
+30 wait 60 | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb a8c1eeb337f9aefd
+31 key return | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb a8c1eeb337f9aefd
+32 wait 1500 | traps 1216098 calls d292e4c889240e97 vals 87352e4c09bc32a7 fb 2fbadb8e952b7391
+33 expect Game Opened | traps 1269475 calls 6c5b0384edf223a9 vals 93770cf765cb2115 fb 8447e1e24e6e3cd5
+34 key down | traps 1269475 calls 6c5b0384edf223a9 vals 93770cf765cb2115 fb 8447e1e24e6e3cd5
+35 wait 2000 | traps 1269632 calls ee31319a03a58378 vals 4d3a5a4d0d0383a1 fb 8447e1e24e6e3cd5
+36 expect [Game Backed Up] | traps 1334001 calls 1ceced39beeafe06 vals 0d680f32a0293c1a fb 721da9636fd6a5ee
+37 quit | traps 1334001 calls 1ceced39beeafe06 vals 0d680f32a0293c1a fb 721da9636fd6a5ee
+0 exit | traps 1334001 calls 1ceced39beeafe06 vals 0d680f32a0293c1a fb 721da9636fd6a5ee

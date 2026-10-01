@@ -1,0 +1,32 @@
+6 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+7 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
+8 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+9 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+10 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
+11 expect Land King Hall | traps 827921 calls e8de561ff51af44c vals f88c6a120aca25f2 fb 637bff037a429733
+12 shot work/shots/saveedit_1.png | traps 827921 calls e8de561ff51af44c vals f88c6a120aca25f2 fb 637bff037a429733
+14 mousedown 362 404 | traps 827921 calls e8de561ff51af44c vals f88c6a120aca25f2 fb 637bff037a429733
+15 wait 6 | traps 827937 calls 745d63928f85a15c vals 33582117280ff839 fb 637bff037a429733
+16 mouseup 362 404 | traps 2251832 calls 1b7bee17ca94a24d vals 8769d51ac0bef15e fb 963e9647bcec7f6f
+17 wait 200 | traps 2251833 calls 9db47ef639a4e8d7 vals 8cfffe90efe91d95 fb 963e9647bcec7f6f
+18 expect 45 | traps 2259690 calls 8c53ca43421dfdf8 vals 2af8d8ace728310d fb be26882e030e5b61
+19 expect 9 | traps 2259690 calls 8c53ca43421dfdf8 vals 2af8d8ace728310d fb be26882e030e5b61
+20 expect 21 | traps 2259690 calls 8c53ca43421dfdf8 vals 2af8d8ace728310d fb be26882e030e5b61
+21 expect 22 | traps 2259690 calls 8c53ca43421dfdf8 vals 2af8d8ace728310d fb be26882e030e5b61
+22 expect 23 | traps 2259690 calls 8c53ca43421dfdf8 vals 2af8d8ace728310d fb be26882e030e5b61
+24 click 60 320 | traps 2259690 calls 8c53ca43421dfdf8 vals 2af8d8ace728310d fb be26882e030e5b61
+25 wait 100 | traps 2261205 calls 7931c26a92de1066 vals a1f41b2bb84fe621 fb fdf6e7866da56b2d
+26 expect 77 | traps 2263718 calls 0c81bf49c7a19081 vals d4291a07b6adc113 fb e334eb50da3544dd
+27 shot work/shots/saveedit_2.png | traps 2263718 calls 0c81bf49c7a19081 vals d4291a07b6adc113 fb e334eb50da3544dd
+29 click 198 320 | traps 2263718 calls 0c81bf49c7a19081 vals d4291a07b6adc113 fb e334eb50da3544dd
+30 wait 100 | traps 2265755 calls 7460ec53a6e737ce vals dbe00fc21da5c997 fb 1849b5b29708d0fa
+31 expect 1234 | traps 2268208 calls b90f4fcc8200abb9 vals 03e4f0a578a15225 fb 7ad16e9ae2f0b48a
+32 expect Sword | traps 2268208 calls b90f4fcc8200abb9 vals 03e4f0a578a15225 fb 7ad16e9ae2f0b48a
+33 shot work/shots/saveedit_3.png | traps 2268208 calls b90f4fcc8200abb9 vals 03e4f0a578a15225 fb 7ad16e9ae2f0b48a
+35 key escape | traps 2268208 calls b90f4fcc8200abb9 vals 03e4f0a578a15225 fb 7ad16e9ae2f0b48a
+36 wait 30 | traps 2268449 calls 66f11f7d46142f77 vals 743c810a988f5691 fb 7ad16e9ae2f0b48a
+37 hold right 20 | traps 2269129 calls 04c0e07fe4412ba0 vals ad225c37ceecbffa fb 5d2263c81618415e
+38 wait 60 | traps 2270092 calls a5e50590907db4aa vals b0929fd55e943736 fb 262fda25453306ee
+39 shot work/shots/saveedit_4.png | traps 2271545 calls d14fa3042f28a246 vals 6e8a585dddc7777d fb 262fda25453306ee
+40 quit | traps 2271545 calls d14fa3042f28a246 vals 6e8a585dddc7777d fb 262fda25453306ee
+0 exit | traps 2271545 calls d14fa3042f28a246 vals 6e8a585dddc7777d fb 262fda25453306ee

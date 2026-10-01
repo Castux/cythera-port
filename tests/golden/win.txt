@@ -1,0 +1,42 @@
+5 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+6 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
+7 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb ff0f97ede3a029b7
+8 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb ff0f97ede3a029b7
+9 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb d4eb299bc0c1c873
+10 expect Land King Hall | traps 828337 calls 47c97e0df0a3aabd vals 751b13298751313f fb 1f30fb1af0cec1f4
+12 mousedown 362 404 | traps 828337 calls 47c97e0df0a3aabd vals 751b13298751313f fb 1f30fb1af0cec1f4
+13 wait 6 | traps 828409 calls 85590db43b0b3742 vals db06529f568af084 fb 1f30fb1af0cec1f4
+14 mouseup 362 404 | traps 1973980 calls 81893d4cd80389e9 vals e12989c2e8b6f55c fb 1eda98ef7a30841c
+15 wait 200 | traps 1975346 calls 59bb149939b0b06d vals 942fce37aa1e9304 fb 1eda98ef7a30841c
+16 click 60 320 | traps 1981839 calls 101a7c191aa8431b vals ada16abb2a4fd73f fb db1ef94352441444
+17 wait 100 | traps 1983362 calls 127bda2328269ce2 vals 1e0ca9f3eb83e547 fb 5bfd2afe19ac0ad5
+18 dclick 37 122 | traps 1985905 calls 08cac2513a69d37d vals 379ce8e61b466e81 fb d86af93da448b18a
+19 wait 100 | traps 1987129 calls 1bbf9fb6478b8624 vals 488861c5fa08135f fb 543eb116efbfa43d
+20 expect Use crystal on what | traps 1989803 calls 946e28af7d34518f vals b0b2c8d6b489eb85 fb cc3a6e759a7ab6b3
+21 click 470 133 | traps 1989803 calls 946e28af7d34518f vals b0b2c8d6b489eb85 fb cc3a6e759a7ab6b3
+22 wait 600 | traps 1992253 calls 21f2dbfbbdd60fcf vals 8488544c81854e79 fb c90a7f05cccba5a8
+23 expect with a look of relief and calm | traps 2003242 calls 37457e2c84ad380d vals 88996ce0ab9060a7 fb 71e7d20023b56787
+24 shot work/shots/win_1.png | traps 2003242 calls 37457e2c84ad380d vals 88996ce0ab9060a7 fb 71e7d20023b56787
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2003242 calls 37457e2c84ad380d vals 88996ce0ab9060a7 fb 71e7d20023b56787
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2006652 calls 630cd88ecb0a50ed vals 23883ef1248712b6 fb 75fcd689a01e4b94
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2010028 calls 849b1f5dbee9cec4 vals 306598ac84da3be0 fb af99815610f0edb4
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2013404 calls 8cc572bb66f1d3b9 vals 710ca2a9cfc8f035 fb 6ab6572302dbbb20
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2016780 calls 8004e9091189ce30 vals 6d57357731186928 fb f427c2651106ea4c
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2020173 calls 0670b6587ad7624f vals 62cd450c3cbd4d5c fb c281ac4bda2587d8
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2023549 calls 98fd12dac8c3bade vals 53ccfca14a3d89a3 fb cc8b8d3b114804e4
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2026945 calls 8061c4290a13782d vals af444a47e47ffd6c fb 1b704f6e79764d06
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2030407 calls de5825845bd104c4 vals 2579bce9e627810f fb 081bf54d64d5b536
+25 keyuntil return 200 40 Bahoudin thanks you | traps 2033868 calls 04abaee997e0c66e vals e2e223a106d0b460 fb 869906c46db7c909
+26 shot work/shots/win_2.png | traps 2033868 calls 04abaee997e0c66e vals e2e223a106d0b460 fb 869906c46db7c909
+28 keyuntil return 600 10 You awake, with a start | traps 2033868 calls 04abaee997e0c66e vals e2e223a106d0b460 fb 869906c46db7c909
+28 keyuntil return 600 10 You awake, with a start | traps 2043667 calls 1ed20723a72ed1b4 vals d6bfd1f8ddb8f335 fb 56be50b0c3c08300
+28 keyuntil return 600 10 You awake, with a start | traps 2086817 calls f5e026a436b4c3f2 vals 19a185452cb5d84f fb 1c1232d1520e4ec5
+29 shot work/shots/win_3.png | traps 2086817 calls f5e026a436b4c3f2 vals 19a185452cb5d84f fb 1c1232d1520e4ec5
+30 keyuntil return 600 10 a magpie caws twice | traps 2086817 calls f5e026a436b4c3f2 vals 19a185452cb5d84f fb 1c1232d1520e4ec5
+30 keyuntil return 600 10 a magpie caws twice | traps 2202996 calls 627c81c265ea0cf5 vals f06ead1e4b838eb3 fb 0d3b3643d2beb791
+31 shot work/shots/win_4.png | traps 2202996 calls 627c81c265ea0cf5 vals f06ead1e4b838eb3 fb 0d3b3643d2beb791
+32 keyuntil return 600 10 You have saved the land of Cythera from darkness | traps 2202996 calls 627c81c265ea0cf5 vals f06ead1e4b838eb3 fb 0d3b3643d2beb791
+32 keyuntil return 600 10 You have saved the land of Cythera from darkness | traps 2224234 calls 2417075a4a7610ea vals ee65c3d8f556eda7 fb 4d0e19430fff8025
+33 shot work/shots/win_5.png | traps 2224234 calls 2417075a4a7610ea vals ee65c3d8f556eda7 fb 4d0e19430fff8025
+35 click 320 240 | traps 2224234 calls 2417075a4a7610ea vals ee65c3d8f556eda7 fb 4d0e19430fff8025
+0 exit | traps 2227197 calls 421c02821a7d4de8 vals 85fcc608ba9cec9d fb 4d0e19430fff8025

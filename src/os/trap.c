@@ -1,5 +1,6 @@
 /* Trap dispatch: binds PEF imports to native handlers, and lets native
  * code call back into guest code. */
+#include "../golden.h"
 #include "os.h"
 #include "../loader/pef.h"
 
@@ -159,6 +160,8 @@ void trap_dispatch(CPU *c, u32 index) {
               c->r[5], c->r[6], n ? n : "?", n ? off : 0);
     }
     if (s->fn) {
+        bool golden = golden_on();
+        if (golden) golden_trap_enter(c);
         if (g_profile && g_prof_sp < 64) {
             u64 now = prof_now();
             if (!g_prof_start) g_prof_start = now;
@@ -172,6 +175,7 @@ void trap_dispatch(CPU *c, u32 index) {
             s->ns += now - g_prof_t0[g_prof_sp];
             if (g_prof_sp > 0) g_prof_t0[g_prof_sp - 1] = now;
         } else s->fn(c);
+        if (golden) golden_trap_leave(c, index);
         return;
     }
     if (s->calls <= 3) {

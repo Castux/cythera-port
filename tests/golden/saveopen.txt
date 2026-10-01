@@ -1,0 +1,25 @@
+1 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+2 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
+3 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+4 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+5 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
+6 key b cmd | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
+7 wait 200 | traps 828390 calls ea482f37f03a27cd vals fce68feabc02f410 fb 5ccaa0eff7464994
+8 expect Hero backup | traps 828390 calls ea482f37f03a27cd vals fce68feabc02f410 fb 5ccaa0eff7464994
+9 type Backup | traps 828390 calls ea482f37f03a27cd vals fce68feabc02f410 fb 5ccaa0eff7464994
+10 key return | traps 828390 calls ea482f37f03a27cd vals fce68feabc02f410 fb 6fde6c9d14adc360
+11 wait 600 | traps 828390 calls ea482f37f03a27cd vals fce68feabc02f410 fb f3b8d9d0d208892f
+12 expect Game Backed Up | traps 849261 calls 5f5f76a1f50c0da5 vals ef2a96f45311165e fb 2aab2312ede6ce76
+13 key o cmd | traps 849261 calls 5f5f76a1f50c0da5 vals ef2a96f45311165e fb 2aab2312ede6ce76
+14 wait 200 | traps 849742 calls 8ef4d33747281f93 vals a83eb5a15324d17b fb b5f4e3565f043f83
+15 expect Save Game before Closing | traps 850432 calls e927f32d407dc285 vals f7a0a28330419d03 fb 07bbc66796628bb6
+16 key return | traps 850432 calls e927f32d407dc285 vals f7a0a28330419d03 fb 07bbc66796628bb6
+17 wait 1500 | traps 850508 calls f8e70e858401faff vals eeac1f18d830caa1 fb f6b06b68d15253d2
+18 expect Backup | traps 852028 calls c862db7f1d46634d vals 623d999eacd2bd4e fb f48fc990b1b74c83
+19 shot work/shots/so_1.png | traps 852028 calls c862db7f1d46634d vals 623d999eacd2bd4e fb f48fc990b1b74c83
+20 key return | traps 852028 calls c862db7f1d46634d vals 623d999eacd2bd4e fb f48fc990b1b74c83
+21 wait 1500 | traps 852028 calls c862db7f1d46634d vals 623d999eacd2bd4e fb cee3e03925b2f997
+22 expect Game Opened | traps 905451 calls 6979e4b9463d1bc7 vals f5bb502a344bce6d fb fcc5075977437e28
+23 shot work/shots/so_2.png | traps 905451 calls 6979e4b9463d1bc7 vals f5bb502a344bce6d fb fcc5075977437e28
+24 quit | traps 905451 calls 6979e4b9463d1bc7 vals f5bb502a344bce6d fb fcc5075977437e28
+0 exit | traps 905451 calls 6979e4b9463d1bc7 vals f5bb502a344bce6d fb fcc5075977437e28

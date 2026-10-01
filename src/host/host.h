@@ -43,6 +43,7 @@ void host_keymap(u8 out[16]);
 void host_present(const u8 *pixels, int pitch, int w, int h, const u32 *palette_rgb);
 /* Save the current frame as a PNG (for scripted tests). */
 bool host_screenshot(const char *path);
+u64 host_frame_hash(void);
 
 void host_set_cursor(const u8 *rgba32x32, int hotx, int hoty, bool visible);
 bool host_is_headless(void);

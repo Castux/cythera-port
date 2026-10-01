@@ -1,0 +1,11 @@
+4 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+5 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
+6 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+7 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+8 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
+9 expect Cythera | traps 828164 calls 7ac71c59c8431cd9 vals f336819360fd71ad fb 376a8312da90dd55
+10 shot work/shots/saveedit_night.png | traps 828164 calls 7ac71c59c8431cd9 vals f336819360fd71ad fb 376a8312da90dd55
+11 key s cmd | traps 828164 calls 7ac71c59c8431cd9 vals f336819360fd71ad fb 376a8312da90dd55
+12 wait 300 | traps 828453 calls afa2e3756eaa488f vals bca3e083f70f7ef2 fb 376a8312da90dd55
+13 quit | traps 839586 calls 53eabfbeff10ff53 vals 61421b057c149188 fb c94a02e56c04399e
+0 exit | traps 839586 calls 53eabfbeff10ff53 vals 61421b057c149188 fb c94a02e56c04399e

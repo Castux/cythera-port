@@ -1,0 +1,31 @@
+1 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+2 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
+3 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+4 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
+5 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
+6 click 363 416 | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
+7 wait 8 | traps 2253650 calls 2ba29c8dda35a2b6 vals 0909a5676ee09cd9 fb 238c61e9cb5a06e6
+8 click 363 416 | traps 2253673 calls e9fff222ec350469 vals 5067416a7a155853 fb df158f64f0ff4e05
+9 wait 200 | traps 2255337 calls 2831dbcb2b4eb395 vals 45d6f4741a68659a fb 8d640484aeac5098
+10 shot work/shots/ui_char.png | traps 2261056 calls 609484b0b728698d vals 24d040d8ca733f79 fb f93297100c1efc58
+11 key w cmd | traps 2261056 calls 609484b0b728698d vals 24d040d8ca733f79 fb f93297100c1efc58
+12 wait 100 | traps 2261222 calls 28f7922da3975a90 vals b6a8f724a454f833 fb 9d1f998f0c56d8da
+13 click 160 344 | traps 2263493 calls 9f72462602bea96b vals 53a547d3de67d84a fb b334eb24cf034915
+14 wait 200 | traps 3212555 calls 4ce18e58bc0681d2 vals edd83ae5419d0409 fb 857eb1a274182436
+15 shot work/shots/ui_todo.png | traps 3217065 calls 8757233fb264f6a1 vals 4ffebc59306c0d9f fb a2d45a69e77b8b8a
+16 click 160 344 | traps 3217065 calls 8757233fb264f6a1 vals 4ffebc59306c0d9f fb a2d45a69e77b8b8a
+17 wait 100 | traps 3217348 calls 7e8f1bcd46a0beb1 vals b5363edf10073e9a fb 5da328753f5fa45e
+18 click 480 344 | traps 3219587 calls 27c7cc9bba05a616 vals 38388545625493c8 fb 0cf86e3a33104782
+19 wait 200 | traps 4168768 calls 613ccadfc31bafa4 vals fbdd2435ee41981f fb 01a4b5a4fc632ddf
+20 shot work/shots/ui_journal.png | traps 4173108 calls 718996733ffe41d7 vals 59f12a71789fec76 fb 085696365a621c9f
+21 click 480 344 | traps 4173108 calls 718996733ffe41d7 vals 59f12a71789fec76 fb 085696365a621c9f
+22 wait 100 | traps 4173187 calls 71355235318bf0ed vals 028d8ae62d215aba fb f3c3046534bcf207
+23 mousedown 45 8 | traps 4174147 calls e2eda40360dc1f39 vals 557eb34ee9af7e71 fb 6ff40786cdbc634f
+24 wait 10 | traps 4174149 calls 67cf12644315dafd vals 6bf39634a0b0e0b0 fb 6ff40786cdbc634f
+25 move 60 172 | traps 4174159 calls a0df2bfcbb22cff1 vals 53ad0f8eeabd6724 fb 6ff40786cdbc634f
+26 wait 10 | traps 4174159 calls a0df2bfcbb22cff1 vals 53ad0f8eeabd6724 fb 6ff40786cdbc634f
+27 mouseup 60 172 | traps 4174169 calls 36c966c94d5fe765 vals 108b65c54158abb8 fb 6ff40786cdbc634f
+28 wait 200 | traps 4174170 calls 4ced213f48c5cbc3 vals c6a4608c25ba6ad9 fb 6ff40786cdbc634f
+29 shot work/shots/ui_prefs.png | traps 4174370 calls 1304b03eeb5f54b3 vals 6a5ce7e33e9405c9 fb 6ff40786cdbc634f
+30 quit | traps 4174370 calls 1304b03eeb5f54b3 vals 6a5ce7e33e9405c9 fb 6ff40786cdbc634f
+0 exit | traps 4174370 calls 1304b03eeb5f54b3 vals 6a5ce7e33e9405c9 fb 6ff40786cdbc634f

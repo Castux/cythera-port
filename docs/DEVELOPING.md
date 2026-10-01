@@ -99,6 +99,13 @@ it is.
   `work/shots/`. Text lays out identically on every platform (the system
   fonts are built in, see `third_party/fonts/`): scripts depend on line
   breaks and conversation pages.
+- Golden traces: every run is also compared with `tests/golden/NAME.txt`, a
+  line per script command with hashes of the Toolbox calls made so far
+  (`calls`), their arguments and results (`vals`) and the screen (`fb`), written
+  by `--golden FILE` (`src/golden.c`). A refactoring must keep them identical;
+  the first line that differs says when a run diverged, and which hash changed
+  says how. After a deliberate change of behaviour, `GOLDEN=update tests/run.sh`
+  records them again (review the diff); `GOLDEN=off` skips the comparison.
 - CI runs both on every push (Linux), see [Releases](#ci-and-releases).
 
 Scripts (`--script FILE`) are one command per line: `wait N` (frames),
@@ -142,6 +149,7 @@ conversation pages.
 | `--headless` | no window |
 | `--trace-traps`, `--trace-only A,B` | log Toolbox calls with symbolized callers and the emulated time |
 | `--profile` | Toolbox and guest-function hot spots at exit |
+| `--golden FILE` | a line per script command with hashes of the run so far (`tests/golden/`) |
 | `--trap-stats FILE` | per-call counts at exit (`CYTHERA_ARGS="--trap-stats F" tests/run.sh` over all scenarios) |
 | `--strict` | abort on an unimplemented call |
 | `--turbo N`, `--timeout N` | faster emulated clock, time limit |

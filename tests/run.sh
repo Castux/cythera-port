@@ -7,6 +7,12 @@
 # fixture made by tests/fixture.txt, which creates the saved game "Hero"
 # (a new game saved after the first conversation with the king).
 # Extra emulator options can be passed in $CYTHERA_ARGS (e.g. "--trap-stats FILE").
+#
+# Golden traces: each run is also compared with tests/golden/NAME.txt, a line
+# per script command with hashes of the Toolbox calls made so far, their
+# arguments and results, and the screen (src/golden.c). Any difference fails,
+# naming the first script line where the run diverged. GOLDEN=update records
+# them instead (after a deliberate change of behaviour); GOLDEN=off skips them.
 cd "$(dirname "$0")/.."
 # a Python 3 that runs (on Windows, python3 may be the Microsoft Store stub)
 PY="${PYTHON:-}"
@@ -22,13 +28,26 @@ run() { # run SCRIPT HOME LOG
   app=$(sed -n '1s/^# app: //p' "$1")
   args=$(sed -n 's/^# args: //p' "$1")
   "${CYTHERA:-./build/cythera}" --deterministic --timeout 900 --sysdir "$2/System Folder" \
-    ${app:+--app "$app"} $args $CYTHERA_ARGS --script "$1" > "$3" 2>&1
+    ${app:+--app "$app"} $args --golden "${3%.log}.golden" $CYTHERA_ARGS --script "$1" > "$3" 2>&1
+}
+golden() { # golden NAME LOG: compare with (or record) tests/golden/NAME.txt
+  want="tests/golden/$(basename "$1" .txt).txt" got="${2%.log}.golden"
+  case "${GOLDEN:-check}" in
+  off) return 0 ;;
+  update) mkdir -p tests/golden; cp "$got" "$want"; return 0 ;;
+  esac
+  [ -f "$want" ] || { echo "FAIL $1 (no $want: GOLDEN=update records it)"; return 1; }
+  cmp -s "$want" "$got" && return 0
+  echo "FAIL $1 (golden trace differs; first difference:)"
+  diff "$want" "$got" | grep -E '^[<>]' | head -2
+  return 1
 }
 check() { # check NAME RC LOG
   bad=$(grep -E "FATAL|unimplemented trap|stall:|EXPECT FAILED" "$3" | head -3)
   if [ "$2" -ne 0 ] || [ -n "$bad" ]; then
     echo "FAIL $1 (exit $2)"; [ -n "$bad" ] && echo "$bad"; return 1
   fi
+  golden "$1" "$3" || return 1
   echo "ok   $1"
 }
 

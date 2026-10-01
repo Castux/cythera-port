@@ -6,6 +6,7 @@
 #include "os/os.h"
 #include "os/misc.h"
 #include "config.h"
+#include "golden.h"
 #include "host/host.h"
 #include <sys/stat.h>
 
@@ -50,6 +51,7 @@ static void usage(void) {
         "  --trace-traps     log every Toolbox call\n"
         "  --trap-stats FILE append per-import call counts to FILE at exit\n"
         "  --strict          abort on unimplemented Toolbox calls\n"
+        "  --golden FILE     write hashes of the run at each script command (tests/golden/)\n"
         "  --autosave MIN    back up the game in progress every MIN minutes (default 10, 0: off)\n"
         "  --screen WxH      fixed emulated screen size (default 640x480; Ctrl+Alt+Enter: display modes)\n"
         "  --scale N         window scale factor\n"
@@ -93,6 +95,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--profile")) { extern bool g_profile; extern void trap_profile_report(void); g_profile = true; atexit(trap_profile_report); }
         else if (!strcmp(a, "--trap-stats") && i + 1 < argc) { extern const char *g_trap_stats; extern void trap_stats_report(void); g_trap_stats = argv[++i]; atexit(trap_stats_report); }
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
+        else if (!strcmp(a, "--golden") && i + 1 < argc) { golden_open(argv[++i]); atexit(golden_exit); }
         else if (!strcmp(a, "--autosave") && i + 1 < argc) { autosave_min = atof(argv[++i]); }
         else if (!strcmp(a, "--screen") && i + 1 < argc) {
             if (sscanf(argv[++i], "%dx%d", &g_cfg.screen_w, &g_cfg.screen_h) != 2) usage();

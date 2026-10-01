@@ -1,0 +1,4 @@
+1 wait 900 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
+2 shot work/shots/b3_1.png | traps 25486 calls b98663a9d3a75784 vals a4b007376e6f9de8 fb 131b3ace946613fc
+3 quit | traps 25486 calls b98663a9d3a75784 vals a4b007376e6f9de8 fb 131b3ace946613fc
+0 exit | traps 25486 calls b98663a9d3a75784 vals a4b007376e6f9de8 fb 131b3ace946613fc

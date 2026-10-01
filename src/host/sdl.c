@@ -1,5 +1,6 @@
 /* SDL2 host: window, framebuffer presentation, input translation,
  * screenshots and scripted input for automated tests. */
+#include "../golden.h"
 #include "host.h"
 #include <SDL.h>
 #include "../os/misc.h"
@@ -411,6 +412,14 @@ void host_present(const u8 *pixels, int pitch, int w, int h, const u32 *pal) {
     SDL_RenderPresent(g_ren);
 }
 
+/* FNV-1a of the last presented frame (golden traces). */
+u64 host_frame_hash(void) {
+    u64 h = 0xcbf29ce484222325ull;
+    for (int i = 0; i < g_w * g_h; i++)
+        for (int k = 0; k < 24; k += 8) h = (h ^ (u8)(g_rgb[i] >> k)) * 0x100000001b3ull;
+    return h;
+}
+
 bool host_screenshot(const char *path) {
     u8 *rgb = malloc((size_t)g_w * (size_t)g_h * 3);
     for (int i = 0; i < g_w * g_h; i++) {
@@ -472,7 +481,7 @@ static void toggle_fullscreen(void) {
 /* ---------------------------------------------------------------------- */
 /* Scripted input                                                          */
 
-typedef struct { char cmd[16]; char arg[256]; } ScriptLine;
+typedef struct { char cmd[16]; char arg[256]; int line; } ScriptLine;
 static ScriptLine *g_script;
 static int g_script_n, g_script_pc;
 static u32 g_script_wait_until;
@@ -492,9 +501,10 @@ void script_load(const char *path) {
     FILE *f = fopen(path, "r");
     if (!f) fatal("cannot open script %s", path);
     char line[512];
-    int cap = 64;
+    int cap = 64, lineno = 0;
     g_script = malloc(sizeof(ScriptLine) * (size_t)cap);
     while (fgets(line, sizeof line, f)) {
+        lineno++;
         char *p = line;
         while (*p == ' ' || *p == '\t') p++;
         if (*p == '#' || *p == '\n' || !*p) continue;
@@ -502,6 +512,7 @@ void script_load(const char *path) {
         if (g_script_n == cap) { cap *= 2; g_script = realloc(g_script, sizeof(ScriptLine) * (size_t)cap); }
         ScriptLine *s = &g_script[g_script_n++];
         memset(s, 0, sizeof *s);
+        s->line = lineno;
         sscanf(p, "%15s", s->cmd);
         char *a = p + strlen(s->cmd);
         while (*a == ' ') a++;
@@ -564,6 +575,7 @@ void script_tick(void) {
         ScriptLine *s = &g_script[g_script_pc++];
         int x, y;
         LOG_I("script: %s %s", s->cmd, s->arg);
+        golden_mark(s->line, s->cmd, s->arg);
         if (!strcmp(s->cmd, "wait")) { g_script_wait_until = now + (u32)atoi(s->arg); return; }
         else if (!strcmp(s->cmd, "move") && sscanf(s->arg, "%d %d", &x, &y) == 2) { g_mx = x; g_my = y; }
         else if (!strcmp(s->cmd, "expect")) {
