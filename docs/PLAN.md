@@ -116,11 +116,36 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
   "endgame": the purified crolna next to Alaric, `win.txt` plays the winning ending
 - **Exit:** a gameplay script can start from a saved stage instead of replaying the opening. (Done.)
 
+## M9 — Refactoring (behaviour-preserving, checked by the golden traces)
+- [x] Phase 0, safety net: golden traces (`tests/golden/`, identical on Linux, Windows and
+  macOS), a pristine game folder per test run, sanitizers (CI job `sanitizers`), coverage
+  (`tools/coverage.sh`: 74% of lines; 122 imported calls never made, 151 TRAPs never
+  imported), speed (`tools/bench.py`: 42.5 s CPU, best of 3 rounds)
+- [ ] Phase 1, mechanical: the 84 `extern` declarations inside `.c` files into headers; the
+  165 raw guest-structure offsets (files.c, sound.c, qd_port.c…) named; a `.clang-format`
+  for the current style, applied a file at a time (177 lines over 120 columns)
+- [ ] Phase 2, structure: a native C API under each trap, so the 46 fake-CPU calls
+  (`CPU f; …; trap_TECut(&f)`) go; one modal event loop for the 4 in dialogs.c; split
+  host/sdl.c (host, display modes, the script interpreter), misc.c, dialogs.c (Standard
+  File), main.c (option table); the game-specific code (licence, autosave) in `src/game/`
+- [ ] Phase 3, optional: interpreter opcode groups (speed must hold); module state structs
+- Rules: one refactoring per commit, never mixed with a change of behaviour; every commit
+  keeps the golden traces identical, `make test` passing, no new warnings; a trace that
+  changes is either a mistake or a bug found, investigated on its own.
+
 ## Working notes
 - Commit and push after each significant chunk.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-10-01 (refactoring, phase 0): golden traces (`--golden`, `tests/golden/`): a line per
+  script command with hashes of the Toolbox calls, their arguments and results, and the
+  screen. Their first runs found three host differences: the game writes "User Custom Data"
+  into its folder, so tests depended on earlier runs (each run now gets a pristine copy);
+  on Windows, FSpExchangeFiles failed on the open saved game while returning noErr, so
+  compacting a save deleted the compacted copy (open files are now closed around the swap
+  and follow their data, as on POSIX), and a missing resource fork opened from /dev/null.
+  UBSan found `mulli` overflowing a C `int` (combat); the low 32 bits are now unsigned.
 - 2026-10-01 (autosave): every 10 minutes of play (`--autosave MIN`), the port has the game run
   its own File › Backup into "NAME autosave 1..3", in turn, so a crash, even during a save, can't
   lose more than that. A save rewrites its file in place (`TSegFile::SaveSegment`), so before this

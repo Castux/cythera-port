@@ -106,6 +106,11 @@ it is.
   the first line that differs says when a run diverged, and which hash changed
   says how. After a deliberate change of behaviour, `GOLDEN=update tests/run.sh`
   records them again (review the diff); `GOLDEN=off` skips the comparison.
+- `tools/coverage.sh` (clang/LLVM) measures what the scripted tests reach: coverage per
+  file, the Toolbox calls imported but never made, and the TRAPs never imported
+  (`work/cov/`). `tools/bench.py` reports the CPU time of a fixed set of
+  deterministic tests (best of 3 rounds), to compare speed before and after a
+  change. CI also runs the scripted tests under ASan and UBSan (job `sanitizers`).
 - CI runs both on every push (Linux), see [Releases](#ci-and-releases).
 
 Scripts (`--script FILE`) are one command per line: `wait N` (frames),
