@@ -147,6 +147,12 @@ jobs:
         run: |
           set -o pipefail
           make test CC=gcc PYTHON=python 2>&1 | tee -a build.log
+      - name: Scripted game tests (releases only; Linux runs them on every push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        timeout-minutes: 30
+        run: |
+          set -o pipefail
+          PYTHON=python tests/run.sh 2>&1 | tee -a build.log
       - name: Stage package
         run: |
           V="$(git describe --tags --always)"
@@ -174,6 +180,11 @@ jobs:
       - name: Report errors
         if: failure()
         run: sh .github/report-errors.sh
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs-windows
+          path: work/shots
 
   macos:
     needs: gamedata
@@ -214,6 +225,10 @@ jobs:
           otool -L cythera
       - name: CPU tests
         run: make test CC="clang -arch arm64" BUILD=build-arm64 SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" 2>&1 | tee -a build.log
+      - name: Scripted game tests (releases only; Linux runs them on every push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        timeout-minutes: 30
+        run: CYTHERA=./cythera tests/run.sh 2>&1 | tee -a build.log  # the universal binary that ships
       - name: App bundle
         run: |
           V="$(git describe --tags --always)"
@@ -279,6 +294,11 @@ jobs:
       - name: Report errors
         if: failure()
         run: sh .github/report-errors.sh
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs-macos
+          path: work/shots
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

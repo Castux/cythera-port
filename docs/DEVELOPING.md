@@ -186,8 +186,8 @@ code offsets (hex, as `tools/ppcdis.py` prints them): a cheap breakpoint.
 once, then builds and packages it on each platform: a Linux tarball (Ubuntu
 22.04, which also runs all the tests), a static Windows zip (MSYS2 UCRT64,
 `GUI=1`) and a universal macOS app in a disk image (static SDL2, per-arch
-builds joined with `lipo`). Pushing a `v*` tag publishes a GitHub release with
-the three packages. Failed jobs repeat their build and test errors as
+builds joined with `lipo`). Pushing a `v*` tag also runs the scripted tests on
+Windows and macOS, then publishes a GitHub release with the three packages. Failed jobs repeat their build and test errors as
 annotations, which are readable without log access.
 
 The macOS app is ad-hoc signed. With these repository secrets it is signed
