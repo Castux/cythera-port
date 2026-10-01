@@ -47,6 +47,7 @@ static void post_host_events(void) {
         case HEV_MOUSE_DOWN:
             g_mouse = (Point){ (s16)he.y, (s16)he.x };
             g_button = true;
+            autosave_note_input();
             ev_post(mouseDown, 0, he.mods);
             break;
         case HEV_MOUSE_UP:
@@ -56,6 +57,7 @@ static void post_host_events(void) {
             break;
         case HEV_KEY_DOWN:
             if (he.repeat) break;
+            autosave_note_input();
             ev_post(keyDown, (u32)he.mac_key << 8 | he.ch, he.mods);
             g_rep_on = true; g_rep_key = he.mac_key; g_rep_msg = (u32)he.mac_key << 8 | he.ch;
             g_rep_next = he.when + rd16(LM_KeyThresh);
@@ -185,9 +187,18 @@ TRAP(WaitNextEvent) {
         ev_post_high_level(FOURCC('a','e','v','t'), FOURCC('o','a','p','p'));
     }
     u32 start = tick_count();
+    bool autosave = autosave_poll(cpu);
     for (;;) {
         ev_idle_frame();
         Ev e;
+        if (autosave && !g_qn && !g_button && mask_ok(mask, keyDown)) { /* File > Backup: autosave.c */
+            Ev b = { keyDown, 0x0B00u | 'b', tick_count(), g_mouse, 0x0100 };
+            write_event(ep, &b);
+            autosave_sent();
+            RET(1);
+            return;
+        }
+        autosave = false;
         if (get_event(mask, &e, true, false)) {
             write_event(ep, &e);
             RET(1);

@@ -49,6 +49,11 @@ Ready-to-play packages, game included, are on the
 Preferences and saved games are kept in `~/.cythera-port/` (on Windows,
 `%APPDATA%\.cythera-port\`): `System Folder/Preferences` and `Saved Games`.
 
+Every 10 minutes of play, the game in progress is also backed up, as with
+File › Backup, into "*NAME* autosave 1", 2 and 3 in turn (the oldest is
+replaced, never the game you have open). Your own saves are left alone: if
+the game ever crashes, open the latest autosave from File › Open.
+
 To build it yourself instead: install SDL2 and Python 3, run `make` and
 `tools/setup_gamedata.sh`, then `./build/cythera`. Details, including Windows,
 are in [docs/DEVELOPING.md](docs/DEVELOPING.md).
@@ -65,6 +70,7 @@ are in [docs/DEVELOPING.md](docs/DEVELOPING.md).
 | `--registered NAME` | the name the game is registered to (see below) |
 | `--data DIR` | game directory (default: `gamedata`, here or next to the program) |
 | `--soundfont FILE` | General MIDI SoundFont for the music |
+| `--autosave MIN` | back up the game in progress every MIN minutes of play (default 10; 0: off) |
 | `--app NAME` | run another application from the game folder |
 
 ### Controls

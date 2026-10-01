@@ -1,0 +1,37 @@
+# args: --autosave 0.5
+# Autosave every 30 s of play: File > Backup into "Hero autosave 1..3", in turn
+wait 1800
+click 240 270
+wait 120
+key return
+wait 1500
+key down
+wait 2000
+expect [Game Backed Up]
+key down
+wait 2000
+key down
+wait 2000
+key down
+wait 2000
+# idle: no autosave
+wait 4000
+key o cmd
+wait 200
+expect Save Game before Closing
+key return
+wait 1500
+expect Hero autosave 1
+expect Hero autosave 2
+expect Hero autosave 3
+shot work/shots/as_open.png
+# open the slot that was replaced, then autosave from it (into another slot)
+key down
+wait 60
+key return
+wait 1500
+expect Game Opened
+key down
+wait 2000
+expect [Game Backed Up]
+quit

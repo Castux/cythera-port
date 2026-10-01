@@ -116,7 +116,8 @@ mode switch does: `tests/scripts/display.txt`), `display` (what Ctrl+Alt+Enter
 does; needs a window, e.g. `SDL_VIDEODRIVER=dummy` without `--deterministic`),
 `bt`, `dumpwin`, `trace on|off`, `quit`. If the program quits (e.g. the game ends) before an `expect`,
 `keyuntil` or `dclickchar` line has run, that fails too. A first line
-`# app: NAME` makes `run.sh` start another application. A line
+`# app: NAME` makes `run.sh` start another application, and a line
+`# args: ...` adds emulator options (`tests/scripts/autosave.txt`). A line
 `# save: NAME` starts the script from the stage save `tests/saves/NAME`
 instead of the fixture's "Hero" (see [tests/saves/README](../tests/saves/README)),
 and a line `# save-edit: KEY=VALUE...` then edits that game with

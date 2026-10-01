@@ -803,6 +803,8 @@ TRAP(StandardPutFile) {
     pstr_to_c(prompt, pr, sizeof pr);
     pstr_to_c(defname, dn, sizeof dn);
     LOG_I("StandardPutFile('%s', '%s')", pr, dn);
+    char as[32]; bool asrep;
+    if (autosave_put_file(pr, dn, as, &asrep)) { fill_reply(reply, true, asrep, 0, files_saves_dir(), as); return; }
     Ditl d = { .n = 0 };
     ditl_add(&d, mkrect(100, 280, 120, 350), btnCtrl, "Save");
     ditl_add(&d, mkrect(100, 200, 120, 270), btnCtrl, "Cancel");
@@ -843,6 +845,7 @@ TRAP(StandardPutFile) {
         fill_reply(reply, true, err == noErr, 0, files_saves_dir(), name);
         LOG_I("StandardPutFile -> '%s'%s", name, err == noErr ? " (replacing)" : "");
     } else fill_reply(reply, false, false, 0, 0, "");
+    autosave_restart();
 }
 
 /* StandardGetFilePreview's preview box: the selected file's QuickTime
@@ -1003,5 +1006,5 @@ static void std_get(CPU *cpu, u32 filter, s16 ntypes, u32 types, u32 reply, bool
     } else fill_reply(reply, false, false, 0, 0, "");
 }
 
-TRAP(StandardGetFile) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3), false); }
-TRAP(StandardGetFilePreview) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3), true); }
+TRAP(StandardGetFile) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3), false); autosave_restart(); }
+TRAP(StandardGetFilePreview) { std_get(cpu, ARG(0), ARGS16(1), ARG(2), ARG(3), true); autosave_restart(); }

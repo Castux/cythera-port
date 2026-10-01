@@ -121,6 +121,13 @@ Status markers: `[ ]` todo, `[~]` in progress, `[x]` done.
 - Headless screenshot tests are the main autonomous verification tool.
 
 ## Progress log
+- 2026-10-01 (autosave): every 10 minutes of play (`--autosave MIN`), the port has the game run
+  its own File › Backup into "NAME autosave 1..3", in turn, so a crash, even during a save, can't
+  lose more than that. A save rewrites its file in place (`TSegFile::SaveSegment`), so before this
+  a crash while saving could damage the only copy. The Cmd-B is only handed over when the game
+  waits for events in its main loop (main > MEL > MyGetEvent), never inside a conversation or
+  dialog, and the "Backup Game As:" dialog is answered without being shown (`src/os/autosave.c`,
+  `tests/scripts/autosave.txt`).
 - 2026-09-30 (the game can be won): the end of "Cure Alaric" read from the scripts and played
   ([ENDGAME.md](ENDGAME.md)): Pelagon's last crolna shard (refused three times), combining the
   pieces, Charax loading his distiller with Sabinate's mushroom, the distiller purifying the

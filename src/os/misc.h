@@ -12,4 +12,11 @@ extern bool g_deterministic;
 void vclock_advance_ns(u64 ns);
 void vclock_idle(void);
 void wait_vbl(void);
+/* autosave.c */
+void autosave_set_minutes(double min);
+void autosave_note_input(void);
+bool autosave_poll(CPU *cpu);
+void autosave_sent(void);
+void autosave_restart(void);
+bool autosave_put_file(const char *prompt, const char *defname, char *name, bool *replacing);
 #endif

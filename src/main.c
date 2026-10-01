@@ -4,6 +4,7 @@
 #include "cpu/ppc.h"
 #include "loader/pef.h"
 #include "os/os.h"
+#include "os/misc.h"
 #include "config.h"
 #include "host/host.h"
 #include <sys/stat.h>
@@ -49,6 +50,7 @@ static void usage(void) {
         "  --trace-traps     log every Toolbox call\n"
         "  --trap-stats FILE append per-import call counts to FILE at exit\n"
         "  --strict          abort on unimplemented Toolbox calls\n"
+        "  --autosave MIN    back up the game in progress every MIN minutes (default 10, 0: off)\n"
         "  --screen WxH      fixed emulated screen size (default 640x480; Ctrl+Alt+Enter: display modes)\n"
         "  --scale N         window scale factor\n"
         "  --fullscreen      start in fullscreen (toggle: Alt+Enter, or Ctrl+Cmd+F on macOS)\n"
@@ -62,6 +64,7 @@ int main(int argc, char **argv) {
     g_cfg.screen_w = 640;
     g_cfg.screen_h = 480;
     g_cfg.scale = 0;
+    double autosave_min = -1;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         if (!strcmp(a, "--data") && i + 1 < argc) g_cfg.data_dir = argv[++i];
@@ -90,6 +93,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--profile")) { extern bool g_profile; extern void trap_profile_report(void); g_profile = true; atexit(trap_profile_report); }
         else if (!strcmp(a, "--trap-stats") && i + 1 < argc) { extern const char *g_trap_stats; extern void trap_stats_report(void); g_trap_stats = argv[++i]; atexit(trap_stats_report); }
         else if (!strcmp(a, "--strict")) g_strict_traps = true;
+        else if (!strcmp(a, "--autosave") && i + 1 < argc) { autosave_min = atof(argv[++i]); }
         else if (!strcmp(a, "--screen") && i + 1 < argc) {
             if (sscanf(argv[++i], "%dx%d", &g_cfg.screen_w, &g_cfg.screen_h) != 2) usage();
             g_cfg.screen_given = true;
@@ -99,6 +103,8 @@ int main(int argc, char **argv) {
         else usage();
     }
 
+    /* tests autosave only when asked (--autosave) */
+    autosave_set_minutes(autosave_min >= 0 ? autosave_min : g_deterministic ? 0 : 10);
     if (!g_cfg.headless) g_fatal_hook = host_error_box;
     /* default: ./gamedata, else gamedata next to the executable (packaged builds) */
     if (!g_cfg.data_dir) {
