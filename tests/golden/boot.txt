@@ -1,8 +1,8 @@
 2 wait 60 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
 3 shot work/shots/boot1.png | traps 8128 calls d1dae284883cfeee vals e7ca9f467064d0e2 fb 4bb03dd9ab9f6d32
 4 wait 120 | traps 8128 calls d1dae284883cfeee vals e7ca9f467064d0e2 fb 4bb03dd9ab9f6d32
-5 shot work/shots/boot2.png | traps 9951 calls 313ae216ca5f9c07 vals ebe98de0c1f5d3a9 fb 4bb03dd9ab9f6d32
-6 wait 240 | traps 9951 calls 313ae216ca5f9c07 vals ebe98de0c1f5d3a9 fb 4bb03dd9ab9f6d32
-7 shot work/shots/boot3.png | traps 13576 calls 93e67bee52cb4a71 vals 298f94e193b9c5f0 fb ca3d8daf894ce872
-8 quit | traps 13576 calls 93e67bee52cb4a71 vals 298f94e193b9c5f0 fb ca3d8daf894ce872
-0 exit | traps 13576 calls 93e67bee52cb4a71 vals 298f94e193b9c5f0 fb ca3d8daf894ce872
+5 shot work/shots/boot2.png | traps 9949 calls bcef5abd1f6e671b vals 4598f3b8352a2043 fb 4bb03dd9ab9f6d32
+6 wait 240 | traps 9949 calls bcef5abd1f6e671b vals 4598f3b8352a2043 fb 4bb03dd9ab9f6d32
+7 shot work/shots/boot3.png | traps 13574 calls fb530a2370fcc565 vals 9a029a76918d132a fb ca3d8daf894ce872
+8 quit | traps 13574 calls fb530a2370fcc565 vals 9a029a76918d132a fb ca3d8daf894ce872
+0 exit | traps 13574 calls fb530a2370fcc565 vals 9a029a76918d132a fb ca3d8daf894ce872

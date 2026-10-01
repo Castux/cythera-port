@@ -186,7 +186,7 @@ void cpu_run(CPU *c) {
             }
             break;
         }
-        case 7: R[rD] = (u32)((s32)R[rA] * simm); break; /* mulli */
+        case 7: R[rD] = R[rA] * (u32)simm; break; /* mulli: the low 32 bits (unsigned: no C overflow) */
         case 8: R[rD] = add_carry(c, ~R[rA], (u32)simm, 1); break; /* subfic */
         case 10: cmp_unsigned(c, rD >> 2, R[rA], uimm); break; /* cmpli */
         case 11: cmp_signed(c, rD >> 2, (s32)R[rA], simm); break; /* cmpi */

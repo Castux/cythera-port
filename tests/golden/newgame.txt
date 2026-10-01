@@ -1,13 +1,13 @@
 1 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-2 click 240 193 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-3 wait 120 | traps 780020 calls 5b32f6130622b693 vals 1a82d0a52120474f fb ad4c36ce0c4e4ca4
-4 shot work/shots/ng_1.png | traps 780020 calls 5b32f6130622b693 vals 1a82d0a52120474f fb ad4c36ce0c4e4ca4
-5 type Hero | traps 780020 calls 5b32f6130622b693 vals 1a82d0a52120474f fb ad4c36ce0c4e4ca4
-6 key return | traps 780020 calls 5b32f6130622b693 vals 1a82d0a52120474f fb e3c7968465b468e8
-7 wait 400 | traps 780020 calls 5b32f6130622b693 vals 1a82d0a52120474f fb 7da6685ea2ff9d89
-8 dumpwin | traps 787031 calls 15afb36f50cdd335 vals db5627ff89f89681 fb 2d9946fd22d2da78
-9 shot work/shots/ng_2.png | traps 787031 calls 15afb36f50cdd335 vals db5627ff89f89681 fb 2d9946fd22d2da78
-10 wait 400 | traps 787031 calls 15afb36f50cdd335 vals db5627ff89f89681 fb 2d9946fd22d2da78
-11 shot work/shots/ng_3.png | traps 792226 calls a021a93108cb242e vals bd2287966f99737a fb 2d9946fd22d2da78
-12 quit | traps 792226 calls a021a93108cb242e vals bd2287966f99737a fb 2d9946fd22d2da78
-0 exit | traps 792226 calls a021a93108cb242e vals bd2287966f99737a fb 2d9946fd22d2da78
+2 click 240 193 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+3 wait 120 | traps 780018 calls a8b6ab71d9cb1337 vals 5bab53383dbd103e fb ad4c36ce0c4e4ca4
+4 shot work/shots/ng_1.png | traps 780018 calls a8b6ab71d9cb1337 vals 5bab53383dbd103e fb ad4c36ce0c4e4ca4
+5 type Hero | traps 780018 calls a8b6ab71d9cb1337 vals 5bab53383dbd103e fb ad4c36ce0c4e4ca4
+6 key return | traps 780018 calls a8b6ab71d9cb1337 vals 5bab53383dbd103e fb e3c7968465b468e8
+7 wait 400 | traps 780018 calls a8b6ab71d9cb1337 vals 5bab53383dbd103e fb 7da6685ea2ff9d89
+8 dumpwin | traps 787029 calls e8f84ff8f6706ff9 vals 0d7b5eaa2640e44f fb 2d9946fd22d2da78
+9 shot work/shots/ng_2.png | traps 787029 calls e8f84ff8f6706ff9 vals 0d7b5eaa2640e44f fb 2d9946fd22d2da78
+10 wait 400 | traps 787029 calls e8f84ff8f6706ff9 vals 0d7b5eaa2640e44f fb 2d9946fd22d2da78
+11 shot work/shots/ng_3.png | traps 792224 calls 15539aabc7a7b6b2 vals 3ba19f1f1dee34c8 fb 2d9946fd22d2da78
+12 quit | traps 792224 calls 15539aabc7a7b6b2 vals 3ba19f1f1dee34c8 fb 2d9946fd22d2da78
+0 exit | traps 792224 calls 15539aabc7a7b6b2 vals 3ba19f1f1dee34c8 fb 2d9946fd22d2da78

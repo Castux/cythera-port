@@ -285,6 +285,10 @@ static void test_imm_arith(void) {
     begin("mulli"); C.r[3] = (u32)-3;
     emit(D(7, 4, 3, 1000)); emit(D(7, 5, 3, -2)); run();
     check("r4", C.r[4], (u32)-3000); check("r5", C.r[5], 6);
+
+    begin("mulli overflow: the low 32 bits"); C.r[3] = 42949491; /* seen in combat */
+    emit(D(7, 4, 3, 100)); emit(D(7, 5, 3, -32768)); run();
+    check("r4", C.r[4], (u32)(42949491ull * 100)); check("r5", C.r[5], (u32)(42949491ull * (u64)-32768));
 }
 
 /* ---- logical ---- */

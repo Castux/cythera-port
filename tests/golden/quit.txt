@@ -1,15 +1,15 @@
 1 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-2 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-3 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-4 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-5 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
-6 click 566 54 | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
-7 wait 200 | traps 1598249 calls 36d56a34f28bb939 vals 424aeceeb6f02c86 fb db2fe4bff6869c0d
-8 key down | traps 1606160 calls 3a9fa356acb3428e vals b0651424201da493 fb 9b989a844dc9935c
-9 wait 40 | traps 1606368 calls d19427f299d29177 vals dc626300c119eca6 fb 9b989a844dc9935c
-10 key q cmd | traps 1607517 calls 89e54cc1879612db vals 90c61707efb3a3c2 fb 29bd399cdefc148c
-11 wait 120 | traps 1607982 calls 900b689e3c8b3d44 vals 28979ca63b9ea07a fb 80bb32bf5be49614
-12 expect Save Game before Quitting | traps 1608592 calls 3f6e3a115b9bfca2 vals 6f8f89cf5e84efe0 fb c07efa29423cd4e9
-13 shot work/shots/q_1.png | traps 1608592 calls 3f6e3a115b9bfca2 vals 6f8f89cf5e84efe0 fb c07efa29423cd4e9
-14 click 240 200 | traps 1608592 calls 3f6e3a115b9bfca2 vals 6f8f89cf5e84efe0 fb c07efa29423cd4e9
-0 exit | traps 1610370 calls 98e9c36ba8d3a91c vals fe9950df344f7ba3 fb 0fb6f720f2cab1cb
+2 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+3 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+4 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+5 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 7d0ac878d3afcc17
+6 click 566 54 | traps 828364 calls aadf86f70228f19a vals 1b43466039502b79 fb 78755f891fb3b429
+7 wait 200 | traps 1597392 calls 700748d8038a45b1 vals 1ac717a1235250f9 fb db2fe4bff6869c0d
+8 key down | traps 1605366 calls b242356ebbca868d vals 5ee2307b0574495f fb 9b989a844dc9935c
+9 wait 40 | traps 1605574 calls 8478bab05047136c vals cc923e4e75a92142 fb 9b989a844dc9935c
+10 key q cmd | traps 1606723 calls b9766c83942e413c vals e296ee9a1590b0b6 fb 29bd399cdefc148c
+11 wait 120 | traps 1607188 calls ed05b73850479583 vals 7993e4ae1dcb6e36 fb 80bb32bf5be49614
+12 expect Save Game before Quitting | traps 1607798 calls 78a2e7bea82e5725 vals edd6606f4428bb94 fb c07efa29423cd4e9
+13 shot work/shots/q_1.png | traps 1607798 calls 78a2e7bea82e5725 vals edd6606f4428bb94 fb c07efa29423cd4e9
+14 click 240 200 | traps 1607798 calls 78a2e7bea82e5725 vals edd6606f4428bb94 fb c07efa29423cd4e9
+0 exit | traps 1609576 calls 7721eb1158166f73 vals 756944ffb235daa0 fb 5012f913d73d32d8

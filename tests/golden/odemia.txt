@@ -1,36 +1,36 @@
 6 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-7 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-8 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb dda05914631f971f
-9 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb dda05914631f971f
-10 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb d7d41ebc36506fdb
-11 expect Odemia | traps 827693 calls b10ba101e82cece1 vals 898c5b294cbeddc3 fb 493023556a019271
-13 key left | traps 827693 calls b10ba101e82cece1 vals 898c5b294cbeddc3 fb 493023556a019271
-14 wait 40 | traps 827973 calls 39779ac4f9014e57 vals 2e34ba702ef4677c fb 493023556a019271
-15 key left | traps 829187 calls 2567db0d7cbc23f6 vals 038446e5f8c61483 fb 942033f13e919b38
-16 wait 40 | traps 829250 calls 49b94e55f31e7bb0 vals 2328c518701d7ece fb 942033f13e919b38
-17 key left | traps 830645 calls 508a49da0e789b1b vals 0bc7d4f347567926 fb 9706138928b21ba8
-18 wait 40 | traps 830708 calls 0d4e1d475a244e21 vals 9ce34ddb2e12ee5a fb 9706138928b21ba8
-19 key left | traps 832059 calls 46a06360309f7b17 vals 93d36921828c0131 fb 95f9c6ca3112a8bf
-20 wait 40 | traps 832122 calls b26d558268d77e9d vals 5ac4844eb1fede2e fb 95f9c6ca3112a8bf
-21 peek 228578 4 | traps 833332 calls 85a097a906e34954 vals 8d0405eeea44e856 fb a0e312ab8d35ebe4
-22 shot work/shots/odemia_1.png | traps 833332 calls 85a097a906e34954 vals 8d0405eeea44e856 fb a0e312ab8d35ebe4
-23 key right | traps 833332 calls 85a097a906e34954 vals 8d0405eeea44e856 fb a0e312ab8d35ebe4
-24 wait 40 | traps 833607 calls a98a4f7416047cce vals 70d97991ea7e3718 fb a0e312ab8d35ebe4
-26 key o cmd | traps 834800 calls a0d2467e64b67ca9 vals b02a901ef921a5f3 fb 7a41e2d44ffc8763
-27 wait 200 | traps 835265 calls 3459e8c828844fd6 vals c104db8b41274c1a fb 7640af7d1e885676
-28 expect Save Game before Closing | traps 835955 calls ed859cd182c38514 vals b8b8a6280b512d66 fb 183d7936864f5907
-29 key return | traps 835955 calls ed859cd182c38514 vals b8b8a6280b512d66 fb 183d7936864f5907
-30 wait 1500 | traps 836031 calls 2815987ce14c2d02 vals 5127f02acc79dea8 fb a565ec59ed677b4b
-31 key return | traps 837719 calls 6aba4657dbeb1ba5 vals c36c76b2712bd7c2 fb 4e158fd3ab035fa8
-32 wait 1500 | traps 837719 calls 6aba4657dbeb1ba5 vals c36c76b2712bd7c2 fb aa0e75606a1daa34
-33 expect Game Opened | traps 889909 calls 9ecdff43b10ab6d5 vals a96b0623b522e927 fb 247ca15057b82463
-34 expect Odemia | traps 889909 calls 9ecdff43b10ab6d5 vals a96b0623b522e927 fb 247ca15057b82463
-35 shot work/shots/odemia_2.png | traps 889909 calls 9ecdff43b10ab6d5 vals a96b0623b522e927 fb 247ca15057b82463
-37 dclickchar 100 | traps 889909 calls 9ecdff43b10ab6d5 vals a96b0623b522e927 fb 247ca15057b82463
-38 wait 120 | traps 891655 calls bc54f150ec819b4a vals 635096de53aac661 fb 2d45a7cc3b64e880
-39 expect savior of our fair lady Ariadne | traps 895616 calls c4ff7a638c58eaa1 vals 1336db4bdfd27dad fb 6d2b0eddc4cb5bb0
-40 key return | traps 895616 calls c4ff7a638c58eaa1 vals 1336db4bdfd27dad fb 6d2b0eddc4cb5bb0
-41 wait 120 | traps 895846 calls 5ff56b2aa23002d2 vals 82bd3f6e1798a7c5 fb 0a906623ab210c20
-42 shot work/shots/odemia_3.png | traps 897774 calls 94325a3864d9df20 vals d63d2e957af84e94 fb 2c1f2e0fdb9d7ab0
-43 quit | traps 897774 calls 94325a3864d9df20 vals d63d2e957af84e94 fb 2c1f2e0fdb9d7ab0
-0 exit | traps 897774 calls 94325a3864d9df20 vals d63d2e957af84e94 fb 2c1f2e0fdb9d7ab0
+7 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+8 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb dda05914631f971f
+9 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb dda05914631f971f
+10 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb d7d41ebc36506fdb
+11 expect Odemia | traps 827692 calls 9ec4369ccc815900 vals 85c65313c8fbf14c fb 493023556a019271
+13 key left | traps 827692 calls 9ec4369ccc815900 vals 85c65313c8fbf14c fb 493023556a019271
+14 wait 40 | traps 827972 calls 7b7dab42ea36b5d2 vals 478360af199f7dc7 fb 493023556a019271
+15 key left | traps 829186 calls 730947e69e8265ff vals 90223ad98d88c190 fb 942033f13e919b38
+16 wait 40 | traps 829249 calls baff24abf5f2c355 vals c0225ecdfea793b9 fb 942033f13e919b38
+17 key left | traps 830644 calls 889de3aedb20383e vals 6b1c9658e2047171 fb 9706138928b21ba8
+18 wait 40 | traps 830707 calls de6fef1e6fa36628 vals 8b2608909709cfc1 fb 9706138928b21ba8
+19 key left | traps 832058 calls bdbe0ced4fa157ae vals 14cf2264256e6b82 fb 95f9c6ca3112a8bf
+20 wait 40 | traps 832121 calls 090b1825fc2646f8 vals 9d88e26126d2d221 fb 95f9c6ca3112a8bf
+21 peek 228578 4 | traps 833331 calls e8ff03ef8a10d065 vals aca0a4b30931abed fb a0e312ab8d35ebe4
+22 shot work/shots/odemia_1.png | traps 833331 calls e8ff03ef8a10d065 vals aca0a4b30931abed fb a0e312ab8d35ebe4
+23 key right | traps 833331 calls e8ff03ef8a10d065 vals aca0a4b30931abed fb a0e312ab8d35ebe4
+24 wait 40 | traps 833606 calls e1f3c5afdff13fbb vals f5214e8172bcdb37 fb a0e312ab8d35ebe4
+26 key o cmd | traps 834799 calls 71a247c0f1a85954 vals 2426040a5d751604 fb 7a41e2d44ffc8763
+27 wait 200 | traps 835264 calls d9ba00947d479e1b vals 32c75f02b8f3daa9 fb 7640af7d1e885676
+28 expect Save Game before Closing | traps 835954 calls dac498b04e2c371d vals 635f7cd5e80c8369 fb 183d7936864f5907
+29 key return | traps 835954 calls dac498b04e2c371d vals 635f7cd5e80c8369 fb 183d7936864f5907
+30 wait 1500 | traps 836030 calls 18c594c1ea126577 vals e7999ffa68fd391b fb a565ec59ed677b4b
+31 key return | traps 837718 calls 19eff2113002a0cc vals b578d02ff2fc555e fb 4e158fd3ab035fa8
+32 wait 1500 | traps 837718 calls 19eff2113002a0cc vals b578d02ff2fc555e fb aa0e75606a1daa34
+33 expect Game Opened | traps 889908 calls c965c7bf5f56190c vals 0dd6a0ba597df1d7 fb 247ca15057b82463
+34 expect Odemia | traps 889908 calls c965c7bf5f56190c vals 0dd6a0ba597df1d7 fb 247ca15057b82463
+35 shot work/shots/odemia_2.png | traps 889908 calls c965c7bf5f56190c vals 0dd6a0ba597df1d7 fb 247ca15057b82463
+37 dclickchar 100 | traps 889908 calls c965c7bf5f56190c vals 0dd6a0ba597df1d7 fb 247ca15057b82463
+38 wait 120 | traps 891654 calls 0751ecf836dfe167 vals a949c69be58f5d31 fb 2d45a7cc3b64e880
+39 expect savior of our fair lady Ariadne | traps 895615 calls b2c83b64a389adb0 vals 1f741522b080acdd fb 6d2b0eddc4cb5bb0
+40 key return | traps 895615 calls b2c83b64a389adb0 vals 1f741522b080acdd fb 6d2b0eddc4cb5bb0
+41 wait 120 | traps 895845 calls 342f7a1d3bb7b707 vals fe7bd1ecccf160ad fb 0a906623ab210c20
+42 shot work/shots/odemia_3.png | traps 897773 calls 1a6fe99cc6bc5fc9 vals 3c6236832cc6656c fb 2c1f2e0fdb9d7ab0
+43 quit | traps 897773 calls 1a6fe99cc6bc5fc9 vals 3c6236832cc6656c fb 2c1f2e0fdb9d7ab0
+0 exit | traps 897773 calls 1a6fe99cc6bc5fc9 vals 3c6236832cc6656c fb 2c1f2e0fdb9d7ab0

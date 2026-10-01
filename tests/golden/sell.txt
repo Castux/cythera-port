@@ -1,44 +1,44 @@
 6 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-7 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-8 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb dda05914631f971f
-9 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb dda05914631f971f
-10 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb d7d41ebc36506fdb
-11 dclickchar 35 | traps 828128 calls f19d926e558d5a3b vals e456190fdff3ce8f fb 73ea825b81bba525
-12 wait 150 | traps 829619 calls fb3bcd53bf6707ec vals 3dd68c1de68ca28c fb e5dbca5bea7b4745
-13 keyuntil return 120 5 help you | traps 832020 calls b5ef8c9c174569ab vals 3ed3a81219b3e98f fb e5dbca5bea7b4745
-13 keyuntil return 120 5 help you | traps 836373 calls b86416cd78951e96 vals 7020f4b789d99464 fb f60e5ee16db05631
-14 type sell | traps 836373 calls b86416cd78951e96 vals 7020f4b789d99464 fb f60e5ee16db05631
-15 key return | traps 836401 calls 847b8c28f7c7c2fb vals 473992497cf1600a fb 750f8f7460f9b6d8
-16 wait 150 | traps 836521 calls 919b6dd10a00e8ea vals fd3eb1e027b4e6f3 fb 750f8f7460f9b6d8
-17 expect pay you 10 oboloi a bale | traps 839266 calls 937bf2e058ef6966 vals 4d73587c5c196abd fb a610fa9b6245a869
-18 type y | traps 839266 calls 937bf2e058ef6966 vals 4d73587c5c196abd fb a610fa9b6245a869
-19 key return | traps 839550 calls cdc44ff16d162ef4 vals 21ef77229d287159 fb a610fa9b6245a869
-20 wait 150 | traps 839611 calls d4089a968510e2f6 vals 10577897ce0a088b fb 42da86c0e6584575
-22 expect Flax (3) | traps 841811 calls 6026e12bda1b0742 vals 6fb651d6631518e3 fb 42da86c0e6584575
-23 expect 30 ob | traps 841811 calls 6026e12bda1b0742 vals 6fb651d6631518e3 fb 42da86c0e6584575
-24 click 210 38 | traps 841811 calls 6026e12bda1b0742 vals 6fb651d6631518e3 fb 42da86c0e6584575
-25 wait 150 | traps 2094445 calls a1bd1181ec79aa53 vals 7fc08bab45f0f92b fb ec318ddef8b775d5
-27 expect Item For Sale | traps 2098245 calls 68acad223bfc75ab vals e204b51a204f3bfb fb ec318ddef8b775d5
-28 click 437 122 | traps 2098245 calls 68acad223bfc75ab vals e204b51a204f3bfb fb ec318ddef8b775d5
-29 wait 60 | traps 2100540 calls 154c58ec38315baa vals 2365ce09e4e8fe24 fb 7ac3c0c241d5ba95
-30 click 397 302 | traps 2101540 calls 50b97ac9d61108ba vals f91423960c10773c fb 7ac3c0c241d5ba95
-31 wait 150 | traps 2103346 calls 90b5e75df826373d vals af4402622e0df42c fb 629e729bf1960329
-32 expect Flax (1) | traps 2105546 calls 5b678ba7e0ee6ff9 vals 5e2f74689ee25980 fb 629e729bf1960329
-33 shot work/shots/sell_1.png | traps 2105546 calls 5b678ba7e0ee6ff9 vals 5e2f74689ee25980 fb 629e729bf1960329
-34 click 525 265 | traps 2105546 calls 5b678ba7e0ee6ff9 vals 5e2f74689ee25980 fb 629e729bf1960329
-35 wait 150 | traps 3356201 calls 34c2746d77e98e9b vals 5f874920d0197370 fb 2cb32a294ebf4f95
-36 type bye | traps 3361151 calls a7d19b92933a86af vals f0ccad3d269cd588 fb 2cb32a294ebf4f95
-37 key return | traps 3361269 calls d8957f93d57b52ae vals c536e505d3a4be91 fb 2cb32a294ebf4f95
-38 wait 150 | traps 3361387 calls 930a38201d89d477 vals e386cce511f64c02 fb f925dd92df2d7746
-39 key return | traps 3364233 calls 32e58764e5cd3d38 vals 452ad85a03d1ee84 fb 43aa090a3fc7e539
-40 wait 150 | traps 3365202 calls 5bca95aaf693eb9e vals c081fc9868ba57b6 fb 404aa91c39476aaf
-42 mousedown 362 404 | traps 3368958 calls e7707a79984a8f8f vals 8039afa12939f1e5 fb 0a11ea66a321dccf
-43 wait 6 | traps 3368977 calls 154345bae7af4706 vals 45e237b9db6330a3 fb 0a11ea66a321dccf
-44 mouseup 362 404 | traps 4513470 calls 66606c542b317dc2 vals 3d87eb835da84bc8 fb f653003fafa8c767
-45 wait 200 | traps 4513471 calls 29788804b5a867e8 vals 33dfbe55a67cac1b fb f653003fafa8c767
-46 click 60 320 | traps 4521186 calls b57378a20e37f35e vals 33e26bf4db399af6 fb b0de6e3edf77854c
-47 wait 100 | traps 4522867 calls c5e44171da68f05f vals 2019313ff01d2f9b fb 729094e8e1d5dd15
-48 expect 120 | traps 4525176 calls 649cd6c597c9e3ec vals 1541da636c039eb2 fb 729094e8e1d5dd15
-49 shot work/shots/sell_2.png | traps 4525176 calls 649cd6c597c9e3ec vals 1541da636c039eb2 fb 729094e8e1d5dd15
-50 quit | traps 4525176 calls 649cd6c597c9e3ec vals 1541da636c039eb2 fb 729094e8e1d5dd15
-0 exit | traps 4525176 calls 649cd6c597c9e3ec vals 1541da636c039eb2 fb 729094e8e1d5dd15
+7 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+8 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb dda05914631f971f
+9 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb dda05914631f971f
+10 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb d7d41ebc36506fdb
+11 dclickchar 35 | traps 828127 calls 7625f9a2e997a7fa vals b9f6f2291259e583 fb 73ea825b81bba525
+12 wait 150 | traps 829618 calls 6a604e6c12007a0d vals a624fc4d9bd41d30 fb e5dbca5bea7b4745
+13 keyuntil return 120 5 help you | traps 832019 calls 3afc8636c20b773e vals 83b9f6c7af9f0ac3 fb e5dbca5bea7b4745
+13 keyuntil return 120 5 help you | traps 836372 calls f2affdedd643637f vals 64f7ca981add442e fb f60e5ee16db05631
+14 type sell | traps 836372 calls f2affdedd643637f vals 64f7ca981add442e fb f60e5ee16db05631
+15 key return | traps 836400 calls 6e111ae68fb1e46e vals be572379d033f140 fb 750f8f7460f9b6d8
+16 wait 150 | traps 836520 calls d0541570e4c65807 vals ec66a650155c5e09 fb 750f8f7460f9b6d8
+17 expect pay you 10 oboloi a bale | traps 839265 calls e89d4bb505853843 vals 709bd6c09f91ba27 fb a610fa9b6245a869
+18 type y | traps 839265 calls e89d4bb505853843 vals 709bd6c09f91ba27 fb a610fa9b6245a869
+19 key return | traps 839549 calls 5d7cab6f48c377c9 vals 9c365f925dec11df fb a610fa9b6245a869
+20 wait 150 | traps 839610 calls 5e6e91fe410ea387 vals 73ab8ec6a73e2155 fb 42da86c0e6584575
+22 expect Flax (3) | traps 841810 calls 13707025124eb88b vals 4e7b0a0e321fb0ad fb 42da86c0e6584575
+23 expect 30 ob | traps 841810 calls 13707025124eb88b vals 4e7b0a0e321fb0ad fb 42da86c0e6584575
+24 click 210 38 | traps 841810 calls 13707025124eb88b vals 4e7b0a0e321fb0ad fb 42da86c0e6584575
+25 wait 150 | traps 2094441 calls 76eccd44f2b922d7 vals 0cff7b13295f11e1 fb ec318ddef8b775d5
+27 expect Item For Sale | traps 2098241 calls dbb2cecc1a85ed6f vals 829e21b45faaadf1 fb ec318ddef8b775d5
+28 click 437 122 | traps 2098241 calls dbb2cecc1a85ed6f vals 829e21b45faaadf1 fb ec318ddef8b775d5
+29 wait 60 | traps 2100536 calls ce387c045bceaeee vals c217763df23a9fe2 fb 7ac3c0c241d5ba95
+30 click 397 302 | traps 2101536 calls d63b71cb0fea103e vals 79f6b23c8257f66a fb 7ac3c0c241d5ba95
+31 wait 150 | traps 2103342 calls 46eb0f0c2d2c07a1 vals a25150f3af00bca2 fb 629e729bf1960329
+32 expect Flax (1) | traps 2105542 calls a43bb0857a372b3d vals fec6200c274a9046 fb 629e729bf1960329
+33 shot work/shots/sell_1.png | traps 2105542 calls a43bb0857a372b3d vals fec6200c274a9046 fb 629e729bf1960329
+34 click 525 265 | traps 2105542 calls a43bb0857a372b3d vals fec6200c274a9046 fb 629e729bf1960329
+35 wait 150 | traps 3356200 calls 51ca61afc5fc7e66 vals 720325f953834218 fb 2cb32a294ebf4f95
+36 type bye | traps 3361150 calls d6c7f7ad1e46b222 vals 43742fc539c6bf90 fb 2cb32a294ebf4f95
+37 key return | traps 3361268 calls 9ddba80c6cd8713b vals 5451bc3ddca9b431 fb 2cb32a294ebf4f95
+38 wait 150 | traps 3361386 calls 06122116de0701ba vals 915e97bb7c4fbb4a fb f925dd92df2d7746
+39 key return | traps 3364232 calls 0dd410b24aea3a69 vals dd283c6b424506b4 fb 43aa090a3fc7e539
+40 wait 150 | traps 3365201 calls 8f601511a6a81f57 vals 43b47fd37d7219c9 fb 404aa91c39476aaf
+42 mousedown 362 404 | traps 3368957 calls 5156c301be67017a vals 6edc668b75073056 fb 0a11ea66a321dccf
+43 wait 6 | traps 3368976 calls e8c830b62d06418b vals e7fabcdd54e4fd68 fb 0a11ea66a321dccf
+44 mouseup 362 404 | traps 4513925 calls 12ec2616e0c672a3 vals 34361073415ff44b fb f653003fafa8c767
+45 wait 200 | traps 4513926 calls 04952fb3ae023319 vals 790d91b28cbe4dac fb f653003fafa8c767
+46 click 60 320 | traps 4521641 calls 45467b0d4ea3023b vals b7998371a49f54a1 fb b0de6e3edf77854c
+47 wait 100 | traps 4523322 calls d7ae7aa3e6264b1a vals 5fdc4fb44acf348c fb 729094e8e1d5dd15
+48 expect 120 | traps 4525631 calls 54a0db4269c1b5e5 vals 6b65c0d50aa6ad7d fb 729094e8e1d5dd15
+49 shot work/shots/sell_2.png | traps 4525631 calls 54a0db4269c1b5e5 vals 6b65c0d50aa6ad7d fb 729094e8e1d5dd15
+50 quit | traps 4525631 calls 54a0db4269c1b5e5 vals 6b65c0d50aa6ad7d fb 729094e8e1d5dd15
+0 exit | traps 4525631 calls 54a0db4269c1b5e5 vals 6b65c0d50aa6ad7d fb 729094e8e1d5dd15

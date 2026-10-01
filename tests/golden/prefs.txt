@@ -1,11 +1,11 @@
 1 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-2 click 505 117 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-3 wait 200 | traps 780471 calls 1568ba564f99bd05 vals 81e0f176da6f36a5 fb fd28e325372a032b
-4 expect Ambient Sounds | traps 782195 calls 9da684b368d18b9b vals 2ffe5de8d3c3a484 fb fd28e325372a032b
-5 expect Walk around obstacles | traps 782195 calls 9da684b368d18b9b vals 2ffe5de8d3c3a484 fb fd28e325372a032b
-6 expect Game Control | traps 782195 calls 9da684b368d18b9b vals 2ffe5de8d3c3a484 fb fd28e325372a032b
-7 shot work/shots/pref_1.png | traps 782195 calls 9da684b368d18b9b vals 2ffe5de8d3c3a484 fb fd28e325372a032b
-8 click 428 287 | traps 782195 calls 9da684b368d18b9b vals 2ffe5de8d3c3a484 fb fd28e325372a032b
-9 wait 60 | traps 782459 calls 850c8f57f490e61e vals 27fc2b42f7dbdf8c fb f259ff5419cc2718
-10 quit | traps 783232 calls 710f1ca5ba5b60b2 vals 6bb8502a70691062 fb e7a4e31d38ac997c
-0 exit | traps 783232 calls 710f1ca5ba5b60b2 vals 6bb8502a70691062 fb e7a4e31d38ac997c
+2 click 505 117 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+3 wait 200 | traps 780469 calls da88a699cc75bf49 vals 98c4c91437b84aac fb fd28e325372a032b
+4 expect Ambient Sounds | traps 782193 calls cd93b7c315b9414f vals 7f44f1a17321e685 fb fd28e325372a032b
+5 expect Walk around obstacles | traps 782193 calls cd93b7c315b9414f vals 7f44f1a17321e685 fb fd28e325372a032b
+6 expect Game Control | traps 782193 calls cd93b7c315b9414f vals 7f44f1a17321e685 fb fd28e325372a032b
+7 shot work/shots/pref_1.png | traps 782193 calls cd93b7c315b9414f vals 7f44f1a17321e685 fb fd28e325372a032b
+8 click 428 287 | traps 782193 calls cd93b7c315b9414f vals 7f44f1a17321e685 fb fd28e325372a032b
+9 wait 60 | traps 782457 calls e44105f899d2d1c2 vals 22ee872d059b3f81 fb f259ff5419cc2718
+10 quit | traps 783230 calls 0f35e746a7e71ebe vals b8dc95a41a91405b fb e7a4e31d38ac997c
+0 exit | traps 783230 calls 0f35e746a7e71ebe vals b8dc95a41a91405b fb e7a4e31d38ac997c

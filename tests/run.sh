@@ -5,7 +5,10 @@
 # Runs are hermetic: each script gets a fresh copy of a temporary System
 # Folder and Saved Games (never ~/.cythera-port). The copy starts from a
 # fixture made by tests/fixture.txt, which creates the saved game "Hero"
-# (a new game saved after the first conversation with the king).
+# (a new game saved after the first conversation with the king). The game
+# folder is copied too, without the files the game creates in it ("User
+# Custom Data", Finder info), so earlier runs don't change later ones; the
+# SoundFont, which only the port reads, stays where it is.
 # Extra emulator options can be passed in $CYTHERA_ARGS (e.g. "--trap-stats FILE").
 #
 # Golden traces: each run is also compared with tests/golden/NAME.txt, a line
@@ -20,15 +23,22 @@ PY="${PYTHON:-}"
 mkdir -p work/shots
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/cythera-tests.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
-mkdir -p "$tmp/fixture/System Folder"
+mkdir -p "$tmp/fixture/System Folder" "$tmp/data/gamedata"
+for f in gamedata/* gamedata/.manifest.csv; do
+  case "$(basename "$f")" in "User Custom Data"|soundfont.sf2) continue ;; esac
+  [ -e "$f" ] && cp -R "$f" "$tmp/data/gamedata/"
+done
+SF=; [ -f gamedata/soundfont.sf2 ] && SF="--soundfont gamedata/soundfont.sf2"
 
 run() { # run SCRIPT HOME LOG
   # optional first line "# app: NAME" selects another application;
   # "# args: ..." adds emulator options
   app=$(sed -n '1s/^# app: //p' "$1")
   args=$(sed -n 's/^# args: //p' "$1")
+  rm -rf "$tmp/gamedata" && cp -R "$tmp/data/gamedata" "$tmp/gamedata"
   "${CYTHERA:-./build/cythera}" --deterministic --timeout 900 --sysdir "$2/System Folder" \
-    ${app:+--app "$app"} $args --golden "${3%.log}.golden" $CYTHERA_ARGS --script "$1" > "$3" 2>&1
+    --data "$tmp/gamedata" $SF ${app:+--app "$app"} $args --golden "${3%.log}.golden" $CYTHERA_ARGS \
+    --script "$1" > "$3" 2>&1
 }
 golden() { # golden NAME LOG: compare with (or record) tests/golden/NAME.txt
   want="tests/golden/$(basename "$1" .txt).txt" got="${2%.log}.golden"
@@ -39,7 +49,9 @@ golden() { # golden NAME LOG: compare with (or record) tests/golden/NAME.txt
   [ -f "$want" ] || { echo "FAIL $1 (no $want: GOLDEN=update records it)"; return 1; }
   cmp -s "$want" "$got" && return 0
   echo "FAIL $1 (golden trace differs; first difference:)"
-  diff "$want" "$got" | grep -E '^[<>]' | head -2
+  awk 'NR == FNR { w[FNR] = $0; n = FNR; next }
+       w[FNR] != $0 { print "  want: " w[FNR]; print "  got:  " $0; d = 1; exit }
+       END { if (!d) print "  (one trace is a prefix of the other: " n " vs " FNR " lines)" }' "$want" "$got"
   return 1
 }
 check() { # check NAME RC LOG

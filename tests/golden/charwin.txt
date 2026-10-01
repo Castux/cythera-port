@@ -1,12 +1,12 @@
 1 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-2 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-3 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-4 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-5 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
-6 mousedown 362 404 | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
-7 wait 6 | traps 828380 calls f9db3fe248524314 vals aa48f5e552ca6b19 fb 78755f891fb3b429
-8 mouseup 362 404 | traps 2252280 calls 2a7278d8b6313aef vals 1c27a2ea374e9999 fb 3ab5a1a38ff42659
-9 wait 200 | traps 2252281 calls 74ba087796f5ad15 vals 1834554a800cf6ce fb 3ab5a1a38ff42659
-10 shot work/shots/ui_char1.png | traps 2260155 calls 21190ec93b232318 vals 4d7d0c3c65ea595c fb 7ee6d9327011c3a8
-11 quit | traps 2260155 calls 21190ec93b232318 vals 4d7d0c3c65ea595c fb 7ee6d9327011c3a8
-0 exit | traps 2260155 calls 21190ec93b232318 vals 4d7d0c3c65ea595c fb 7ee6d9327011c3a8
+2 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+3 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+4 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+5 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 7d0ac878d3afcc17
+6 mousedown 362 404 | traps 828364 calls aadf86f70228f19a vals 1b43466039502b79 fb 78755f891fb3b429
+7 wait 6 | traps 828379 calls ed93dea6f251e29d vals 455ad4aa9efbc81e fb 78755f891fb3b429
+8 mouseup 362 404 | traps 2251068 calls d303a1b090138f7c vals 6397da04dd044cd5 fb 3ab5a1a38ff42659
+9 wait 200 | traps 2252422 calls 14c114be1fa74a9c vals add6fde3fd7e9ad4 fb 3ab5a1a38ff42659
+10 shot work/shots/ui_char1.png | traps 2258942 calls a1410a1c30b8464d vals 5fd7afb7922bf4f7 fb 7ee6d9327011c3a8
+11 quit | traps 2258942 calls a1410a1c30b8464d vals 5fd7afb7922bf4f7 fb 7ee6d9327011c3a8
+0 exit | traps 2258942 calls a1410a1c30b8464d vals 5fd7afb7922bf4f7 fb 7ee6d9327011c3a8

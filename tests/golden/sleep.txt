@@ -1,73 +1,73 @@
 3 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-4 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-5 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-6 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-7 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
-8 click 566 54 | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
-9 wait 200 | traps 1598249 calls 36d56a34f28bb939 vals 424aeceeb6f02c86 fb db2fe4bff6869c0d
-11 key down | traps 1606160 calls 3a9fa356acb3428e vals b0651424201da493 fb 9b989a844dc9935c
-12 wait 40 | traps 1606368 calls d19427f299d29177 vals dc626300c119eca6 fb 9b989a844dc9935c
-13 key down | traps 1607517 calls 89e54cc1879612db vals 90c61707efb3a3c2 fb 29bd399cdefc148c
-14 wait 40 | traps 1607588 calls 25422c2820414a61 vals 95cf84584c687cfd fb 29bd399cdefc148c
-15 key up | traps 1608712 calls 2504ff91b71a0a32 vals dfeee7affcf97f7e fb 7228d8bdf3c3ee23
-16 wait 40 | traps 1608782 calls 8233adb8a3d3eac3 vals 7a98cdfc9951af18 fb 7228d8bdf3c3ee23
-17 dclick 470 190 | traps 1609739 calls e50a741fe071760f vals e1560b4350a46a72 fb f59775408bba9830
-18 wait 120 | traps 1610366 calls d0aef4c560754a35 vals 0c752f5756311144 fb edb7ceb4057ea2f3
-19 expect Use lever | traps 1611870 calls 5ba431c2308fc130 vals 9d6fd38b1f00e6bf fb 8bc9e6740ae70208
-20 key up | traps 1611870 calls 5ba431c2308fc130 vals 9d6fd38b1f00e6bf fb 8bc9e6740ae70208
-21 wait 40 | traps 1611940 calls 03fb4e7e0db05db1 vals ef40a84ea51237ed fb 8bc9e6740ae70208
-22 key up | traps 1612981 calls 1f8ecf6a562014f3 vals 4b6b96990f423d4b fb fc785fde08a3f1a8
-23 wait 40 | traps 1613068 calls a74868fbe1e44439 vals 7eead235b5e93fba fb fc785fde08a3f1a8
-24 key up | traps 1614166 calls 8ab5364961bb1ea7 vals 3a9d558f4c295dc3 fb bc20aa581c9c39fc
-25 wait 40 | traps 1614229 calls ef7ccfce3ca3b38d vals 209b450eb5268024 fb bc20aa581c9c39fc
-26 key left | traps 1615269 calls d70edce03b8410b3 vals 90eae93244aff7e0 fb 991a021cc50ec74f
-27 wait 40 | traps 1615332 calls 125f2401db472c89 vals fcbb73f0186b2d7f fb 991a021cc50ec74f
-28 key up | traps 1616200 calls b2b75eccf62dac34 vals 5390d1e300e1978d fb 8e5154a828c51387
-29 wait 40 | traps 1616263 calls b4d0c84ea0ddf4be vals dc7ab7315dc9f08c fb 8e5154a828c51387
-30 dclick 505 137 | traps 1621598 calls f599ffa5fb07376f vals 5bbc29c1ca71c6c7 fb 2487487b5b4ba727
-31 wait 300 | traps 1624707 calls 215ea55ba778feb8 vals cbd30eb372ea572a fb bd4eeab5eadd8497
-32 key escape | traps 1632697 calls 9196c59f4e875830 vals 8bae1eef93aad90e fb 29c7a1240d10953c
-33 wait 30 | traps 1632773 calls 549eccefab9a8c29 vals b701823f93b924c0 fb 29c7a1240d10953c
-34 click 560 250 | traps 1633418 calls 9dadfef9bf4de676 vals 2c10176719d16fba fb 29c7a1240d10953c
-35 wait 30 | traps 2288208 calls 59f8f469a00d0dd1 vals 4f6d2060924a6672 fb 7d01fd2f237ce9c4
-36 key right | traps 2292289 calls 4bee33a64363fa1e vals 8c6d6f00229a0d6e fb fadcaaa4ef72fd05
-37 wait 40 | traps 2292375 calls 496bd7e1f33648a3 vals 594053ba93569ed7 fb fadcaaa4ef72fd05
-38 key down | traps 2293383 calls f7be957df60d1b18 vals 35ce0ccfac05a47e fb 1f8b24a8be20189d
-39 wait 40 | traps 2293494 calls c7200e662ab9a078 vals 6761695e2d17cfd0 fb 1f8b24a8be20189d
-40 key down | traps 2294436 calls d7f9138a41b5c8af vals 0c3e20e7b94e54b3 fb 2c5149802cc5bc21
-41 wait 40 | traps 2294522 calls f10e24282dc883ba vals 29600fbc09b3150e fb 2c5149802cc5bc21
-42 key down | traps 2295551 calls accea093f3b30cc6 vals 724c3a04a2a4bc4e fb bc7dbaaf6fabfeb5
-43 wait 40 | traps 2295629 calls 99763db615985857 vals ae1c85f83a16a8c7 fb bc7dbaaf6fabfeb5
-45 expect The vision of Omen returns | traps 2297038 calls 3e71e2bf7bc4aca7 vals c685d33eee68b629 fb 98aea6c3a3f113f0
-46 keyuntil return 120 40 the bed looks comfortable | traps 2297038 calls 3e71e2bf7bc4aca7 vals c685d33eee68b629 fb 98aea6c3a3f113f0
-46 keyuntil return 120 40 the bed looks comfortable | traps 2299207 calls b80d46a64d405132 vals 98273898af0af194 fb 75423e9e2b21280c
-46 keyuntil return 120 40 the bed looks comfortable | traps 2301293 calls 8598e9a78cefd19c vals 98de52ee966fc6d6 fb a14bbb806b5baa9c
-46 keyuntil return 120 40 the bed looks comfortable | traps 2303373 calls 859fbf910be8b556 vals 098604646302421e fb 0943adda0b42181c
-46 keyuntil return 120 40 the bed looks comfortable | traps 2305470 calls 1e64e1168d4d328a vals 245d01cfd430be22 fb 360e9f31289bf5a0
-46 keyuntil return 120 40 the bed looks comfortable | traps 2307556 calls d7cd700ba17b4f94 vals 3f35bd6f38727966 fb 1534ee3e5ac05b5c
-46 keyuntil return 120 40 the bed looks comfortable | traps 2309642 calls f04ed26da7cb13be vals 678cf858b252b078 fb 6fa293fe797ed0bc
-46 keyuntil return 120 40 the bed looks comfortable | traps 2311739 calls b332e9ba2b1405d2 vals e69a2e97340a2ae7 fb d0ab0f8764bc1598
-46 keyuntil return 120 40 the bed looks comfortable | traps 2313819 calls f0ef8c566012a674 vals 045ce8c153fa6df6 fb ac2ff9c7f570f75c
-46 keyuntil return 120 40 the bed looks comfortable | traps 2315916 calls 4e396a096dd341e8 vals 6521cf0c3a5bc944 fb 1747d00596011e4c
-46 keyuntil return 120 40 the bed looks comfortable | traps 2325432 calls 788c7b9ddc94f3a5 vals 1659fa1cdd9bbe0a fb df2aa8088a0c6b99
-47 wait 60 | traps 2325432 calls 788c7b9ddc94f3a5 vals 1659fa1cdd9bbe0a fb df2aa8088a0c6b99
-48 key left | traps 2326753 calls abb7bee2972e2022 vals e8a1ba6f58d6c597 fb 07888e1bce9b9b75
-49 wait 20 | traps 2326871 calls 8279f7f97571ae18 vals 92df54abc28af023 fb 07888e1bce9b9b75
-50 key left | traps 2327422 calls 7a7a51acaed5abab vals 10949992a10ff0f8 fb 380a7956860ab0b5
-51 wait 20 | traps 2327540 calls 8822be37461412f9 vals fa13cf07c32eeb2d fb 380a7956860ab0b5
-52 dclick 454 135 | traps 2328297 calls 2cce911dbc15336a vals b765f551703b11f2 fb ca6d9fc6711e62fd
-53 wait 120 | traps 2332752 calls cefebeb35d8653a8 vals 2e659b6e47b51f5a fb 9e834c54991dbb08
-54 expect Sleep how long | traps 2334913 calls bdd9397bf5e466e3 vals 4d4a0662cc20e7fa fb 9e834c54991dbb08
-55 shot work/shots/sl_1.png | traps 2334913 calls bdd9397bf5e466e3 vals 4d4a0662cc20e7fa fb 9e834c54991dbb08
-57 click 320 95 | traps 2334913 calls bdd9397bf5e466e3 vals 4d4a0662cc20e7fa fb 9e834c54991dbb08
-58 wait 1200 | traps 2338297 calls 2a6fce810c12ea3f vals 0c5b3e3d7bb12afc fb 9e834c54991dbb08
-59 expect You sleep soundly | traps 2373391 calls 6508449079c6955c vals 22d11f9b71ce5028 fb 4f01f5326e53691b
-60 shot work/shots/sl_2.png | traps 2373391 calls 6508449079c6955c vals 22d11f9b71ce5028 fb 4f01f5326e53691b
-62 dclick 454 135 | traps 2373391 calls 6508449079c6955c vals 22d11f9b71ce5028 fb 4f01f5326e53691b
-63 wait 120 | traps 2377742 calls 28be1aabf09d6b3c vals 95158a0725cb6d80 fb aa4887c0694ff5e8
-64 click 320 95 | traps 2379903 calls 7b93bddfb071f877 vals 4fb18e6af512880c fb aa4887c0694ff5e8
-65 wait 120 | traps 2384026 calls 93f1900f4ea1fe45 vals c1db989408f4ffe0 fb b8cd32f4b5904da5
-66 expect It is already morning | traps 2387499 calls a4982db5b4b4f8e1 vals d094b6e6266a8431 fb 9318ca3a28ac3c2d
-67 shot work/shots/sl_3.png | traps 2387499 calls a4982db5b4b4f8e1 vals d094b6e6266a8431 fb 9318ca3a28ac3c2d
-68 quit | traps 2387499 calls a4982db5b4b4f8e1 vals d094b6e6266a8431 fb 9318ca3a28ac3c2d
-0 exit | traps 2387499 calls a4982db5b4b4f8e1 vals d094b6e6266a8431 fb 9318ca3a28ac3c2d
+4 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+5 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+6 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+7 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 7d0ac878d3afcc17
+8 click 566 54 | traps 828364 calls aadf86f70228f19a vals 1b43466039502b79 fb 78755f891fb3b429
+9 wait 200 | traps 1597392 calls 700748d8038a45b1 vals 1ac717a1235250f9 fb db2fe4bff6869c0d
+11 key down | traps 1605366 calls b242356ebbca868d vals 5ee2307b0574495f fb 9b989a844dc9935c
+12 wait 40 | traps 1605574 calls 8478bab05047136c vals cc923e4e75a92142 fb 9b989a844dc9935c
+13 key down | traps 1606723 calls b9766c83942e413c vals e296ee9a1590b0b6 fb 29bd399cdefc148c
+14 wait 40 | traps 1606794 calls 58eda6671654e576 vals 1eccae8962bd1d19 fb 29bd399cdefc148c
+15 key up | traps 1607918 calls 750b4bb081b07f69 vals 7480cb5be4dc4392 fb 7228d8bdf3c3ee23
+16 wait 40 | traps 1607988 calls faef297ec01a5b00 vals 3991f570627f6d8c fb 7228d8bdf3c3ee23
+17 dclick 470 190 | traps 1608945 calls 63ee342707b59bc8 vals 45ef3647f2db3d06 fb f59775408bba9830
+18 wait 120 | traps 1609572 calls 333c657ee15eba32 vals 013b0e194cfd1670 fb edb7ceb4057ea2f3
+19 expect Use lever | traps 1611076 calls 9f64942bd68b1597 vals 809b7763259591a3 fb 8bc9e6740ae70208
+20 key up | traps 1611076 calls 9f64942bd68b1597 vals 809b7763259591a3 fb 8bc9e6740ae70208
+21 wait 40 | traps 1611146 calls c2d3a97cd3bfe7e6 vals 0b9d434faa717f31 fb 8bc9e6740ae70208
+22 key up | traps 1612187 calls 506a33d624aaa128 vals dd3e63b52ed95e0f fb fc785fde08a3f1a8
+23 wait 40 | traps 1612274 calls b9d80cd447ea9552 vals bcbd2f14ef170c1e fb fc785fde08a3f1a8
+24 key up | traps 1613372 calls 1a9e449778025a68 vals 4ce74e090d76a2a7 fb bc20aa581c9c39fc
+25 wait 40 | traps 1613435 calls 721888135d77c112 vals acffb322678a0f70 fb bc20aa581c9c39fc
+26 key left | traps 1614475 calls 8e50d063710db5b8 vals 446b3ef045df709c fb 991a021cc50ec74f
+27 wait 40 | traps 1614538 calls 1d3ad7bc552645c2 vals a87198fe62c7be33 fb 991a021cc50ec74f
+28 key up | traps 1615406 calls 490ca7f4a5885d3b vals a6cd4aebd503c4d1 fb 8e5154a828c51387
+29 wait 40 | traps 1615469 calls 0f33a13064fcf501 vals ddfd858e99694680 fb 8e5154a828c51387
+30 dclick 505 137 | traps 1620803 calls eb742aa70bcc262b vals 1ac36b81d978223c fb 0af3133ee3d20627
+31 wait 300 | traps 1623913 calls bcec7432e9af028b vals 58d6184f4285e561 fb bd4eeab5eadd8497
+32 key escape | traps 1631903 calls 84869c463c434173 vals 5e4e4102eac1c475 fb 29c7a1240d10953c
+33 wait 30 | traps 1631979 calls 0d6a4fe7754b1d0a vals 425366222e192593 fb 29c7a1240d10953c
+34 click 560 250 | traps 1632624 calls 5a7738d5510484e9 vals 5ca5f9f5d222ea79 fb 29c7a1240d10953c
+35 wait 30 | traps 2287263 calls 87b8883aad926fba vals 1fe5d3281f86e40e fb 7d01fd2f237ce9c4
+36 key right | traps 2291344 calls 959af48b362fbba1 vals 506ae079acb40699 fb fadcaaa4ef72fd05
+37 wait 40 | traps 2291430 calls 60b29df8a509c4bc vals 2e75acb22a39ced0 fb fadcaaa4ef72fd05
+38 key down | traps 2292438 calls cf55d9b37b5a99ab vals 76ed6627f29a9735 fb 1f8b24a8be20189d
+39 wait 40 | traps 2292549 calls 73a26957fd069f1b vals 3880af1efef48e0b fb 1f8b24a8be20189d
+40 key down | traps 2293491 calls f8cf4d80d658c1f8 vals af1c0add3e7d21dc fb 2c5149802cc5bc21
+41 wait 40 | traps 2293577 calls a5e9fd007dfb558d vals 3de9484d7912de21 fb 2c5149802cc5bc21
+42 key down | traps 2294606 calls 3fff1e75f839e891 vals 430282b8b5fdc62d fb bc7dbaaf6fabfeb5
+43 wait 40 | traps 2294684 calls ea6789d84b49cda0 vals 603ac713abd2de64 fb bc7dbaaf6fabfeb5
+45 expect The vision of Omen returns | traps 2296093 calls 1d48cdb321c0d84c vals 5ebc1a8a91cb66c6 fb 98aea6c3a3f113f0
+46 keyuntil return 120 40 the bed looks comfortable | traps 2296093 calls 1d48cdb321c0d84c vals 5ebc1a8a91cb66c6 fb 98aea6c3a3f113f0
+46 keyuntil return 120 40 the bed looks comfortable | traps 2298262 calls bcfdb12379c81215 vals ff02aa60d5e3ca8f fb 75423e9e2b21280c
+46 keyuntil return 120 40 the bed looks comfortable | traps 2300348 calls 0be0f27ecd0cc58b vals b8a0501c48895141 fb a14bbb806b5baa9c
+46 keyuntil return 120 40 the bed looks comfortable | traps 2302428 calls a985453b90e52891 vals 24c062ece60928e1 fb 0943adda0b42181c
+46 keyuntil return 120 40 the bed looks comfortable | traps 2304525 calls 007c64c952d869cd vals b32fc204171b4239 fb 360e9f31289bf5a0
+46 keyuntil return 120 40 the bed looks comfortable | traps 2306611 calls 22f2647b369f7263 vals 4c38b848e06af261 fb 1534ee3e5ac05b5c
+46 keyuntil return 120 40 the bed looks comfortable | traps 2308697 calls e7646204c0e25879 vals 88eb60b93d8105a3 fb 6fa293fe797ed0bc
+46 keyuntil return 120 40 the bed looks comfortable | traps 2310794 calls 6146cf118936ce15 vals ceb9fcfda0c736b4 fb d0ab0f8764bc1598
+46 keyuntil return 120 40 the bed looks comfortable | traps 2312874 calls 1b9b2e91008df833 vals 58e01d2c49037315 fb ac2ff9c7f570f75c
+46 keyuntil return 120 40 the bed looks comfortable | traps 2314971 calls 67d7529cd6dbd78f vals 88d52a4c0d8ef2e3 fb 1747d00596011e4c
+46 keyuntil return 120 40 the bed looks comfortable | traps 2324487 calls 719d7d2af09bda02 vals e5ad55ac7bc16f5a fb df2aa8088a0c6b99
+47 wait 60 | traps 2324487 calls 719d7d2af09bda02 vals e5ad55ac7bc16f5a fb df2aa8088a0c6b99
+48 key left | traps 2325808 calls bb8eb41e393f9909 vals ff6c4d28f6d6a8d7 fb 07888e1bce9b9b75
+49 wait 20 | traps 2325926 calls 5513f5e1bb3ef5cf vals f1214ca3bc6ccb93 fb 07888e1bce9b9b75
+50 key left | traps 2326477 calls 215832fedb7cb608 vals 6346166ee8e8dab8 fb 380a7956860ab0b5
+51 wait 20 | traps 2326595 calls 8ce50b6e5168578e vals 8b9070e80d9ac11d fb 380a7956860ab0b5
+52 dclick 454 135 | traps 2327352 calls eafd8950324f1091 vals 865baa7a14788dc2 fb ca6d9fc6711e62fd
+53 wait 120 | traps 2331807 calls 8c180bd8e1047b27 vals 917e951509dac8a2 fb 9e834c54991dbb08
+54 expect Sleep how long | traps 2333968 calls bfb22a17f24f5a4c vals 94ba4affdbd55d92 fb 9e834c54991dbb08
+55 shot work/shots/sl_1.png | traps 2333968 calls bfb22a17f24f5a4c vals 94ba4affdbd55d92 fb 9e834c54991dbb08
+57 click 320 95 | traps 2333968 calls bfb22a17f24f5a4c vals 94ba4affdbd55d92 fb 9e834c54991dbb08
+58 wait 1200 | traps 2337352 calls 2f34f64f2c288118 vals 9f412c929e733b0f fb 9e834c54991dbb08
+59 expect You sleep soundly | traps 2372446 calls 8b3c9fb26b811023 vals 11c1b7cd1decb41f fb 4f01f5326e53691b
+60 shot work/shots/sl_2.png | traps 2372446 calls 8b3c9fb26b811023 vals 11c1b7cd1decb41f fb 4f01f5326e53691b
+62 dclick 454 135 | traps 2372446 calls 8b3c9fb26b811023 vals 11c1b7cd1decb41f fb 4f01f5326e53691b
+63 wait 120 | traps 2376797 calls 84b0e832c6f3a4fb vals 2706d5751a1919ef fb aa4887c0694ff5e8
+64 click 320 95 | traps 2378958 calls 09a623e204fd7f30 vals f332dadefca9845f fb aa4887c0694ff5e8
+65 wait 120 | traps 2383081 calls e4a7e69d97218ab2 vals efb49de21b2b5a85 fb b8cd32f4b5904da5
+66 expect It is already morning | traps 2386554 calls 121518da5114155e vals 00af3e850873f9c0 fb 9318ca3a28ac3c2d
+67 shot work/shots/sl_3.png | traps 2386554 calls 121518da5114155e vals 00af3e850873f9c0 fb 9318ca3a28ac3c2d
+68 quit | traps 2386554 calls 121518da5114155e vals 00af3e850873f9c0 fb 9318ca3a28ac3c2d
+0 exit | traps 2386554 calls 121518da5114155e vals 00af3e850873f9c0 fb 9318ca3a28ac3c2d

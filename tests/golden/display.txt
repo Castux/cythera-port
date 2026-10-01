@@ -1,42 +1,42 @@
 5 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-6 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-7 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-8 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb df195320a4adaa93
-9 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 0f5084a83da8ccef
-10 expect Omen's Test | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
-11 screen 1024x768 | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
-12 wait 120 | traps 828364 calls bbf92089003722e4 vals 3db5f01064186f23 fb 78755f891fb3b429
-13 shot work/shots/display_1.png | traps 836025 calls 9f31ac42bd440480 vals 48cde65b89d4c1c2 fb de3a678def415ad9
-15 move 893 406 | traps 836025 calls 9f31ac42bd440480 vals 48cde65b89d4c1c2 fb de3a678def415ad9
-16 wait 5 | traps 836025 calls 9f31ac42bd440480 vals 48cde65b89d4c1c2 fb de3a678def415ad9
-17 mousedown 893 406 | traps 836086 calls 7a82f81fbe159e41 vals 3abce0b361497fd6 fb de3a678def415ad9
-18 wait 5 | traps 836122 calls 5f484ea5186acd3b vals d36a2dc7e7306f59 fb de3a678def415ad9
-19 move 950 520 | traps 836147 calls 7f688e80383a4a2c vals 8c78dddda3e35954 fb 6ae9a82928d89cfd
-20 wait 5 | traps 836147 calls 7f688e80383a4a2c vals 8c78dddda3e35954 fb 6ae9a82928d89cfd
-21 move 1010 640 | traps 836147 calls 7f688e80383a4a2c vals 8c78dddda3e35954 fb 2ef6b341d65a0fb9
-22 wait 10 | traps 836147 calls 7f688e80383a4a2c vals 8c78dddda3e35954 fb 2ef6b341d65a0fb9
-23 mouseup 1010 640 | traps 836147 calls 7f688e80383a4a2c vals 8c78dddda3e35954 fb 9bc5f03393581689
-24 wait 200 | traps 836648 calls b0026482cc6e192f vals d79f0a79501cd61c fb 9bc5f03393581689
-25 shot work/shots/display_2.png | traps 841340 calls 998a9be5de098ad6 vals db9f94e6a74e8d00 fb 5899eee93470d763
-26 key down | traps 841340 calls 998a9be5de098ad6 vals db9f94e6a74e8d00 fb 5899eee93470d763
-27 wait 40 | traps 841610 calls fc9f37637b60b7c7 vals b8bd0d3ffc8264c2 fb 5899eee93470d763
-28 expect Omen's Test | traps 842676 calls 3e5690509b734a7e vals 453c9f89653f9148 fb 4cae097a8cd20e77
-29 screen 640x480 | traps 842676 calls 3e5690509b734a7e vals 453c9f89653f9148 fb 4cae097a8cd20e77
-30 wait 200 | traps 842676 calls 3e5690509b734a7e vals 453c9f89653f9148 fb 4cae097a8cd20e77
-31 shot work/shots/display_3.png | traps 849133 calls 847fa1a2c598a29e vals e64bb87127851727 fb 3641486c63165ed7
-32 key up | traps 849133 calls 847fa1a2c598a29e vals e64bb87127851727 fb 3641486c63165ed7
-33 wait 40 | traps 849211 calls 58d4ff6de5af9caf vals 4806798771fe3919 fb 3641486c63165ed7
-34 key s cmd | traps 849953 calls 35b7bc4953664437 vals 67dd93576fd428a7 fb e8acb4961f106f2c
-35 wait 300 | traps 850519 calls e88014abd6aa961b vals b2e8a52ca660f2c1 fb e8acb4961f106f2c
-36 key o cmd | traps 856299 calls 831492faa4415c81 vals a3cd925a12062c17 fb 2d53fbc0fe7c7af7
-37 wait 200 | traps 856794 calls dddcb9da1af54adb vals 990d48115d051380 fb 568e01474f0e7020
-39 expect Save Game before Closing | traps 857484 calls b3831506e2f8b45d vals 60184639b5675636 fb 073d2749c71d6289
-40 key return | traps 857484 calls b3831506e2f8b45d vals 60184639b5675636 fb 073d2749c71d6289
-41 wait 300 | traps 857560 calls 032e60f2eb8ccfb7 vals 539f9d6571d7f56c fb 2c3be4254ac68b05
-42 click 507 306 | traps 859033 calls 6001e33d01def848 vals 4ba28735643b603c fb 92a10d022f450548
-43 wait 1200 | traps 860830 calls a25106ca9a515212 vals 62f193cbafa61880 fb 8d844d6f41180043
-44 shot work/shots/display_4.png | traps 892679 calls e39fc05da2ec815c vals 7099137ef2763dd0 fb fc3cb65ad9f03901
-45 expect [Game Opened] | traps 892679 calls e39fc05da2ec815c vals 7099137ef2763dd0 fb fc3cb65ad9f03901
-46 expect Omen's Test | traps 892679 calls e39fc05da2ec815c vals 7099137ef2763dd0 fb fc3cb65ad9f03901
-47 quit | traps 892679 calls e39fc05da2ec815c vals 7099137ef2763dd0 fb fc3cb65ad9f03901
-0 exit | traps 892679 calls e39fc05da2ec815c vals 7099137ef2763dd0 fb fc3cb65ad9f03901
+6 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+7 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+8 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 0a3c2f5f4203837b
+9 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 7d0ac878d3afcc17
+10 expect Omen's Test | traps 828364 calls aadf86f70228f19a vals 1b43466039502b79 fb 78755f891fb3b429
+11 screen 1024x768 | traps 828364 calls aadf86f70228f19a vals 1b43466039502b79 fb 78755f891fb3b429
+12 wait 120 | traps 828364 calls aadf86f70228f19a vals 1b43466039502b79 fb 78755f891fb3b429
+13 shot work/shots/display_1.png | traps 836024 calls 3be92e6bb9748899 vals a2f5d0a704e56f51 fb de3a678def415ad9
+15 move 893 406 | traps 836024 calls 3be92e6bb9748899 vals a2f5d0a704e56f51 fb de3a678def415ad9
+16 wait 5 | traps 836024 calls 3be92e6bb9748899 vals a2f5d0a704e56f51 fb de3a678def415ad9
+17 mousedown 893 406 | traps 836085 calls 27a4ea569f271610 vals 2bd90cd919578cbd fb de3a678def415ad9
+18 wait 5 | traps 836121 calls d84d4fac6c506b9a vals eb4412308b92ce9a fb de3a678def415ad9
+19 move 950 520 | traps 836146 calls 7bf365fea19c1e05 vals 8af8914c00003097 fb 6ae9a82928d89cfd
+20 wait 5 | traps 836146 calls 7bf365fea19c1e05 vals 8af8914c00003097 fb 6ae9a82928d89cfd
+21 move 1010 640 | traps 836146 calls 7bf365fea19c1e05 vals 8af8914c00003097 fb 2ef6b341d65a0fb9
+22 wait 10 | traps 836146 calls 7bf365fea19c1e05 vals 8af8914c00003097 fb 2ef6b341d65a0fb9
+23 mouseup 1010 640 | traps 836146 calls 7bf365fea19c1e05 vals 8af8914c00003097 fb 9bc5f03393581689
+24 wait 200 | traps 836651 calls db34953314338f1e vals 01cd177456facf0e fb 9bc5f03393581689
+25 shot work/shots/display_2.png | traps 841339 calls 5cb2307a204a682b vals 89b8f19992e416ed fb 5899eee93470d763
+26 key down | traps 841339 calls 5cb2307a204a682b vals 89b8f19992e416ed fb 5899eee93470d763
+27 wait 40 | traps 841609 calls a03ff3f6702ffa66 vals 8d97b3d73a26b5b3 fb 5899eee93470d763
+28 expect Omen's Test | traps 842675 calls 4b653d02e6803f77 vals 89b8924027f4a6f2 fb 4cae097a8cd20e77
+29 screen 640x480 | traps 842675 calls 4b653d02e6803f77 vals 89b8924027f4a6f2 fb 4cae097a8cd20e77
+30 wait 200 | traps 842675 calls 4b653d02e6803f77 vals 89b8924027f4a6f2 fb 4cae097a8cd20e77
+31 shot work/shots/display_3.png | traps 849132 calls f3fd38544454349b vals 816a36f8e0b59c56 fb 3641486c63165ed7
+32 key up | traps 849132 calls f3fd38544454349b vals 816a36f8e0b59c56 fb 3641486c63165ed7
+33 wait 40 | traps 849210 calls 311593f27a54213a vals 08f3f31d1d8e7374 fb 3641486c63165ed7
+34 key s cmd | traps 849952 calls 2b5b19c75d57cd36 vals 9f3d6f6daea4f07e fb e8acb4961f106f2c
+35 wait 300 | traps 850518 calls 59c5326fdf5caad6 vals 8b7cc655a6ffcbf9 fb e8acb4961f106f2c
+36 key o cmd | traps 856289 calls 27ce4378fc24868f vals dfa8e18ad4cbdf7c fb 2d53fbc0fe7c7af7
+37 wait 200 | traps 856793 calls 3b65f6dda3aeba5a vals dfb4cbae8d3f4fb4 fb 568e01474f0e7020
+39 expect Save Game before Closing | traps 857483 calls 472616d5be510268 vals 7a9ed6a0c5d42632 fb 073d2749c71d6289
+40 key return | traps 857483 calls 472616d5be510268 vals 7a9ed6a0c5d42632 fb 073d2749c71d6289
+41 wait 300 | traps 857559 calls 27a041c4e4d3d1ae vals aebfe476624a0100 fb 2c3be4254ac68b05
+42 click 507 306 | traps 859032 calls 44e6b9e9f0183d6d vals 0bbcd12bb6bce3bc fb 92a10d022f450548
+43 wait 1200 | traps 860834 calls 6fb22f9476a5c2ec vals b4b5870b625e7c9e fb 8d844d6f41180043
+44 shot work/shots/display_4.png | traps 892678 calls 4ced4085c2b392ad vals 6a95302db0f9e213 fb fc3cb65ad9f03901
+45 expect [Game Opened] | traps 892678 calls 4ced4085c2b392ad vals 6a95302db0f9e213 fb fc3cb65ad9f03901
+46 expect Omen's Test | traps 892678 calls 4ced4085c2b392ad vals 6a95302db0f9e213 fb fc3cb65ad9f03901
+47 quit | traps 892678 calls 4ced4085c2b392ad vals 6a95302db0f9e213 fb fc3cb65ad9f03901
+0 exit | traps 892678 calls 4ced4085c2b392ad vals 6a95302db0f9e213 fb fc3cb65ad9f03901

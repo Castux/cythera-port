@@ -1,23 +1,23 @@
 6 wait 1800 | traps 201 calls dac3535d40c42d9a vals c33129eb1873eaff fb b3f01229fd7df325
-7 click 240 270 | traps 37267 calls fba8b158b1c89881 vals a24c2a14c9372719 fb 94ee64784b81fbf4
-8 wait 120 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 65854e60b69552ab
-9 key return | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 65854e60b69552ab
-10 wait 1500 | traps 780021 calls 43268f4bd91ac21b vals 4488240f3a419b60 fb 6749cce992524547
-11 expect Cellar | traps 827227 calls fa5d2a84f87c7730 vals 8cd01fd3c604b9eb fb 77d805c37f2f2105
-12 shot work/shots/magic_1.png | traps 827227 calls fa5d2a84f87c7730 vals 8cd01fd3c604b9eb fb 77d805c37f2f2105
-14 mousedown 362 404 | traps 827227 calls fa5d2a84f87c7730 vals 8cd01fd3c604b9eb fb 77d805c37f2f2105
-15 wait 6 | traps 827243 calls ba04c260e9d8e400 vals 70939d04c98f6270 fb 77d805c37f2f2105
-16 mouseup 362 404 | traps 2251138 calls 3d30e51b4c983161 vals 4204308dc8c12b84 fb 8e64a9745542119d
-17 wait 200 | traps 2251139 calls 86c7bf4aa7cc47fb vals 93d1ca9982d996ff fb 8e64a9745542119d
-18 click 198 320 | traps 2258823 calls f804d2af0a52f913 vals 7fd6298674d07d43 fb 138644c6a29645a5
-19 wait 100 | traps 2260929 calls f54c5f880b4df96b vals 8ad8fda1ea973a94 fb bce31e86b87c5fa0
-20 expect Magic: 22 | traps 2263330 calls f48ff15f83b46ca8 vals ef0e92a74f2d09df fb bce31e86b87c5fa0
-21 expect Minor Embrightenment | traps 2263330 calls f48ff15f83b46ca8 vals ef0e92a74f2d09df fb bce31e86b87c5fa0
-22 click 110 148 | traps 2263330 calls f48ff15f83b46ca8 vals ef0e92a74f2d09df fb bce31e86b87c5fa0
-23 wait 60 | traps 2264833 calls 5073ef1c06dd31f2 vals bdbc71e9b118f4f0 fb bbe17a67212e71d3
-24 click 190 284 | traps 2266327 calls 78098189f6cfb1ad vals 59e0c626fd188aa0 fb bbe17a67212e71d3
-25 wait 200 | traps 2267963 calls 880c26b6e42a9717 vals 353aa652d77d4243 fb 32d72f0ae75bed63
-26 expect Magic: 20 | traps 2272967 calls 2616e251a99cc7fd vals 26a2eb62ca132c59 fb 9a398fda3e61b413
-27 shot work/shots/magic_2.png | traps 2272967 calls 2616e251a99cc7fd vals 26a2eb62ca132c59 fb 9a398fda3e61b413
-28 quit | traps 2272967 calls 2616e251a99cc7fd vals 26a2eb62ca132c59 fb 9a398fda3e61b413
-0 exit | traps 2272967 calls 2616e251a99cc7fd vals 26a2eb62ca132c59 fb 9a398fda3e61b413
+7 click 240 270 | traps 37265 calls 1a0889180b4d267d vals 062a3c21fe5a6a3b fb 94ee64784b81fbf4
+8 wait 120 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 65854e60b69552ab
+9 key return | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 65854e60b69552ab
+10 wait 1500 | traps 780019 calls f5af825bbb6c9d07 vals 235b65a090117841 fb 6749cce992524547
+11 expect Cellar | traps 827226 calls 18e3e4e66f85f815 vals a8f163d29aa0d698 fb 77d805c37f2f2105
+12 shot work/shots/magic_1.png | traps 827226 calls 18e3e4e66f85f815 vals a8f163d29aa0d698 fb 77d805c37f2f2105
+14 mousedown 362 404 | traps 827226 calls 18e3e4e66f85f815 vals a8f163d29aa0d698 fb 77d805c37f2f2105
+15 wait 6 | traps 827242 calls f4ab0fefb36de361 vals a22cea0561b35853 fb 77d805c37f2f2105
+16 mouseup 362 404 | traps 2249928 calls 0b1970144787af0d vals 9331de56c5275cbb fb 8e64a9745542119d
+17 wait 200 | traps 2249929 calls a4497555a06c2197 vals 169a8e9b6cd4cd1c fb 8e64a9745542119d
+18 click 198 320 | traps 2257613 calls 265a9ee4421b9c97 vals 82db55ed56dd1740 fb 138644c6a29645a5
+19 wait 100 | traps 2259719 calls d1fa7916c8c1e76f vals 233e06fc45d6729b fb bce31e86b87c5fa0
+20 expect Magic: 22 | traps 2262120 calls 80b5bcf99759034c vals 8dbff51dcbf4e54c fb bce31e86b87c5fa0
+21 expect Minor Embrightenment | traps 2262120 calls 80b5bcf99759034c vals 8dbff51dcbf4e54c fb bce31e86b87c5fa0
+22 click 110 148 | traps 2262120 calls 80b5bcf99759034c vals 8dbff51dcbf4e54c fb bce31e86b87c5fa0
+23 wait 60 | traps 2263623 calls 1939afa071da4f36 vals c2b35224cb4c74eb fb bbe17a67212e71d3
+24 click 190 284 | traps 2265117 calls 4f4cff0bc7a0f1e1 vals 89c7c2f8f8da0087 fb bbe17a67212e71d3
+25 wait 200 | traps 2266753 calls 996c6d38192d1083 vals 6213070da513103c fb 32d72f0ae75bed63
+26 expect Magic: 20 | traps 2271757 calls 9ff45dc6b2702139 vals b7d3eae139629462 fb 9a398fda3e61b413
+27 shot work/shots/magic_2.png | traps 2271757 calls 9ff45dc6b2702139 vals b7d3eae139629462 fb 9a398fda3e61b413
+28 quit | traps 2271757 calls 9ff45dc6b2702139 vals b7d3eae139629462 fb 9a398fda3e61b413
+0 exit | traps 2271757 calls 9ff45dc6b2702139 vals b7d3eae139629462 fb 9a398fda3e61b413
