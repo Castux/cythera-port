@@ -147,8 +147,8 @@ jobs:
         run: |
           set -o pipefail
           make test CC=gcc PYTHON=python 2>&1 | tee -a build.log
-      - name: Scripted game tests (releases only; Linux runs them on every push)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Scripted game tests (releases and manual runs; Linux runs them on every push)
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         timeout-minutes: 30
         run: |
           set -o pipefail
@@ -225,8 +225,8 @@ jobs:
           otool -L cythera
       - name: CPU tests
         run: make test CC="clang -arch arm64" BUILD=build-arm64 SDL_CFLAGS="$(sdl/bin/sdl2-config --cflags)" 2>&1 | tee -a build.log
-      - name: Scripted game tests (releases only; Linux runs them on every push)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Scripted game tests (releases and manual runs; Linux runs them on every push)
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         timeout-minutes: 30
         run: CYTHERA=./cythera tests/run.sh 2>&1 | tee -a build.log  # the universal binary that ships
       - name: App bundle
