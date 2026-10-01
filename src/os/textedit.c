@@ -422,7 +422,7 @@ static void text_replace(u32 te, int from, int to, const u8 *ins, int n) {
     if (nl > 32767) { n -= nl - 32767; nl = 32767; }
     u8 *buf = malloc((size_t)nl + 1);
     if (from) gmemcpy_from(buf, hderef(th), (u32)from);
-    memcpy(buf + from, ins, (size_t)n);
+    if (n) memcpy(buf + from, ins, (size_t)n); /* ins may be NULL when nothing is inserted */
     if (len - to) gmemcpy_from(buf + from + n, hderef(th) + (u32)to, (u32)(len - to));
     mm_set_handle_size(th, (u32)nl);
     if (nl) gmemcpy_to(hderef(th), buf, (u32)nl);

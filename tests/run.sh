@@ -49,6 +49,7 @@ golden() { # golden NAME LOG: compare with (or record) tests/golden/NAME.txt
   [ -f "$want" ] || { echo "FAIL $1 (no $want: GOLDEN=update records it)"; return 1; }
   cmp -s "$want" "$got" && return 0
   echo "FAIL $1 (golden trace differs; first difference:)"
+  cp "$want" "${2%.log}.want" # next to the run's .golden, for the CI artifacts
   awk 'NR == FNR { w[FNR] = $0; n = FNR; next }
        w[FNR] != $0 { print "  want: " w[FNR]; print "  got:  " $0; d = 1; exit }
        END { if (!d && n != FNR) print "  (one trace is a prefix of the other: " n " vs " FNR " lines)"
