@@ -369,7 +369,7 @@ int fcb_open(const char *hostpath, bool rsrc_fork, int perm, s16 *refnum) {
         if (!f) return perm == 0 ? fnfErr : permErr;
     } else {
         f = fopen(path, "rb");
-        if (!f && rsrc_fork) { *refnum = 0; f = fopen("/dev/null", "rb"); } /* empty rsrc fork */
+        if (!f && rsrc_fork) { *refnum = 0; f = fopen(PLAT_NULL_DEVICE, "rb"); } /* empty rsrc fork */
         if (!f) return fnfErr;
     }
     s16 ref = fcb_alloc_refnum();
@@ -559,21 +559,48 @@ TRAP(FSpDelete) {
     RETERR(err);
 }
 
+/* Swap the host files at paths a and b (either may be missing). */
+static bool swap_host_files(const char *a, const char *b) {
+    char tmp[1200];
+    snprintf(tmp, sizeof tmp, "%s.xchg", a);
+    bool ea = vfs_exists(a), eb = vfs_exists(b);
+    if (ea && rename(a, tmp)) return false;
+    if (eb && rename(b, a)) { if (ea) rename(tmp, a); return false; }
+    if (ea && rename(tmp, b)) return false;
+    return true;
+}
+
+/* The files' contents trade places; open access paths follow their data, as
+   they do on POSIX hosts by themselves. Windows can't rename open files, so
+   the host files open on either fork are closed around the swap and reopened
+   where their data went. */
 TRAP(FSpExchangeFiles) {
-    char a[1100], b[1100], tmp[1200];
+    char a[1100], b[1100], ra[1100], rb[1100];
     int err = fsspec_hostpath(ARG(0), a, sizeof a);
     if (!err) err = fsspec_hostpath(ARG(1), b, sizeof b);
     if (err) { RETERR(err); return; }
-    snprintf(tmp, sizeof tmp, "%s.xchg", a);
-    rename(a, tmp); rename(b, a); rename(tmp, b);
-    char ra[1100], rb[1100];
     rsrc_path(a, ra, sizeof ra); rsrc_path(b, rb, sizeof rb);
-    snprintf(tmp, sizeof tmp, "%s.xchg", ra);
-    bool ea = vfs_exists(ra), eb = vfs_exists(rb);
-    if (ea) rename(ra, tmp);
-    if (eb) rename(rb, ra);
-    if (ea) rename(tmp, rb);
-    RETERR(noErr);
+    const char *from[4] = { a, b, ra, rb }, *to[4] = { b, a, rb, ra };
+    int moved[FCB_MAX], nmoved = 0, dest[FCB_MAX];
+    for (int i = 0; i < FCB_MAX; i++) {
+        FCB *f = &g_fcbs[i];
+        if (!f->used || f->f == NULL) continue;
+        for (int k = 0; k < 4; k++)
+            if (!strcmp(f->path, from[k])) { fclose(f->f); f->f = NULL; moved[nmoved] = i; dest[nmoved++] = k; break; }
+    }
+    bool ok = swap_host_files(a, b) && swap_host_files(ra, rb);
+    for (int j = 0; j < nmoved; j++) {
+        FCB *f = &g_fcbs[moved[j]];
+        int k = dest[j];
+        const char *path = ok ? to[k] : from[k];
+        bool w = f->perm == 0 || f->perm == 2 || f->perm == 3 || f->perm == 4;
+        f->f = fopen(path, w ? "r+b" : "rb");
+        if (!f->f && w) f->f = fopen(path, "rb");
+        if (!f->f) f->f = fopen(PLAT_NULL_DEVICE, "rb");
+        snprintf(f->path, sizeof f->path, "%s", path);
+        if (ok) snprintf(f->datapath, sizeof f->datapath, "%s", k == 0 || k == 2 ? b : a);
+    }
+    RETERR(ok ? noErr : ioErr);
 }
 
 static void write_finfo(u32 fi, const char *host) {

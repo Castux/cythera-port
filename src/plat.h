@@ -15,6 +15,7 @@
 #define PATH_MAX 260
 #endif
 #define plat_mkdir(p) _mkdir(p)
+#define PLAT_NULL_DEVICE "NUL"
 static inline char *plat_realpath(const char *p, char *out) { return _fullpath(out, p, PATH_MAX); }
 /* per-user data directory */
 static inline const char *plat_home(void) {
@@ -37,6 +38,7 @@ static inline long plat_gmtoff(time_t t) {
 #else
 #include <unistd.h>
 #define plat_mkdir(p) mkdir((p), 0755)
+#define PLAT_NULL_DEVICE "/dev/null"
 static inline char *plat_realpath(const char *p, char *out) { return realpath(p, out); }
 static inline const char *plat_home(void) { return getenv("HOME"); }
 static inline int plat_ftruncate(int fd, long long len) { return ftruncate(fd, (off_t)len); }
