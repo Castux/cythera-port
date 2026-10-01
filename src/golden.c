@@ -23,7 +23,7 @@ static u64 fnv(u64 h, const void *p, size_t n) {
 }
 
 void golden_open(const char *path) {
-    g_f = fopen(path, "w");
+    g_f = fopen(path, "wb"); /* "\n" line ends on every host */
     if (!g_f) fatal("cannot write %s", path);
 }
 

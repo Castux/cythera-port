@@ -51,7 +51,8 @@ golden() { # golden NAME LOG: compare with (or record) tests/golden/NAME.txt
   echo "FAIL $1 (golden trace differs; first difference:)"
   awk 'NR == FNR { w[FNR] = $0; n = FNR; next }
        w[FNR] != $0 { print "  want: " w[FNR]; print "  got:  " $0; d = 1; exit }
-       END { if (!d) print "  (one trace is a prefix of the other: " n " vs " FNR " lines)" }' "$want" "$got"
+       END { if (!d && n != FNR) print "  (one trace is a prefix of the other: " n " vs " FNR " lines)"
+             else if (!d) print "  (the same lines: line ends or trailing bytes differ)" }' "$want" "$got"
   return 1
 }
 check() { # check NAME RC LOG
