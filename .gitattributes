@@ -1,0 +1,2 @@
+# compared byte for byte by tests/run.sh: no line-end conversion on checkout
+tests/golden/*.txt -text

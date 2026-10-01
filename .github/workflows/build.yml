@@ -110,6 +110,44 @@ jobs:
           name: test-logs
           path: work/shots
 
+  sanitizers:
+    # the scripted tests under AddressSanitizer and UndefinedBehaviorSanitizer:
+    # any report outside third_party/ fails (TinySoundFont shifts negative values)
+    needs: gamedata
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: SDL2
+        run: |
+          sudo timeout 300 apt-get -o Acquire::Retries=3 update
+          sudo timeout 600 apt-get -o Acquire::Retries=3 install -y libsdl2-dev
+      - uses: actions/download-artifact@v8
+        with:
+          name: gamedata
+      - run: tar -xzf gamedata.tar.gz
+      - name: Build
+        run: >
+          make -j"$(nproc)" CC=gcc BUILD=build-asan
+          CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer"
+          LDFLAGS="-fsanitize=address,undefined"
+      - name: Scripted game tests
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: |
+          CYTHERA=build-asan/cythera tests/run.sh
+          if grep -h "runtime error:\|ERROR: AddressSanitizer" work/shots/*.log | grep -v "third_party/"; then
+            echo "sanitizer reports (work/shots/*.log)"; exit 1
+          fi
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs-sanitizers
+          path: work/shots
+
   windows:
     needs: gamedata
     runs-on: windows-latest
